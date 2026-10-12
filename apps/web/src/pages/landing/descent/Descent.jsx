@@ -51,6 +51,43 @@ function useFontsReady() {
   return ready;
 }
 
+/**
+ * The 27 stars of the Brazilian flag's sky (Cruzeiro do Sul, Escorpião, Cão Maior...),
+ * set in the open sky around the island and the caption: the flag's stars and colours,
+ * never the flag. m = brightness (1 brightest), then [x, y] in % of the screen for
+ * phones/tall screens and for wide screens.
+ */
+const BRAZIL_STARS = [
+  // m, phone x, y, wide x, y
+  [2, 6, 16, 44, 25], // Procyon
+  [1, 9, 42, 20, 84], [3, 4.5, 40.5, 14, 82], [2, 10, 47, 19, 91], [2, 6, 49.5, 15, 94], [3, 15, 49, 24, 93], // Cão Maior
+  [1, 21, 52, 32, 88], // Canopus
+  [2, 64, 9, 70, 9], // Spica
+  [2, 70, 12, 46, 13], [3, 74, 15.5, 48.5, 17], // Hidra
+  [2, 80, 39.5, 87, 12], [1, 81, 51, 88, 30], [1, 75.5, 45, 83.5, 20.5], [2, 86.5, 44.5, 91.5, 19.5], [4, 83.5, 48, 89.5, 25], // Cruzeiro do Sul
+  [4, 50, 9, 36, 12], // Sigma do Oitante
+  [2, 85, 9.5, 78, 14], [3, 90, 12, 81, 9], [3, 83, 13.5, 75, 9.5], // Triângulo Austral
+  [1, 31, 11.5, 60, 14], [3, 22, 9, 52, 10], [3, 25.5, 8.5, 55, 9.5], [3, 27.5, 10.5, 57, 12], [3, 33.5, 13.5, 61, 18.5], [3, 31.5, 16.5, 59, 22.5], [3, 28, 17.5, 56, 24], [3, 25.5, 16, 54, 21.5], // Escorpião
+];
+const STAR_PATH = 'M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6l-6.4 3.5L7 14l-5.3-5 7.2-.9z';
+
+function BrazilSky() {
+  return (
+    <div className={s.brazil} aria-hidden="true">
+      {BRAZIL_STARS.map(([m, x, y, dx, dy], i) => (
+        <svg
+          key={i}
+          className={s.star}
+          viewBox="0 0 24 24"
+          style={{ '--x': x, '--y': y, '--dx': dx, '--dy': dy, '--size': `${[0, 15, 11, 8, 6][m]}px`, animationDelay: `${((i * 0.37) % 3.2).toFixed(2)}s` }}
+        >
+          <path d={STAR_PATH} />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
 function Copy({ index, reduced }) {
   const c = CHAPTERS[index];
   const { isAuthenticated } = useSession();
@@ -269,6 +306,7 @@ export default function Descent() {
       <div ref={stage} className={s.stage} onClick={onStageClick} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className={s.sky} aria-hidden="true" />
         <div className={s.horizon} aria-hidden="true" />
+        <BrazilSky />
         {webgl && fontsReady ? (
           <div className={`${s.canvas} ${canvasOn ? s.canvasOn : ''}`} aria-hidden="true">
             <SceneBoundary onFail={() => setWebgl(false)}>

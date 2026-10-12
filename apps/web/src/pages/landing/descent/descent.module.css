@@ -16,9 +16,9 @@
 }
 
 .stage {
-  --d-top: #4a6fb5;
-  --d-bottom: #0e1830;
-  --d-accent: #8fb2ff;
+  --d-top: #0c3a96;
+  --d-bottom: #00502a;
+  --d-accent: #ffdf00;
   --d-fill: 0;
   position: sticky;
   top: 0;
@@ -35,6 +35,59 @@
   background:
     radial-gradient(110% 75% at 68% 12%, color-mix(in srgb, var(--d-top) 78%, #ffffff 22%) 0%, transparent 62%),
     linear-gradient(180deg, var(--d-top) 0%, var(--d-bottom) 80%);
+}
+
+/* First screen only: Brazil's colours (a golden horizon glow) and the flag's stars,
+   fading away as the camera dives to the next island. */
+.brazil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: clamp(0, calc(1 - var(--d-fill) * 9), 1);
+  background:
+    radial-gradient(70% 24% at 50% 52%, rgba(255, 223, 0, 0.22), transparent 70%),
+    radial-gradient(38% 12% at 50% 50%, rgba(255, 223, 0, 0.16), transparent 70%);
+}
+
+.star {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1%);
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
+  fill: #ffffff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 10px rgba(255, 223, 0, 0.35));
+  animation: twinkle 3.2s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/* Wide screens: a golden horizon along the bottom, stars in the open sky. */
+@media (min-width: 768px) and (min-aspect-ratio: 4/5) {
+  .brazil {
+    background:
+      radial-gradient(85% 30% at 46% 104%, rgba(255, 223, 0, 0.3), transparent 72%),
+      radial-gradient(45% 14% at 46% 100%, rgba(255, 223, 0, 0.2), transparent 70%);
+  }
+
+  .star {
+    left: calc(var(--dx) * 1%);
+    top: calc(var(--dy) * 1%);
+    width: calc(var(--size) * 1.15);
+    height: calc(var(--size) * 1.15);
+    margin: calc(var(--size) * -0.575) 0 0 calc(var(--size) * -0.575);
+  }
 }
 
 /* Faint orbit lines behind the island: depth without noise. */
@@ -468,6 +521,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .star {
+    animation: none;
+  }
+
   .wheel {
     animation: none;
     transform: translateY(-8px);

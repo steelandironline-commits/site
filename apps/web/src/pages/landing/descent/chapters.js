@@ -10,7 +10,7 @@ export const CHAPTERS = [
     kicker: 'Transporte · Pessoas · Serviços · Pix',
     title: 'Tem emprego, tem rota, tem serviço. TemPix.',
     body: 'Clientes, cargas, vagas e serviços com pagamento assegurado até a conclusão. Profissional entra grátis; empresa paga só o cadastro, uma vez, e nunca mensalidade.',
-    palette: { top: '#4a6fb5', bottom: '#0e1830', sky: '#b9ccff', ground: '#1c2340', accent: '#8fb2ff' },
+    palette: { top: '#0c3a96', bottom: '#00502a', sky: '#d6e4ff', ground: '#0c3d24', accent: '#ffdf00' },
   },
   {
     id: 'demanda',
