@@ -1,23 +1,26 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
   Check,
+  Download,
   Gauge,
   Menu,
   MessageSquareText,
   Radar,
+  Share,
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { PLAN, formatCents } from '@autopix/shared';
+import { PRICING } from '@autopix/shared';
 import { Logo } from '../../components/brand/Logo.jsx';
-import { Button, DemoBadge, ScoreRing } from '../../components/ui/ui.jsx';
+import { Button, DemoBadge, Dialog, ScoreRing } from '../../components/ui/ui.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import { PipelineFlow } from '../../components/activity/Flow.jsx';
 import { useDemoFeed } from '../../lib/demoFeed.js';
 import { useSession } from '../../lib/session.jsx';
+import { isIos, useInstallPrompt } from '../../lib/pwa.js';
 import Descent from './descent/Descent.jsx';
 import s from './landing.module.css';
 
@@ -28,6 +31,62 @@ const reveal = {
   viewport: { once: true, margin: '-80px' },
   transition: { duration: 0.6, ease },
 };
+
+/* ------------------------------------------------------------ download */
+/** "Baixe aqui": installs the TemPix app (PWA). iPhone gets the two-tap instructions. */
+function DownloadButton({ block = false }) {
+  const { installed, canPrompt, prompt } = useInstallPrompt();
+  const navigate = useNavigate();
+  const [help, setHelp] = useState(null);
+  const onClick = async () => {
+    if (installed) return navigate('/app');
+    if (canPrompt) {
+      const outcome = await prompt();
+      if (outcome !== 'unavailable') return undefined;
+    }
+    setHelp(isIos() ? 'ios' : 'other');
+    return undefined;
+  };
+  return (
+    <>
+      <Button size={block ? 'lg' : 'sm'} block={block} icon={Download} onClick={onClick} className={block ? undefined : s.navCta}>
+        {block ? 'BAIXE AQUI' : 'Baixe aqui'}
+      </Button>
+      <Dialog
+        open={Boolean(help)}
+        title="Baixe o app TemPix"
+        onClose={() => setHelp(null)}
+        actions={
+          <Button size="sm" onClick={() => setHelp(null)}>
+            ENTENDI
+          </Button>
+        }
+      >
+        {help === 'ios' ? (
+          <ol className={s.installSteps}>
+            <li>
+              No Safari, toque em <Share size={15} aria-hidden="true" /> <strong>Compartilhar</strong>.
+            </li>
+            <li>
+              Escolha <strong>Adicionar à Tela de Início</strong>.
+            </li>
+            <li>Abra o TemPix pelo ícone, como qualquer app.</li>
+          </ol>
+        ) : (
+          <ol className={s.installSteps}>
+            <li>
+              No Android, abra este site no <strong>Chrome</strong> e toque em <strong>Instalar app</strong> no menu ⋮.
+            </li>
+            <li>
+              No computador, use o ícone de instalar na barra de endereço do <strong>Chrome</strong> ou do <strong>Edge</strong>.
+            </li>
+            <li>O TemPix abre como app, com avisos de clientes, cargas e Pix.</li>
+          </ol>
+        )}
+      </Dialog>
+    </>
+  );
+}
 
 /* ------------------------------------------------------------------ nav */
 function Nav() {
@@ -74,9 +133,7 @@ function Nav() {
           <Link to={isAuthenticated ? '/app' : '/login'} className={s.navLogin}>
             {isAuthenticated ? 'Painel' : 'Entrar'}
           </Link>
-          <Button to="/onboarding" size="sm" className={s.navCta}>
-            Cadastre-se
-          </Button>
+          <DownloadButton />
           <button type="button" className={s.menuBtn} onClick={() => setOpen(true)} aria-label="Abrir menu" aria-expanded={open}>
             <Menu size={20} />
           </button>
@@ -117,9 +174,10 @@ function Nav() {
                 {isAuthenticated ? 'Painel' : 'Entrar'}
               </Link>
             </nav>
-            <Button to="/onboarding" size="lg" block>
+            <Button to="/onboarding" size="lg" block iconRight={ArrowRight}>
               CADASTRE-SE AGORA
             </Button>
+            <DownloadButton block />
           </motion.div>
         )}
       </AnimatePresence>
@@ -272,33 +330,45 @@ function LiveDemo() {
 
 /* --------------------------------------------------------------- pricing */
 function Pricing() {
+  const fee = PRICING.commissionLabel;
   return (
     <section id="preco" className={`${s.section} ${s.sectionAlt}`} aria-labelledby="preco-title">
       <div className="container">
         <motion.header className={s.sectionHead} {...reveal}>
           <p className="eyebrow">Preço</p>
-          <h2 id="preco-title">Um plano. Tudo incluído.</h2>
+          <h2 id="preco-title">Sem mensalidade. {fee} só quando o contrato fecha.</h2>
+          <p>
+            Cadastro gratuito. O TemPix cobra uma taxa fixa de {fee} sobre cada contrato entre as partes: cargas, rotas, obras, serviços e
+            vagas.
+          </p>
         </motion.header>
         <motion.article className={s.price} {...reveal}>
           <div className={s.priceTop}>
             <Logo />
             <p className={s.priceValue}>
-              <span className={s.priceCurrency}>R$</span>597<span className={s.pricePer}>/mês</span>
+              {fee.replace('%', '')}
+              <span className={s.pricePer}>% por contrato fechado</span>
             </p>
-            <p className={s.priceNote}>{formatCents(PLAN.priceCents)} por mês, via Pix. Sem fidelidade.</p>
+            <p className={s.priceNote}>Exemplo: contrato de R$ 10.000,00 → R$ 200,00 para o TemPix e R$ 9.800,00 para quem executou.</p>
           </div>
           <ul className={s.priceList}>
-            {PLAN.features.map((f) => (
+            {PRICING.features.map((f) => (
               <li key={f}>
                 <Check size={15} aria-hidden="true" /> {f}
               </li>
             ))}
           </ul>
-          <Button to="/onboarding" size="lg" block iconRight={ArrowRight}>
-            ATIVAR COM PIX
-          </Button>
+          <div className={s.priceCtas}>
+            <Button to="/login" size="lg" variant="outline">
+              FAZER LOGIN
+            </Button>
+            <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
+              CADASTRE-SE AGORA
+            </Button>
+          </div>
           <p className={s.priceSafe}>
-            <ShieldCheck size={14} aria-hidden="true" /> Pagamento confirmado pelo provedor. Sua senha é criada por você, nunca enviada por e-mail.
+            <ShieldCheck size={14} aria-hidden="true" /> Pagamento assegurado até a conclusão: em obras, serviços, rotas e transportes, o valor fica
+            protegido na instituição de pagamento parceira e só é liberado quando a conclusão é confirmada.
           </p>
         </motion.article>
       </div>
@@ -311,10 +381,18 @@ function FinalCta() {
     <section className={s.final}>
       <div className="container">
         <motion.div className={s.finalInner} {...reveal}>
-          <h2>Tem emprego, tem rota, tem serviço. <span>TemPix.</span></h2>
-          <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
-            CADASTRE-SE AGORA
-          </Button>
+          <h2>
+            Tem emprego, tem rota, tem serviço. <span>TemPix.</span>
+          </h2>
+          <p className={s.finalSub}>Cadastro gratuito · {PRICING.commissionLabel} só sobre contratos fechados · pagamento assegurado até a conclusão</p>
+          <div className={s.priceCtas}>
+            <Button to="/login" size="lg" variant="outline">
+              FAZER LOGIN
+            </Button>
+            <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
+              CADASTRE-SE AGORA
+            </Button>
+          </div>
         </motion.div>
       </div>
     </section>

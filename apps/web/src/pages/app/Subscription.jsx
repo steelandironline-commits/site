@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Check, QrCode } from 'lucide-react';
-import { PLAN, SUBSCRIPTION_STATUS_LABELS, formatCents } from '@autopix/shared';
+import { AlertTriangle, Check, QrCode, ShieldCheck } from 'lucide-react';
+import { COMMISSION_PLAN_CODE, PLAN, PRICING, SUBSCRIPTION_STATUS_LABELS, formatCents } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useSession } from '../../lib/session.jsx';
@@ -21,7 +21,7 @@ export default function Subscription() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    document.title = 'Assinatura — TemPix';
+    document.title = 'Plano — TemPix';
   }, []);
 
   const act = async (action, message) => {
@@ -40,6 +40,7 @@ export default function Subscription() {
   };
 
   const data = sub.data?.subscription;
+  if (data?.plan === COMMISSION_PLAN_CODE) return <CommissionPlan />;
 
   return (
     <>
@@ -169,6 +170,60 @@ export default function Subscription() {
       >
         Seu TemPix continua ativo até {fmtDate(data?.currentPeriodEnd)}. Depois disso, os agentes são pausados e nenhuma nova cobrança é gerada.
       </Dialog>
+    </>
+  );
+}
+
+/** TemPix has no subscription: signup is free and the fee is a share of each contract. */
+function CommissionPlan() {
+  const fee = PRICING.commissionLabel;
+  return (
+    <>
+      <header className={s.pageHead}>
+        <div>
+          <h1 className={s.pageTitle}>Plano</h1>
+          <p className={s.pageSub}>Sem mensalidade. Você só paga quando fecha negócio.</p>
+        </div>
+      </header>
+      <div className={s.subGrid}>
+        <section className={s.planCard} aria-labelledby="plan">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <h2 id="plan" className="mono" style={{ letterSpacing: '0.2em', fontSize: 16 }}>
+              TEMPIX
+            </h2>
+            <Badge tone="primary" dot pulse>
+              Ativo
+            </Badge>
+          </div>
+          <p className={`${s.planPrice} num`}>
+            {fee}
+            <span> por contrato fechado</span>
+          </p>
+          <p className={s.pageSub}>
+            Taxa fixa sobre o valor de cada contrato entre as partes: cargas, rotas, obras, serviços e vagas. Cadastro e uso do painel não
+            têm mensalidade.
+          </p>
+          <ul className={s.reasons} style={{ marginTop: 18 }}>
+            {PRICING.features.map((f) => (
+              <li key={f}>
+                <Check size={14} aria-hidden="true" /> {f}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section className={s.planCard} aria-labelledby="assured">
+          <h2 id="assured" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16 }}>
+            <ShieldCheck size={18} aria-hidden="true" /> Pagamento assegurado até a conclusão
+          </h2>
+          <p className={s.pageSub}>
+            Em obras, serviços, rotas e transportes, o valor do contrato fica protegido na instituição de pagamento parceira e só é liberado
+            quando a conclusão é confirmada. Chegada por GPS ou mensagem de WhatsApp sozinhas não liberam dinheiro.
+          </p>
+          <p className={s.pageSub}>
+            Exemplo: contrato de R$ 10.000,00 → taxa TemPix de R$ 200,00 ({fee}) e R$ 9.800,00 para quem executou.
+          </p>
+        </section>
+      </div>
     </>
   );
 }

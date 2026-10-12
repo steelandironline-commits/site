@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { PLAN, checkoutState, deepLinks, formatCents } from '@autopix/shared';
+import { PLAN, checkoutState, deepLinks, formatCents, PRICING } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { generateToken } from '../security/tokens.js';
@@ -135,6 +135,9 @@ export class PaymentService {
   // ------------------------------------------------- subscription checkout
 
   async createPixCharge({ user, company }) {
+    if (this.config.billing.model === 'commission') {
+      throw conflict(`O TemPix não cobra assinatura: a taxa é de ${PRICING.commissionLabel} por contrato fechado.`);
+    }
     const provider = this.provider();
     if (provider.name === 'none') throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE); // nothing is recorded
     let subscription = await this.prisma.subscription.findUnique({ where: { companyId: company.id } });

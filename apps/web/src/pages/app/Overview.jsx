@@ -62,7 +62,7 @@ export default function Overview() {
             {greeting()}, {firstName}.
           </h1>
           <p className={s.pageSub}>
-            {active ? 'Seu TemPix está procurando oportunidades.' : 'Seus agentes estão pausados. Renove a assinatura para retomar.'}
+            {active ? 'Seu TemPix está procurando oportunidades.' : 'Seus agentes estão pausados. Veja o seu plano para retomar.'}
             {job && (
               <span className={s.muted}>
                 {' '}
@@ -77,7 +77,7 @@ export default function Overview() {
               Buscar agora
             </Button>
           ) : (
-            <Button to="/app/subscription">Renovar assinatura</Button>
+            <Button to="/app/subscription">Ver plano</Button>
           )}
         </div>
       </header>

@@ -1,3 +1,4 @@
+import { COMMISSION_PLAN_CODE } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { badRequest, conflict } from '../errors.js';
@@ -57,6 +58,7 @@ export class OnboardingService {
       company,
       subscription: subscription ? { status: subscription.status } : null,
       latestPayment: payment,
+      billingModel: this.config.billing.model,
     };
   }
 
@@ -85,5 +87,38 @@ export class OnboardingService {
         ...(complete ? { onboardingCompletedAt: new Date() } : {}),
       },
     });
+  }
+
+  /**
+   * Commission model: no subscription and no charge at signup. Once the
+   * company profile is complete, the account's access record is opened and an
+   * activation token is handed to this same onboarding session, so the owner
+   * creates the password next (the password is always chosen by the user).
+   */
+  async finish(user) {
+    if (this.config.billing.model !== 'commission') throw conflict('Conclua o pagamento para ativar a conta.');
+    const fresh = await this.prisma.user.findUnique({ where: { id: user.id } });
+    if (fresh.status === 'ACTIVE') return { alreadyActive: true };
+    if (fresh.status !== 'PENDING_PAYMENT' && fresh.status !== 'PENDING_ACTIVATION') throw conflict('Onboarding já concluído.');
+    const company = await this.prisma.company.findUnique({ where: { id: fresh.companyId } });
+    if (!company.onboardingCompletedAt) throw badRequest('Complete os dados da empresa antes de continuar.');
+    const now = new Date();
+    const access = {
+      plan: COMMISSION_PLAN_CODE,
+      priceCents: 0,
+      status: 'ACTIVE',
+      provider: 'none',
+      currentPeriodStart: now,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      canceledAt: null,
+      activatedAt: now,
+    };
+    const token = await this.prisma.$transaction(async (tx) => {
+      await tx.subscription.upsert({ where: { companyId: company.id }, update: access, create: { companyId: company.id, ...access } });
+      await tx.user.update({ where: { id: fresh.id }, data: { status: 'PENDING_ACTIVATION' } });
+      return this.auth.issueActivationToken(fresh.id, tx);
+    });
+    return { token };
   }
 }

@@ -41,7 +41,7 @@ const NAV = [
   { to: '/app/workforce', label: 'Equipes', icon: HardHat },
   { to: '/app/agents', label: 'Agentes', icon: Cpu },
   { to: '/app/company', label: 'Empresa', icon: Building2 },
-  { to: '/app/subscription', label: 'Assinatura', icon: CreditCard },
+  { to: '/app/subscription', label: 'Plano', icon: CreditCard },
   { to: '/app/settings', label: 'Configurações', icon: Settings },
 ];
 const MOBILE_TABS = [NAV[0], NAV[2], NAV[3], NAV[4]];
@@ -106,7 +106,7 @@ function GlobalState({ subscription }) {
   return (
     <span className={`${s.globalState} ${active ? s.globalActive : s.globalPaused}`} role="status">
       <span className={s.globalDot} aria-hidden="true" />
-      {active ? 'TEMPIX ATIVO' : `TEMPIX PAUSADO · ${SUBSCRIPTION_STATUS_LABELS[subscription?.status] || 'sem assinatura'}`}
+      {active ? 'TEMPIX ATIVO' : `TEMPIX PAUSADO · ${SUBSCRIPTION_STATUS_LABELS[subscription?.status] || 'conta inativa'}`}
     </span>
   );
 }

@@ -90,11 +90,7 @@
   }
 }
 
-@media (max-width: 400px) {
-  .navCta {
-    display: none !important;
-  }
-}
+
 
 .sheet {
   position: fixed;
@@ -724,4 +720,42 @@
   margin-top: 20px;
   font-size: var(--fs-12);
   color: var(--dim);
+}
+
+/* ---------------- Download (PWA) + pricing CTAs ---------------- */
+.installSteps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.installSteps svg {
+  vertical-align: -2px;
+}
+
+.priceCtas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.price .priceCtas > * {
+  flex: 1 1 200px;
+}
+
+.finalSub {
+  margin: -12px auto 0;
+  max-width: 60ch;
+  color: var(--text-2);
+  font-size: var(--fs-14);
+}
+
+@media (max-width: 520px) {
+  .priceCtas > * {
+    width: 100%;
+  }
 }

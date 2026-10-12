@@ -263,11 +263,11 @@ Marketplace payments on top of the same provider abstraction (details:
   Comissões, Histórico, Configurações; metrics RECEBIDO, A LIBERAR,
   EM PROCESSAMENTO, COMISSÕES AUTOPIX; "Pagamentos processados por instituições
   financeiras parceiras." and a `SANDBOX` badge outside production.
-- `/app/pay/transactions/:id` — values (gross, 1.5% commission, seller net),
+- `/app/pay/transactions/:id` — values (gross, 2% commission, seller net),
   Pix, timeline, freight trip panel, and only the actions the server allows
   for your role and the current state.
 - `MarketplaceTransaction` with server-side amounts and a commission snapshot
-  (`CommissionRule`, default 1.5% → R$ 1.400 = R$ 21 + R$ 1.379).
+  (`CommissionRule`, default 2% → R$ 1.400 = R$ 28 + R$ 1.372).
 - Protected payment, split and payout appear **only** when the provider
   reports the capability. Without them the seller payable is tracked as
   `PENDING_PROVIDER_CAPABILITY` — TemPix never acts as unofficial escrow.

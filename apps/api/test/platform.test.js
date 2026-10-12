@@ -149,7 +149,7 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect(paid).toMatchObject({ status: 'CONFIRMED', protectionStatus: 'NONE' });
     expect(await ctx.prisma.domainEvent.count({ where: { type: 'PAYMENT_RECEIVED', aggregateId: payment.transactionId } })).toBe(1);
     const tx = await ctx.prisma.marketplaceTransaction.findUnique({ where: { id: payment.transactionId } });
-    expect(tx).toMatchObject({ status: 'PAID', type: 'SERVICE', grossAmount: 140000, commissionAmount: 2100, sellerNetAmount: 137900, settlementStatus: 'PENDING_PROVIDER_CAPABILITY' });
+    expect(tx).toMatchObject({ status: 'PAID', type: 'SERVICE', grossAmount: 140000, commissionAmount: 2800, sellerNetAmount: 137200, settlementStatus: 'PENDING_PROVIDER_CAPABILITY' });
 
     // PAYMENT_RECEIVED appears on the web dashboard.
     const feed = await user.c.get('/api/activity?type=PAYMENT');

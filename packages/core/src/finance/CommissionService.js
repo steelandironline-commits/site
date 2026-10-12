@@ -1,9 +1,9 @@
 import { getPrisma } from '../db.js';
 import { badRequest } from '../errors.js';
 
-/** Default rules: 1.5% on marketplace types; subscriptions are 100% TemPix revenue. */
+/** Default rules: fixed 2% on every contract between the parties; legacy subscriptions are 100% TemPix revenue. */
 export const DEFAULT_COMMISSION_RULES = [
-  { name: 'Padrão marketplace 1,5%', transactionType: null, rateBps: 150, priority: 0 },
+  { name: 'Padrão TemPix 2%', transactionType: null, rateBps: 200, priority: 0 },
   { name: 'Assinatura TemPix', transactionType: 'SUBSCRIPTION', rateBps: 10000, priority: 10 },
 ];
 

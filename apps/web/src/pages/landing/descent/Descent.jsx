@@ -101,11 +101,11 @@ function Copy({ index, reduced }) {
             </Button>
           ) : (
             <>
-              <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
-                CADASTRE-SE AGORA
-              </Button>
               <Button to="/login" size="lg" variant="outline">
                 FAZER LOGIN
+              </Button>
+              <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
+                CADASTRE-SE AGORA
               </Button>
             </>
           )}
@@ -270,7 +270,6 @@ export default function Descent() {
         ) : null}
         {!webgl && <FallbackArt Art={Art} />}
         <div className={s.vignette} aria-hidden="true" />
-        <span className={s.badge}>CENA ILUSTRATIVA</span>
         <div ref={copyBox} className={s.copyBox}>
           <AnimatePresence initial>
             <Copy key={active} index={active} reduced={reduced} />

@@ -19,6 +19,7 @@ export function testConfig(overrides = {}) {
     PAYMENT_WEBHOOK_SECRET: 'test-webhook-secret-0123456789abcdef01234567',
     DEMO_MODE: 'true',
     OPPORTUNITY_SCORE_THRESHOLD: '50',
+    BILLING_MODEL: 'subscription',
     ...overrides,
   });
 }

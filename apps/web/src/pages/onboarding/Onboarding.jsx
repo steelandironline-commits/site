@@ -137,20 +137,55 @@ function Analysis({ onDone }) {
 }
 
 function Ready({ companyName }) {
+  const navigate = useNavigate();
+  const { config } = useSession();
+  const subscription = config?.billing?.model === 'subscription';
+  const fee = config?.billing?.commissionLabel || '2%';
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Commission model: no charge at signup — straight to creating the password.
+  const finish = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await post('/api/onboarding/finish');
+      if (res.alreadyActive) return navigate('/login', { replace: true });
+      navigate(`/activate/${res.token}`, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Não foi possível concluir agora. Tente novamente.');
+      setBusy(false);
+    }
+  };
+
   return (
     <motion.div className={s.ready} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
       <span className={s.readyIcon}>
         <Check size={26} />
       </span>
-      <h1 className={s.readyTitle}>Seu TemPix está pronto para ser ativado.</h1>
+      <h1 className={s.readyTitle}>{subscription ? 'Seu TemPix está pronto para ser ativado.' : 'Cadastro concluído. Falta só a sua senha.'}</h1>
       <p className={s.readyText}>
-        Os agentes de {companyName || 'sua empresa'} começam a procurar oportunidades assim que o Pix for confirmado.
+        {subscription
+          ? `Os agentes de ${companyName || 'sua empresa'} começam a procurar oportunidades assim que o Pix for confirmado.`
+          : `Os agentes de ${companyName || 'sua empresa'} começam a procurar clientes, cargas e profissionais assim que você criar a senha.`}
       </p>
-      <Button to="/checkout" size="lg" iconRight={ArrowRight}>
-        PAGAR COM PIX
-      </Button>
+      {subscription ? (
+        <Button to="/checkout" size="lg" iconRight={ArrowRight}>
+          PAGAR COM PIX
+        </Button>
+      ) : (
+        <Button size="lg" iconRight={ArrowRight} onClick={finish} loading={busy}>
+          CRIAR MINHA SENHA
+        </Button>
+      )}
+      {error && (
+        <p className={s.readySafe} role="alert">
+          {error}
+        </p>
+      )}
       <p className={s.readySafe}>
-        <Lock size={13} aria-hidden="true" /> R$ 597,00/mês · Sem fidelidade · Cancele quando quiser
+        <Lock size={13} aria-hidden="true" />{' '}
+        {subscription ? 'R$ 597,00/mês · Sem fidelidade · Cancele quando quiser' : `Sem mensalidade · ${fee} só sobre contratos fechados`}
       </p>
     </motion.div>
   );

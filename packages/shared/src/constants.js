@@ -1,5 +1,28 @@
 // Product-wide constants shared by web, api and worker.
 
+/**
+ * How TemPix earns: no subscription. A fixed 2% of every contract closed
+ * between the parties (cargas, rotas, obras, serviços, vagas).
+ */
+export const PRICING = Object.freeze({
+  model: 'commission',
+  commissionRateBps: 200,
+  commissionLabel: '2%',
+  features: [
+    'Cadastro gratuito, sem mensalidade',
+    'Clientes, cargas e vagas para a sua empresa',
+    'Pagamento assegurado até a conclusão',
+    'Cobrança e recebimento por Pix',
+    'Rotas e entregas registradas no painel',
+    'Contratação de profissionais',
+    'Alertas no WhatsApp',
+    'Painel no computador e no celular',
+  ],
+});
+
+/** Plan code stored on the account-access record in the commission model. */
+export const COMMISSION_PLAN_CODE = 'COMMISSION';
+
 export const PLAN = Object.freeze({
   code: 'AUTOPIX',
   name: 'TemPix',

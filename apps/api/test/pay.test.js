@@ -72,7 +72,7 @@ describe.skipIf(!hasDb)('TemPix Pay — standard Pix (no protected capability)',
     await disconnectPrisma();
   });
 
-  it('ACCEPTANCE (standard Pix): R$1.400 → commission R$21 / net R$1.379 → PAID → dashboard + WhatsApp → persisted after restart', async () => {
+  it('ACCEPTANCE (standard Pix): R$1.400 → commission R$28 / net R$1.372 → PAID → dashboard + WhatsApp → persisted after restart', async () => {
     const seller = await createActiveUser(ctx.app);
     const buyer = await createActiveUser(ctx.app);
     await k.linkWhatsApp(seller);
@@ -82,10 +82,10 @@ describe.skipIf(!hasDb)('TemPix Pay — standard Pix (no protected capability)',
     expect(caps.body.protectedPayment.enabled).toBe(false);
 
     const quote = await seller.c.get('/api/pay/commission/quote?grossCents=140000');
-    expect(quote.body.quote).toMatchObject({ grossCents: 140000, commissionCents: 2100, sellerNetCents: 137900, rateBps: 150 });
+    expect(quote.body.quote).toMatchObject({ grossCents: 140000, commissionCents: 2800, sellerNetCents: 137200, rateBps: 200 });
 
     const t = await k.newTransaction(seller, { grossCents: 140000, description: 'Manutenção de caldeira', buyerEmail: buyer.email });
-    expect(t).toMatchObject({ status: 'DRAFT', type: 'SERVICE', grossAmount: 140000, commissionAmount: 2100, sellerNetAmount: 137900, protectedFlow: false, isSandbox: true });
+    expect(t).toMatchObject({ status: 'DRAFT', type: 'SERVICE', grossAmount: 140000, commissionAmount: 2800, sellerNetAmount: 137200, protectedFlow: false, isSandbox: true });
 
     // Server-side amount: the client's amountCents is ignored.
     const payment = await k.payTransaction(seller, t.id);
@@ -101,7 +101,7 @@ describe.skipIf(!hasDb)('TemPix Pay — standard Pix (no protected capability)',
       expect(feed.body.items.some((e) => e.title === 'Pix recebido · R$ 1.400,00')).toBe(true);
     }
     const sum = await seller.c.get('/api/pay/summary');
-    expect(sum.body.summary).toMatchObject({ receivedCents: 140000, commissionsCents: 2100, toReleaseCents: 0 });
+    expect(sum.body.summary).toMatchObject({ receivedCents: 140000, commissionsCents: 2800, toReleaseCents: 0 });
     expect(sum.body.sandbox).toBe(true);
 
     // WhatsApp: text + deep link, never a money button.
@@ -275,7 +275,7 @@ describe.skipIf(!hasDb)('TemPix Pay — protected payment (provider with protect
     expect(rel.status).toBe(200);
     expect(rel.body.result.transaction).toMatchObject({ status: 'RELEASED', settlementStatus: 'PAYOUT_COMPLETED' });
     const payout = await ctx.prisma.payout.findFirst({ where: { transactionId: t.id } });
-    expect(payout).toMatchObject({ amountCents: 137900, status: 'COMPLETED', idempotencyKey: `release-${t.id}` });
+    expect(payout).toMatchObject({ amountCents: 137200, status: 'COMPLETED', idempotencyKey: `release-${t.id}` });
     for (const type of ['PROTECTED_PAYMENT_RELEASED', 'PAYOUT_CREATED', 'PAYOUT_CONFIRMED']) {
       expect(await ctx.prisma.domainEvent.count({ where: { type, aggregateId: t.id } })).toBeGreaterThanOrEqual(1);
     }
@@ -296,7 +296,7 @@ describe.skipIf(!hasDb)('TemPix Pay — protected payment (provider with protect
 
     // Amount comes from the freight reference — the client's grossCents is ignored.
     const t = await k.newTransaction(carrier, { referenceType: 'freightMatch', referenceId: match.id, grossCents: 100, buyerEmail: shipper.email });
-    expect(t).toMatchObject({ type: 'FREIGHT', grossAmount: 480000, commissionAmount: 7200, sellerNetAmount: 472800, protectedFlow: true });
+    expect(t).toMatchObject({ type: 'FREIGHT', grossAmount: 480000, commissionAmount: 9600, sellerNetAmount: 470400, protectedFlow: true });
     await k.payTransaction(carrier, t.id);
 
     // Location requires explicit consent for this trip.
@@ -330,7 +330,7 @@ describe.skipIf(!hasDb)('TemPix Pay — protected payment (provider with protect
     expect(await ctx.prisma.payout.count()).toBe(0);
     const rel = await k.actConfirmed(shipper, 'RELEASE_PAYMENT', { id: t.id });
     expect(rel.status).toBe(200);
-    expect(await ctx.prisma.payout.findFirst({ where: { transactionId: t.id } })).toMatchObject({ amountCents: 472800, status: 'COMPLETED' });
+    expect(await ctx.prisma.payout.findFirst({ where: { transactionId: t.id } })).toMatchObject({ amountCents: 470400, status: 'COMPLETED' });
   });
 
   it('disputes freeze release; only a platform admin (human, step-up) resolves; refund completes on provider confirmation', async () => {

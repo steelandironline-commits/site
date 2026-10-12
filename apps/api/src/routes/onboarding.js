@@ -23,5 +23,10 @@ export function onboardingRoutes({ onboarding, config, limiters }) {
     res.json({ company });
   });
 
+  /** Commission model: complete signup without a charge → activation hand-off. */
+  r.post('/finish', requireOnboardingSession, async (req, res) => {
+    res.json(await onboarding.finish(req.user));
+  });
+
   return r;
 }

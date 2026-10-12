@@ -1,8 +1,11 @@
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { getPaymentProvider } from '../payments/index.js';
+import { COMMISSION_PLAN_CODE, PRICING } from '@autopix/shared';
 import { conflict, notFound } from '../errors.js';
 import { ActivityService } from './activityService.js';
+
+const NO_SUBSCRIPTION = `O TemPix não tem assinatura: a taxa é de ${PRICING.commissionLabel} por contrato fechado.`;
 
 export class SubscriptionService {
   constructor({ prisma = getPrisma(), config = getConfig(), providerFactory = getPaymentProvider } = {}) {
@@ -25,6 +28,7 @@ export class SubscriptionService {
   async cancel(companyId, userId) {
     const sub = await this.prisma.subscription.findUnique({ where: { companyId } });
     if (!sub) throw notFound('Assinatura não encontrada.');
+    if (sub.plan === COMMISSION_PLAN_CODE) throw conflict(NO_SUBSCRIPTION);
     if (sub.status !== 'ACTIVE') throw conflict('A assinatura não está ativa.');
     if (sub.cancelAtPeriodEnd) return this.get(companyId);
     await this.providerFactory(sub.provider, this.config).cancelSubscription(sub);
@@ -47,6 +51,7 @@ export class SubscriptionService {
   async resume(companyId, userId) {
     const sub = await this.prisma.subscription.findUnique({ where: { companyId } });
     if (!sub) throw notFound('Assinatura não encontrada.');
+    if (sub.plan === COMMISSION_PLAN_CODE) throw conflict(NO_SUBSCRIPTION);
     if (sub.status !== 'ACTIVE' || !sub.cancelAtPeriodEnd) throw conflict('Não há cancelamento agendado.');
     await this.prisma.subscription.update({ where: { id: sub.id }, data: { cancelAtPeriodEnd: false, canceledAt: null } });
     await this.activity.record({

@@ -998,7 +998,7 @@ export function HiringIsland() {
 }
 
 /* ====================================================================== 5 · pix */
-const P_PERIOD = 10;
+const P_PERIOD = 11.5;
 function drawPixDiamond(g, cx, cy, r, color) {
   g.save();
   g.translate(cx, cy);
@@ -1024,10 +1024,10 @@ function phoneTexture(paid) {
     g.fillText('Pix', 74, 109);
     g.fillStyle = 'rgba(236,235,230,.6)';
     g.font = '400 22px "IBM Plex Sans", system-ui, sans-serif';
-    g.fillText(paid ? 'Pagamento enviado' : 'Pagar cobrança', 26, 168);
+    g.fillText(paid ? 'Pagamento protegido' : 'Contrato · reforma', 26, 168);
     g.fillStyle = '#f3f2ee';
     g.font = '600 50px "IBM Plex Sans", system-ui, sans-serif';
-    g.fillText('R$ 4.800,00', 26, 228);
+    g.fillText('R$ 10.000,00', 26, 228);
     if (!paid) {
       g.fillStyle = '#ffffff';
       roundRect(g, 60, 262, 240, 240, 18);
@@ -1069,57 +1069,104 @@ function phoneTexture(paid) {
       g.fillStyle = 'rgba(236,235,230,.7)';
       g.font = '400 22px "IBM Plex Sans", system-ui, sans-serif';
       g.textAlign = 'center';
-      g.fillText('Aguardando confirmação do banco', w / 2, 540);
+      g.fillText('Liberado na conclusão da obra', w / 2, 540);
     }
   });
 }
 
+function shieldGeometry() {
+  const sh = new THREE.Shape();
+  sh.moveTo(-0.62, 0.62);
+  sh.lineTo(0.62, 0.62);
+  sh.lineTo(0.62, 0.05);
+  sh.quadraticCurveTo(0.6, -0.5, 0, -0.88);
+  sh.quadraticCurveTo(-0.6, -0.5, -0.62, 0.05);
+  sh.closePath();
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 0.18, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 2, curveSegments: 14 });
+  g.center();
+  return g;
+}
+
+/** Contract paid by Pix → held by the partner institution → works concluded → released to the account (minus 2%). */
 export function PixIsland() {
   const ch = useChapter();
   const PHONE = [-3.8, 0, 3.4];
-  const STORE = [0.2, 0, 0];
-  const BANK = [4.0, 0, -3.4];
-  const tokenArc = useMemo(() => new THREE.QuadraticBezierCurve3(v3(-3.4, 2.4, 3.8), v3(-1.6, 5.2, 1.8), v3(0.2, 2.2, 0)), []);
-  const coinArc = useMemo(() => new THREE.QuadraticBezierCurve3(v3(0.2, 2.0, 0), v3(2.2, 5.0, -1.8), v3(4.0, 3.2, -3.4)), []);
+  const VAULT = [0.2, 0, -0.4];
+  const SITE = [3.7, 0, 2.4];
+  const BANK = [4.0, 0, -3.6];
+  const tokenArc = useMemo(() => new THREE.QuadraticBezierCurve3(v3(-3.4, 2.4, 3.8), v3(-1.6, 5.2, 1.6), v3(0.2, 2.5, -0.4)), []);
+  const coinArc = useMemo(() => new THREE.QuadraticBezierCurve3(v3(0.2, 2.1, -0.4), v3(2.2, 5.0, -2.0), v3(4.0, 3.2, -3.6)), []);
   const screens = useMemo(() => [phoneTexture(false), phoneTexture(true)], []);
   const screenMat = useMemo(() => new THREE.MeshBasicMaterial({ map: screens[0], toneMapped: false }), [screens]);
+  const shieldGeo = useMemo(() => shieldGeometry(), []);
+  const shieldMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2ad1b8', emissive: '#2ad1b8', emissiveIntensity: 0.2, roughness: 0.5, flatShading: true }), []);
   const token = useRef();
   const coins = useRef([]);
   const scan = useRef();
-  const st = useRef({ token: 0 });
-  useFrame(() => {
+  const shield = useRef();
+  const walls = useRef();
+  const roof = useRef();
+  const scaffold = useRef();
+  const worker = useRef();
+  const st = useRef({ token: 0, held: 0, walk: 0, wave: 0 });
+  useFrame((state) => {
     const c = ch.current;
     if (!c.visible) return;
     const t = c.t % P_PERIOD;
-    const paid = t >= 1.4 && t < 9.4;
+    const S = st.current;
+    const paid = t >= 1.4 && t < 11;
     if (screenMat.map !== screens[paid ? 1 : 0]) {
       screenMat.map = screens[paid ? 1 : 0];
       screenMat.needsUpdate = true;
     }
     scan.current.visible = t < 1.4;
     scan.current.position.y = lerp(0.9, 2.3, (t * 1.6) % 1);
+    // money: phone → protected → released
     const k = seg(t, 1.4, 2.9);
     token.current.visible = k > 0 && k < 1;
-    st.current.token = token.current.visible ? 1 : 0;
+    S.token = token.current.visible ? 1 : 0;
     if (token.current.visible) {
       tokenArc.getPoint(eio(k), token.current.position);
       token.current.rotation.y = t * 6;
     }
+    S.held = bump(t, 2.8, 3.1, 6.6, 7.4);
+    shieldMat.emissiveIntensity = 0.2 + S.held * 0.9;
+    const T = c.reduced ? 0 : state.clock.elapsedTime;
+    shield.current.rotation.y = Math.PI / 4 + Math.sin(T * 0.9) * 0.3;
+    shield.current.position.y = 2.75 + Math.sin(T * 1.7) * 0.07 + S.held * 0.12;
     coins.current.forEach((g, i) => {
       if (!g) return;
-      const q = seg(t, 3.5 + i * 0.28, 4.7 + i * 0.28);
+      const q = seg(t, 6.6 + i * 0.22, 7.8 + i * 0.22);
       g.visible = q > 0 && q < 1;
       if (g.visible) {
         coinArc.getPoint(eio(q), g.position);
         g.rotation.y = t * 7 + i;
       }
     });
+    // the works: walls go up, roof lands, scaffold comes down
+    const build = c.reduced ? 1 : eo(seg(t, 3.0, 5.0));
+    walls.current.scale.y = Math.max(0.12 + 0.88 * build, 0.001);
+    const r = c.reduced ? 1 : seg(t, 5.0, 5.6);
+    roof.current.visible = r > 0;
+    roof.current.position.y = 1.0 + (1 - back(r)) * 1.4;
+    scaffold.current.visible = !c.reduced && t < 5.7;
+    // worker paces along the site while building, then waves
+    const w = worker.current;
+    if (t < 5.6) {
+      walkBetween(w, [SITE[0] - 1.5, SITE[2] + 1.35], [SITE[0] + 1.3, SITE[2] + 1.35], T, 0.7);
+      S.walk = c.reduced ? 0 : 1;
+      S.wave = 0;
+    } else {
+      w.rotation.y = 0.5;
+      S.walk = 0;
+      S.wave = bump(t, 5.7, 6.0, 7.0, 7.4);
+    }
   });
   const tt = () => ch.current.t % P_PERIOD;
   return (
     <Island w={15} d={13} top="#e2eeec" lip="#c5dbd8" strata={['#9fdcd2', '#4fa79b', '#226862']} seed={67}>
-      <B p={[0.2, 0, 0.2]} s={[5.4, 0.03, 4.4]} c="#d6e3e1" shadow={false} />
-      {/* phone monument */}
+      <B p={[0.2, 0, -0.2]} s={[4.8, 0.03, 4.2]} c="#d6e3e1" shadow={false} />
+      {/* contractor pays by Pix */}
       <group position={PHONE} rotation={[0, Math.PI / 4, 0]}>
         <Rise delay={0.05} dur={0.9}>
           <Cy s={[1.6, 0.2, 1.0]} c="#c5ccd9" />
@@ -1131,22 +1178,61 @@ export function PixIsland() {
         </Rise>
       </group>
       <Person position={[-2.4, 0, 4.2]} rotation={[0, -2.2, 0]} shirt="#e5a53b" scale={0.95} />
-      <Label text="Cobrança Pix" sub="R$ 4.800,00 · QR dinâmico" accent="#4fe0c9" position={[-3.8, 3.85, 3.4]} vis={() => bump(tt(), 0.2, 0.6, 1.6, 2.0)} />
-      {/* store */}
-      <group position={STORE}>
+      <Label text="Contrato R$ 10.000,00" sub="reforma · pago por Pix" accent="#4fe0c9" position={[-3.8, 3.85, 3.4]} vis={() => bump(tt(), 0.2, 0.6, 1.6, 2.0)} />
+      {/* protected by the partner payment institution */}
+      <group position={VAULT}>
         <Rise delay={0.25}>
-          <Building w={2.6} d={2.2} h={1.6} c="#f4f1ea" roof="#23b3a6" lit={0.1} />
-          {[-1.05, -0.63, -0.21, 0.21, 0.63, 1.05].map((x, i) => (
-            <B key={x} p={[x, 1.15, 1.32]} s={[0.42, 0.07, 0.6]} c={i % 2 ? '#ffffff' : '#23b3a6'} />
-          ))}
-          <B p={[0, 0, 1.11]} s={[0.8, 1.0, 0.03]} c="#1b2433" e="#2ad1b8" ei={0.1} />
+          <B s={[1.9, 0.18, 1.7]} c="#c5ccd9" />
+          <group rotation={[0, Math.PI / 4, 0]}>
+            <B p={[0, 0.18, 0]} s={[1.5, 1.4, 1.3]} c="#2c3a52" />
+            <Cy p={[0, 0.88, 0.66]} s={[0.9, 0.06, 0.9]} r={[Math.PI / 2, 0, 0]} c="#5d6f9c" center />
+            <B p={[0, 0.88, 0.71]} s={[0.5, 0.07, 0.04]} c="#c9d3e0" center />
+            <B p={[0, 0.88, 0.71]} s={[0.07, 0.5, 0.04]} c="#c9d3e0" center />
+          </group>
         </Rise>
-        <Pulse color="#23b3a6" radius={2.2} period={P_PERIOD} delay={2.9} y={0.04} />
-        <Glow color="#4fe0c9" size={3} position={[0, 2.2, 0]} vis={() => bump(tt(), 2.8, 3.0, 3.2, 3.9)} />
+        <group ref={shield} position={[0, 2.75, 0]}>
+          <Rise delay={0.45} all>
+            <mesh geometry={shieldGeo} material={shieldMat} castShadow />
+            <B p={[-0.17, -0.05, 0.16]} s={[0.36, 0.12, 0.05]} r={[0, 0, -Math.PI / 4]} c="#04201b" center />
+            <B p={[0.12, 0.03, 0.16]} s={[0.6, 0.12, 0.05]} r={[0, 0, Math.PI / 4 + 0.05]} c="#04201b" center />
+          </Rise>
+        </group>
+        <Glow color="#4fe0c9" size={3.2} position={[0, 2.8, 0]} vis={() => st.current.held} />
+        <Pulse color="#23b3a6" radius={2.2} period={P_PERIOD} delay={2.9} y={0.22} />
       </group>
-      <Person position={[1.6, 0, 1.7]} rotation={[0, 0.6, 0]} shirt="#23b3a6" scale={0.95} skin="#a87454" />
-      <Label text="Pix recebido" sub="R$ 4.800,00 · confirmado" accent="#4fe0c9" check position={[0.2, 2.35, 0]} vis={() => bump(tt(), 2.9, 3.3, 5.6, 5.95)} />
-      {/* bank */}
+      <Label text="Pagamento protegido" sub="até a conclusão da obra" accent="#4fe0c9" position={[0.2, 3.75, -0.4]} vis={() => bump(tt(), 2.9, 3.3, 6.4, 6.8)} />
+      {/* the works */}
+      <group position={SITE}>
+        <Rise delay={0.35}>
+          <B s={[2.4, 0.1, 2.0]} c="#cfc9bd" />
+        </Rise>
+        <group ref={walls} position={[0, 0.1, 0]}>
+          <B p={[0, 0, 0.84]} s={[2.0, 0.9, 0.12]} c="#f3efe7" />
+          <B p={[0, 0, -0.84]} s={[2.0, 0.9, 0.12]} c="#f3efe7" />
+          <B p={[0.94, 0, 0]} s={[0.12, 0.9, 1.6]} c="#f3efe7" />
+          <B p={[-0.94, 0, 0]} s={[0.12, 0.9, 1.6]} c="#f3efe7" />
+          <B p={[-0.4, 0, 0.91]} s={[0.36, 0.62, 0.02]} c="#5a4636" />
+          <B p={[0.45, 0.35, 0.91]} s={[0.42, 0.3, 0.02]} c="#7f95b8" />
+        </group>
+        <group ref={roof} position={[0, 1.0, 0]} visible={false}>
+          <mesh geometry={GEO.prism} material={mat('#c46a4a')} position={[0, 0.3, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]} scale={[2.6, 2.3, 1.2]} castShadow />
+        </group>
+        <group ref={scaffold}>
+          {[
+            [-1.15, 1.05],
+            [1.15, 1.05],
+            [-1.15, -1.05],
+            [1.15, -1.05],
+          ].map(([x, z]) => (
+            <B key={`${x}${z}`} p={[x, 0, z]} s={[0.05, 1.5, 0.05]} c="#e5a53b" />
+          ))}
+          <B p={[0, 0.75, 1.05]} s={[2.35, 0.05, 0.22]} c="#b08a5a" />
+        </group>
+        <Pulse color="#5fe39a" radius={2} period={P_PERIOD} delay={5.7} y={0.12} />
+      </group>
+      <Person ref={worker} shirt="#f2b134" hat="hard" walk={() => st.current.walk} wave={() => st.current.wave} scale={0.9} />
+      <Label text="Obra concluída" sub="confirmada pelo contratante" accent="#5fe39a" check position={[3.7, 2.6, 2.4]} vis={() => bump(tt(), 5.7, 6.1, 7.6, 8.0)} />
+      {/* released to the account */}
       <group position={BANK} rotation={[0, Math.PI / 4, 0]}>
         <Rise delay={0.4}>
           <B s={[3.4, 0.15, 2.8]} c="#e6e2d8" />
@@ -1159,9 +1245,9 @@ export function PixIsland() {
           <B p={[0, 2.1, 0]} s={[2.9, 0.25, 2.3]} c="#f2efe7" />
           <mesh geometry={GEO.prism} material={mat('#e9e5dc')} position={[0, 2.35 + 0.23, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[3.46, 2.3, 0.62]} castShadow />
         </Rise>
-        <Pulse color="#23b3a6" radius={2.6} period={P_PERIOD} delay={5.9} y={0.32} />
+        <Pulse color="#23b3a6" radius={2.6} period={P_PERIOD} delay={8.6} y={0.32} />
       </group>
-      <Label text="Depositado na conta" sub="conciliado no extrato" accent="#4fe0c9" check position={[4.0, 3.5, -3.4]} vis={() => bump(tt(), 5.9, 6.3, 9.0, 9.4)} />
+      <Label text="Liberado na conta" sub="R$ 9.800,00 · taxa TemPix 2%" accent="#4fe0c9" check position={[4.0, 3.5, -3.6]} vis={() => bump(tt(), 8.7, 9.1, 11.0, 11.4)} />
       {/* money in flight */}
       <group ref={token} visible={false}>
         <B s={[0.62, 0.62, 0.14]} r={[0, 0, Math.PI / 4]} c="#32bcad" e="#32bcad" ei={0.9} center />
@@ -1173,22 +1259,22 @@ export function PixIsland() {
         </group>
       ))}
       <Rise delay={0.6} all>
-        <Truck position={[2.4, 0, 2.6]} rotation={[0, Math.PI / 2, 0]} cargo="#23b3a6" scale={0.85} />
+        <Truck position={[1.2, 0, 4.6]} rotation={[0, Math.PI / 2, 0]} cargo="#c46a4a" scale={0.85} />
       </Rise>
       {[
         [-6.3, 0.2],
         [-5.6, -2.4],
         [-1.6, -4.8],
         [6.2, 1.4],
-        [5.6, 3.6],
+        [6.4, 4.6],
         [-6.2, 5.2],
       ].map(([x, z]) => (
         <Rise key={`${x}${z}`} delay={0.6} all>
           <Tree p={[x, 0, z]} s={0.85} c="#4f9a86" />
         </Rise>
       ))}
-      <Lamp p={[-1.6, 0, 1.6]} />
-      <Lamp p={[2.1, 0, -1.6]} />
+      <Lamp p={[-1.6, 0, 1.4]} />
+      <Lamp p={[2.0, 0, -1.6]} />
     </Island>
   );
 }
@@ -1229,7 +1315,7 @@ function dashboardTexture() {
     g.fillText('Bom dia', 232, 60);
     g.fillStyle = 'rgba(236,235,230,.5)';
     g.font = '500 18px "IBM Plex Mono", ui-monospace, monospace';
-    g.fillText('EXEMPLO ILUSTRATIVO', 232, 90);
+    g.fillText('TUDO EM DIA', 232, 90);
     const cards = [
       ['Oportunidades', '12', 'novas hoje', '#2ad1b8'],
       ['Cargas em rota', '3', '1 chegando', '#ffb35c'],

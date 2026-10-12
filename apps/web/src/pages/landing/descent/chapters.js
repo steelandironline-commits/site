@@ -9,7 +9,7 @@ export const CHAPTERS = [
     rail: 'Início',
     kicker: 'Transporte · Pessoas · Serviços · Pix',
     title: 'Tem emprego, tem rota, tem serviço. TemPix.',
-    body: 'O TemPix encontra clientes, cargas e profissionais para a sua empresa, e você recebe por Pix. Cadastre-se agora e veja tudo funcionando.',
+    body: 'O TemPix encontra clientes, cargas e profissionais para a sua empresa, com pagamento assegurado até a conclusão. Sem mensalidade: só 2% por contrato fechado.',
     palette: { top: '#4a6fb5', bottom: '#0e1830', sky: '#b9ccff', ground: '#1c2340', accent: '#8fb2ff' },
   },
   {
@@ -46,10 +46,10 @@ export const CHAPTERS = [
   },
   {
     id: 'pix',
-    rail: 'Pix',
-    kicker: 'Tem Pix · TemPix Pay',
-    title: 'Recebeu, caiu na conta.',
-    body: 'Cobranças por Pix com confirmação do banco. Nada aparece como pago antes de o provedor confirmar, e o depósito fica conciliado no extrato.',
+    rail: 'Garantia',
+    kicker: 'Tem garantia · pagamento assegurado',
+    title: 'Pagamento assegurado até a conclusão.',
+    body: 'Em obras, serviços, rotas e transportes, o valor fica protegido na instituição de pagamento parceira e só é liberado, por Pix, quando a conclusão é confirmada. O TemPix fica com 2% do contrato.',
     palette: { top: '#23b3a6', bottom: '#04282b', sky: '#c4fff6', ground: '#0a2f30', accent: '#4fe0c9' },
   },
   {
@@ -57,7 +57,7 @@ export const CHAPTERS = [
     rail: 'Painel',
     kicker: 'Tem tudo · seu painel',
     title: 'Tudo isso numa tela só.',
-    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Cadastre-se e comece hoje.',
+    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Cadastro gratuito: você só paga 2% quando fecha um contrato.',
     palette: { top: '#24365e', bottom: '#0a0b0d', sky: '#c7d6ff', ground: '#10141f', accent: '#2ad1b8' },
   },
 ];

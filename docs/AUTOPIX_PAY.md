@@ -17,7 +17,7 @@ lets a browser, a WhatsApp button, a GPS event or an LLM move money.
 | Errors / retries | `packages/core/src/payments/errors.js` | `FinancialError` codes with safe pt-BR messages; `withRetry` (exponential backoff) used only for idempotent calls. |
 | `PaymentService` | `services/paymentService.js` | Charges (server-side amount), idempotent webhook processing, amount verification. |
 | `MarketplaceTransactionService` | `finance/MarketplaceTransactionService.js` | Deals (SALES, FREIGHT, WORKFORCE, SERVICE), commission snapshot, lifecycle, timeline, reads. |
-| `CommissionService` | `finance/CommissionService.js` | `CommissionRule` (default 1.5%; most specific rule wins; min/max; round half-up). |
+| `CommissionService` | `finance/CommissionService.js` | `CommissionRule` (default 2%; most specific rule wins; min/max; round half-up). |
 | `ProtectedPaymentService` | `finance/ProtectedPaymentService.js` | "Pagamento protegido" — active only with provider `protectedFlow` **and** `payout` or `split`. |
 | `RefundService` | `finance/RefundService.js` | Full/partial refunds; COMPLETED only after provider confirmation. |
 | `DisputeService` | `finance/DisputeService.js` | Freeze, both sides' statements, deterministic evidence summary, human admin decision. |

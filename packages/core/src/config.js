@@ -73,6 +73,13 @@ const schema = z.object({
   PAYMENT_WEBHOOK_SECRET: optional,
   PAYMENT_API_URL: optional,
   DEMO_MODE: bool(false),
+  // commission: free signup, TemPix keeps a fixed % of each contract (default).
+  // subscription: legacy monthly Pix plan (kept for existing accounts/tests).
+  BILLING_MODEL: z
+    .string()
+    .optional()
+    .transform((v) => (v || 'commission').toLowerCase())
+    .pipe(z.enum(['commission', 'subscription'])),
   PORT: z.coerce.number().int().positive().default(3000),
   EMBEDDED_WORKER: bool(false),
   SEARCH_INTERVAL_MINUTES: z.coerce.number().int().min(5).max(10080).default(60),
@@ -158,6 +165,7 @@ export function loadConfig(env = process.env) {
       apiUrl: e.PAYMENT_API_URL,
     },
     demoMode: e.DEMO_MODE,
+    billing: { model: e.BILLING_MODEL },
     mockCapabilities: (e.MOCK_PAYMENT_CAPABILITIES || '').split(',').map((s) => s.trim()).filter(Boolean),
     bb: (() => {
       const sandbox = e.BB_ENVIRONMENT !== 'production';

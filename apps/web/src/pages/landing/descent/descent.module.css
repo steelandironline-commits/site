@@ -72,22 +72,6 @@
     radial-gradient(140% 110% at 62% 42%, transparent 58%, rgba(0, 0, 0, 0.42) 100%);
 }
 
-.badge {
-  position: absolute;
-  z-index: 3;
-  top: 80px;
-  right: calc(var(--gutter) + 4px);
-  padding: 4px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(6px);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.82);
-  pointer-events: none;
-}
 
 /* ---------------- caption ---------------- */
 .copyBox {
@@ -390,11 +374,6 @@
     background: radial-gradient(140% 100% at 50% 30%, transparent 55%, rgba(0, 0, 0, 0.4) 100%);
   }
 
-  .badge {
-    top: 74px;
-    right: auto;
-    left: var(--gutter);
-  }
 
   .copyBox {
     left: 0;

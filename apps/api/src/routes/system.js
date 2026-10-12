@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { PLAN } from '@autopix/shared';
+import { PLAN, PRICING } from '@autopix/shared';
 import { describeSession } from './me.js';
 
 export function systemRoutes({ config, prisma, hub }) {
@@ -27,6 +27,7 @@ export function systemRoutes({ config, prisma, hub }) {
       paymentProvider: config.payment.provider,
       simulationAvailable: !config.isProduction && config.payment.provider === 'mock',
       plan: { name: PLAN.name, priceCents: PLAN.priceCents, features: PLAN.features },
+      billing: { model: config.billing.model, commissionRateBps: PRICING.commissionRateBps, commissionLabel: PRICING.commissionLabel },
     });
   });
 
