@@ -47,3 +47,14 @@ export { WhatsAppConnectionService } from './whatsapp/WhatsAppConnectionService.
 export { WhatsAppCommandService, HELP_TEXT } from './whatsapp/WhatsAppCommandService.js';
 export { WhatsAppInboundService } from './whatsapp/WhatsAppInboundService.js';
 export { RuleBasedIntentParser, LlmIntentParser, intentSchema, parseAmountCents, parseDate } from './whatsapp/IntentParser.js';
+
+// AutoPix Pay (financial layer)
+export { FinancialAuditService, auditSourceFor } from './finance/FinancialAuditService.js';
+export { CommissionService, DEFAULT_COMMISSION_RULES } from './finance/CommissionService.js';
+export { MarketplaceTransactionService, TX_TITLES } from './finance/MarketplaceTransactionService.js';
+export { ProtectedPaymentService } from './finance/ProtectedPaymentService.js';
+export { RefundService } from './finance/RefundService.js';
+export { DisputeService, EvidenceSummarizer, OPEN_DISPUTE_STATUSES } from './finance/DisputeService.js';
+export { TripService, haversineM, geocodeCity, normalizeCity, ARRIVAL_RADIUS_M, NEAR_RADIUS_M } from './finance/TripService.js';
+export { ReconciliationService } from './finance/ReconciliationService.js';
+export { AdminService } from './finance/AdminService.js';

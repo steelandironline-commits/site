@@ -26,6 +26,15 @@ import { WhatsAppConnectionService } from './whatsapp/WhatsAppConnectionService.
 import { WhatsAppCommandService } from './whatsapp/WhatsAppCommandService.js';
 import { WhatsAppInboundService } from './whatsapp/WhatsAppInboundService.js';
 import { RuleBasedIntentParser, LlmIntentParser } from './whatsapp/IntentParser.js';
+import { FinancialAuditService } from './finance/FinancialAuditService.js';
+import { CommissionService } from './finance/CommissionService.js';
+import { MarketplaceTransactionService } from './finance/MarketplaceTransactionService.js';
+import { ProtectedPaymentService } from './finance/ProtectedPaymentService.js';
+import { RefundService } from './finance/RefundService.js';
+import { DisputeService } from './finance/DisputeService.js';
+import { TripService } from './finance/TripService.js';
+import { ReconciliationService } from './finance/ReconciliationService.js';
+import { AdminService } from './finance/AdminService.js';
 
 /**
  * Composition root: ONE business logic layer shared by every client
@@ -35,7 +44,9 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
   email ??= new EmailService({ config });
   // Tests drive dispatch explicitly; elsewhere requests kick it and the worker is the safety net.
   const events = new EventEngine({ prisma, autoDispatch: !config.isTest });
+  const audit = new FinancialAuditService({ prisma, config });
   const s = {
+    audit,
     config,
     prisma,
     email,
@@ -45,7 +56,8 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
     companies: new CompanyService({ prisma, config }),
     onboarding: new OnboardingService({ prisma, config }),
     opportunities: new OpportunityService({ prisma, events }),
-    payments: new PaymentService({ prisma, config, email, events }),
+    payments: new PaymentService({ prisma, config, email, events, audit }),
+    commissions: new CommissionService({ prisma }),
     subscriptions: new SubscriptionService({ prisma, config }),
     dashboard: new DashboardService({ prisma }),
     agents: new AgentService({ prisma, config }),
@@ -55,6 +67,17 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
     preferences: new PreferenceService({ prisma }),
     push: push ?? new PushService({ prisma, config }),
   };
+
+  // AutoPix Pay — provider-independent financial layer.
+  s.transactions = new MarketplaceTransactionService({ prisma, config, events, commissions: s.commissions, audit, payments: s.payments });
+  s.refunds = new RefundService({ prisma, config, events, audit, transactions: s.transactions });
+  s.payments.transactions = s.transactions;
+  s.payments.refunds = s.refunds;
+  s.protectedPayments = new ProtectedPaymentService({ prisma, config, events, audit, transactions: s.transactions });
+  s.disputes = new DisputeService({ prisma, events, audit, transactions: s.transactions, refunds: s.refunds });
+  s.trips = new TripService({ prisma, events, audit, transactions: s.transactions, protectedPayments: s.protectedPayments });
+  s.reconciliation = new ReconciliationService({ prisma, config, payments: s.payments, refunds: s.refunds, events });
+  s.admin = new AdminService({ prisma, audit, disputes: s.disputes, reconciliation: s.reconciliation });
 
   s.actions = registerCoreActions(new ActionEngine({ prisma, config, services: s }));
   s.challenges = new ChallengeService({ prisma, engine: s.actions });

@@ -9,6 +9,7 @@ async function main() {
   await ensureAgents(prisma);
 
   const services = buildServices({ config, prisma });
+  await services.commissions.ensureDefaults();
   const hub = await new ActivityHub({ activity: services.activity, databaseUrl: config.databaseUrl }).start();
   const app = createApp({ services, hub });
 

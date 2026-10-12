@@ -1,8 +1,10 @@
-import { PLAN, deepLinks, formatCents } from '@autopix/shared';
+import crypto from 'node:crypto';
+import { PLAN, checkoutState, deepLinks, formatCents } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { generateToken } from '../security/tokens.js';
 import { badRequest, conflict, forbidden, notFound, unavailable } from '../errors.js';
+import { FinancialError } from '../payments/errors.js';
 import { getPaymentProvider, isWebhookProviderAllowed } from '../payments/index.js';
 import { WebhookSignatureError } from '../payments/PaymentProvider.js';
 import { AuthService } from './authService.js';
@@ -39,6 +41,11 @@ export const PUBLIC_PAYMENT_SELECT = {
   createdAt: true,
   companyId: true,
   subscriptionId: true,
+  txid: true,
+  isSandbox: true,
+  refundedCents: true,
+  transactionId: true,
+  failureCode: true,
 };
 
 const LIST_SELECT = {
@@ -56,6 +63,8 @@ const LIST_SELECT = {
   expiresAt: true,
   releasedAt: true,
   payerName: true,
+  isSandbox: true,
+  transactionId: true,
 };
 
 function newReference() {
@@ -63,12 +72,18 @@ function newReference() {
 }
 
 /**
- * PaymentService — Pix charges (subscription and protected charges),
- * idempotent webhook processing, protected-funds lifecycle.
+ * PaymentService — Pix charges (subscription and AutoPix Pay charges) and
+ * idempotent provider-event processing. Money movement after payment
+ * (release, refund, split, payout) lives in the finance services and always
+ * goes through the provider's authorized flows.
  */
 export class PaymentService {
-  constructor({ prisma = getPrisma(), config = getConfig(), email, events, providerFactory = getPaymentProvider } = {}) {
+  constructor({ prisma = getPrisma(), config = getConfig(), email, events, audit, providerFactory = getPaymentProvider } = {}) {
     this.prisma = prisma;
+    this.audit = audit;
+    /** Wired by buildPlatform (circular): MarketplaceTransactionService, RefundService. */
+    this.transactions = null;
+    this.refunds = null;
     this.config = config;
     this.email = email;
     this.providerFactory = providerFactory;
@@ -100,13 +115,18 @@ export class PaymentService {
           pixQrCodeBase64: charge.qrCodeBase64,
           pixCopyPaste: charge.copyPaste,
           expiresAt: charge.expiresAt || expiresAt,
+          txid: provider.name === 'banco_do_brasil' ? charge.providerPaymentId : (charge.metadata?.txid ?? null),
+          isSandbox: Boolean(provider.isSandbox),
           metadata: charge.metadata ?? undefined,
         },
         select: PUBLIC_PAYMENT_SELECT,
       });
     } catch (err) {
-      logger.error('pix charge creation failed', { err, paymentId: payment.id, provider: provider.name });
-      await this.prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
+      // Never expose raw bank/provider errors to the customer.
+      const code = err instanceof FinancialError ? err.code : 'PIX_CREATE_FAILED';
+      logger.error('pix charge creation failed', { code, paymentId: payment.id, provider: provider.name });
+      await this.prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED', failureCode: code } });
+      if (err instanceof FinancialError && err.status < 500) throw err;
       throw unavailable('Não foi possível gerar o Pix agora. Tente novamente em instantes.');
     }
   }
@@ -153,6 +173,7 @@ export class PaymentService {
         provider: provider.name,
         amountCents: subscription.priceCents,
         description: 'Assinatura AutoPix — 30 dias',
+        isSandbox: Boolean(provider.isSandbox),
         idempotencyKey: generateToken(18),
         createdByUserId: user.id,
         expiresAt,
@@ -176,20 +197,20 @@ export class PaymentService {
     return updated;
   }
 
-  // ------------------------------------------------------ protected charges
+  // ------------------------------------------------------------ charges
 
   /**
-   * Create a protected Pix charge for the company (e.g. to bill its own
-   * customer). Funds are HELD on confirmation and released to the company's
-   * payout key only through RELEASE_PAYMENT (step-up confirmed).
+   * Create a Pix charge. For AutoPix Pay the amount ALWAYS comes from the
+   * MarketplaceTransaction (server-side), never from the client.
    */
-  async createCharge({ user, company, amountCents, description, payer = {}, relatedType = null, relatedId = null }) {
+  async createCharge({ user, company, amountCents, description, payer = {}, transactionId = null, relatedType = null, relatedId = null }) {
     const provider = this.provider();
+    if (!provider.has('pix')) throw new FinancialError('PROVIDER_CAPABILITY_NOT_AVAILABLE', { capability: 'pix' });
     if (!Number.isInteger(amountCents) || amountCents < 100) throw badRequest('Valor mínimo: R$ 1,00.');
-    const payerDocument = payer.document || company.cnpj;
-    if (provider.name === 'asaas' && !payerDocument) throw badRequest('Informe o CPF/CNPJ do pagador.');
+    const payerDocument = payer.document || null;
+    if (provider.name === 'asaas' && !(payerDocument || company.cnpj)) throw badRequest('Informe o CPF/CNPJ do pagador.');
 
-    const expiresAt = new Date(Date.now() + CHARGE_TTL_MS);
+    const expiresAt = new Date(Date.now() + (provider.name === 'banco_do_brasil' ? this.config.bb.pixExpirationSeconds * 1000 : CHARGE_TTL_MS));
     const payment = await this.prisma.payment.create({
       data: {
         kind: 'CHARGE',
@@ -199,156 +220,40 @@ export class PaymentService {
         reference: newReference(),
         description: description || `Cobrança ${company.name}`,
         payerName: payer.name || null,
-        payerDocument: payerDocument || null,
+        payerDocument,
         payerEmail: payer.email || null,
         relatedType,
         relatedId,
+        transactionId,
+        isSandbox: Boolean(provider.isSandbox),
         idempotencyKey: generateToken(18),
         createdByUserId: user.id,
         expiresAt,
       },
     });
     const updated = await this.#issueCharge(payment, {
-      payer: {
-        name: payer.name || company.name,
-        email: payer.email || user.email,
-        cnpj: payerDocument,
-        companyId: company.id,
-      },
+      payer: { name: payer.name || null, email: payer.email || null, cnpj: payerDocument || (provider.name === 'asaas' ? company.cnpj : null), companyId: company.id },
       description: `${payment.description} · ${payment.reference}`,
       expiresAt,
       idempotencyKey: payment.idempotencyKey,
     });
-    await this.events.publish({
+    const event = {
       type: 'PAYMENT_CREATED',
-      companyId: company.id,
       userId: user.id,
-      aggregateType: 'payment',
-      aggregateId: payment.id,
-      payload: { amountCents, reference: payment.reference, kind: 'CHARGE' },
+      payload: { amountCents, reference: payment.reference, kind: 'CHARGE', paymentId: payment.id, link: transactionId ? deepLinks.transaction(transactionId) : deepLinks.payment(payment.id) },
       activity: {
         type: 'PAYMENT',
-        title: `Pix gerado · ${formatCents(amountCents)}`,
+        title: `Cobrança AutoPix criada · ${formatCents(amountCents)}`,
         description: `${payment.reference} · ${payment.description}`,
-        source: provider.name,
+        source: 'AutoPix Pay',
         metadata: { paymentId: payment.id },
       },
-    });
+    };
+    const t = transactionId && this.transactions ? await this.prisma.marketplaceTransaction.findUnique({ where: { id: transactionId } }) : null;
+    if (t) await this.transactions.publishBoth(t, event);
+    else await this.events.publish({ ...event, companyId: company.id, aggregateType: 'payment', aggregateId: payment.id });
+    await this.audit?.log({ action: 'PIX_CHARGE_CREATED', source: 'SYSTEM', userId: user.id, companyId: company.id, transactionId, paymentId: payment.id, metadata: { amountCents, provider: provider.name, sandbox: Boolean(provider.isSandbox) } });
     return updated;
-  }
-
-  async #loadCharge(companyId, id) {
-    const p = await this.prisma.payment.findFirst({ where: { id, companyId, kind: 'CHARGE' } });
-    if (!p) throw notFound('Pagamento não encontrado.');
-    return p;
-  }
-
-  async requestRelease({ companyId, userId, paymentId, reason }) {
-    const p = await this.#loadCharge(companyId, paymentId);
-    if (p.status !== 'CONFIRMED' || p.protectionStatus !== 'HELD') throw conflict('Este pagamento não está protegido aguardando liberação.');
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const u = await tx.payment.update({ where: { id: p.id }, data: { protectionStatus: 'RELEASE_REQUESTED' }, select: PUBLIC_PAYMENT_SELECT });
-      await this.events.publish(
-        {
-          type: 'PAYMENT_RELEASE_REQUESTED',
-          companyId,
-          userId,
-          aggregateType: 'payment',
-          aggregateId: p.id,
-          payload: { amountCents: p.amountCents, reference: p.reference, reason },
-          activity: { type: 'PAYMENT', title: 'Liberação de pagamento solicitada', description: `${p.reference} · ${formatCents(p.amountCents)}`, source: 'payments' },
-        },
-        tx,
-      );
-      return u;
-    });
-    return updated;
-  }
-
-  /** Executes only after ActionEngine verified a confirmed challenge. */
-  async release({ company, userId, paymentId }) {
-    const p = await this.#loadCharge(company.id, paymentId);
-    if (p.status !== 'CONFIRMED' || !['HELD', 'RELEASE_REQUESTED'].includes(p.protectionStatus)) {
-      throw conflict('Este pagamento não pode ser liberado.');
-    }
-    if (!company.payoutPixKey) throw badRequest('Cadastre a chave Pix de recebimento antes de liberar.');
-    // Reserve the state first so a concurrent release cannot pay out twice.
-    const reserved = await this.prisma.payment.updateMany({
-      where: { id: p.id, protectionStatus: { in: ['HELD', 'RELEASE_REQUESTED'] } },
-      data: { protectionStatus: 'RELEASED', releasedAt: new Date() },
-    });
-    if (reserved.count !== 1) throw conflict('Este pagamento já foi liberado.');
-    let transfer;
-    try {
-      transfer = await this.provider(p.provider).releaseFunds({
-        amountCents: p.amountCents,
-        pixKey: company.payoutPixKey,
-        pixKeyType: company.payoutPixKeyType,
-        description: `AutoPix ${p.reference}`,
-      });
-    } catch (err) {
-      await this.prisma.payment.update({ where: { id: p.id }, data: { protectionStatus: p.protectionStatus, releasedAt: null } });
-      throw unavailable(`Não foi possível liberar o pagamento: ${err.message}`);
-    }
-    await this.events.publish({
-      type: 'PAYMENT_RELEASED',
-      companyId: company.id,
-      userId,
-      aggregateType: 'payment',
-      aggregateId: p.id,
-      payload: { amountCents: p.amountCents, reference: p.reference, transferId: transfer.transferId },
-      activity: {
-        type: 'PAYMENT',
-        title: `Pagamento liberado · ${formatCents(p.amountCents)}`,
-        description: `${p.reference} enviado para a chave Pix cadastrada.`,
-        source: p.provider,
-        severity: 'SUCCESS',
-      },
-    });
-    return this.prisma.payment.findUnique({ where: { id: p.id }, select: PUBLIC_PAYMENT_SELECT });
-  }
-
-  async refund({ companyId, userId, paymentId }) {
-    const p = await this.#loadCharge(companyId, paymentId);
-    if (p.status !== 'CONFIRMED' || ['RELEASED', 'REFUNDED'].includes(p.protectionStatus)) throw conflict('Este pagamento não pode ser estornado.');
-    await this.provider(p.provider).refundPayment(p.providerPaymentId);
-    await this.prisma.$transaction(async (tx) => {
-      await tx.payment.update({ where: { id: p.id }, data: { status: 'REFUNDED', protectionStatus: 'REFUNDED', refundedAt: new Date() } });
-      await this.events.publish(
-        {
-          type: 'PAYMENT_REFUNDED',
-          companyId,
-          userId,
-          aggregateType: 'payment',
-          aggregateId: p.id,
-          payload: { amountCents: p.amountCents, reference: p.reference },
-          activity: { type: 'PAYMENT', title: 'Pagamento estornado', description: `${p.reference} · ${formatCents(p.amountCents)}`, source: p.provider, severity: 'WARNING' },
-        },
-        tx,
-      );
-    });
-    return this.prisma.payment.findUnique({ where: { id: p.id }, select: PUBLIC_PAYMENT_SELECT });
-  }
-
-  async openDispute({ companyId, userId, paymentId, reason }) {
-    const p = await this.#loadCharge(companyId, paymentId);
-    if (!['HELD', 'RELEASE_REQUESTED'].includes(p.protectionStatus)) throw conflict('Só é possível abrir disputa para pagamentos protegidos.');
-    await this.prisma.$transaction(async (tx) => {
-      await tx.payment.update({ where: { id: p.id }, data: { protectionStatus: 'DISPUTED', disputeReason: reason } });
-      await this.events.publish(
-        {
-          type: 'PAYMENT_DISPUTED',
-          companyId,
-          userId,
-          aggregateType: 'payment',
-          aggregateId: p.id,
-          payload: { reference: p.reference, reason },
-          activity: { type: 'PAYMENT', title: 'Disputa aberta', description: `${p.reference}: ${reason}`, source: 'payments', severity: 'WARNING' },
-        },
-        tx,
-      );
-    });
-    return this.prisma.payment.findUnique({ where: { id: p.id }, select: PUBLIC_PAYMENT_SELECT });
   }
 
   // ---------------------------------------------------------------- queries
@@ -358,18 +263,29 @@ export class PaymentService {
     if (!payment) throw notFound('Pagamento não encontrado.');
 
     if (payment.status === 'PENDING') {
-      if (payment.expiresAt && payment.expiresAt.getTime() < Date.now()) {
-        await this.reconcile(payment.id).catch(() => null);
-        payment = await this.prisma.payment.findUnique({ where: { id }, select: PUBLIC_PAYMENT_SELECT });
-        if (payment.status === 'PENDING') {
-          payment = await this.prisma.payment.update({ where: { id }, data: { status: 'EXPIRED' }, select: PUBLIC_PAYMENT_SELECT });
-        }
-      } else {
-        await this.reconcile(payment.id).catch((err) => logger.warn('reconcile failed', { err }));
+      await this.reconcile(payment.id).catch((err) => logger.warn('reconcile failed', { code: err.code || err.name }));
+      payment = await this.prisma.payment.findUnique({ where: { id }, select: PUBLIC_PAYMENT_SELECT });
+      if (payment.status === 'PENDING' && payment.expiresAt && payment.expiresAt.getTime() < Date.now()) {
+        await this.expireLocally(payment.id);
         payment = await this.prisma.payment.findUnique({ where: { id }, select: PUBLIC_PAYMENT_SELECT });
       }
     }
-    return payment;
+    return { ...payment, checkoutState: checkoutState(payment) };
+  }
+
+  /** The charge's own deadline passed and the provider did not confirm it. */
+  async expireLocally(paymentId) {
+    const p = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!p || p.status !== 'PENDING') return null;
+    if (!p.providerPaymentId) return this.prisma.payment.update({ where: { id: p.id }, data: { status: 'EXPIRED' } });
+    return this.applyEvent({
+      provider: p.provider,
+      providerEventId: `local-expiry:${p.id}`,
+      providerPaymentId: p.providerPaymentId,
+      type: 'local.expiry',
+      status: 'EXPIRED',
+      payload: { source: 'local-expiry' },
+    });
   }
 
   async reconcile(paymentId) {
@@ -379,7 +295,7 @@ export class PaymentService {
     if (Date.now() - last < RECONCILE_EVERY_MS) return null;
     this.lastReconcile.set(paymentId, Date.now());
 
-    const { status, paidAt } = await this.provider(payment.provider).getPaymentStatus(payment.providerPaymentId);
+    const { status, paidAt, amountCents } = await this.provider(payment.provider).getPaymentStatus(payment.providerPaymentId);
     if (status === 'PENDING') return null;
     return this.applyEvent({
       provider: payment.provider,
@@ -388,6 +304,7 @@ export class PaymentService {
       type: 'reconcile',
       status,
       paidAt,
+      amountCents,
       payload: { source: 'reconcile' },
     });
   }
@@ -403,72 +320,132 @@ export class PaymentService {
 
   // ---------------------------------------------------------------- webhooks
 
+  static hashPayload(raw) {
+    const s = Buffer.isBuffer(raw) ? raw : Buffer.from(typeof raw === 'string' ? raw : JSON.stringify(raw ?? {}));
+    return crypto.createHash('sha256').update(s).digest('hex');
+  }
+
   async processWebhook(providerName, req) {
     if (!isWebhookProviderAllowed(providerName, this.config)) throw notFound('Provedor não configurado.');
     const provider = this.provider(providerName);
-    const events = await provider.handleWebhook(req); // throws WebhookSignatureError
+    const payloadHash = PaymentService.hashPayload(req.rawBody ?? req.body);
+    let events;
+    try {
+      events = await provider.handleWebhook(req); // authenticity first; throws on failure
+    } catch (err) {
+      // Keep a trace of rejected deliveries for the admin "failed webhooks" view
+      // (hash only, never the body — it may carry personal data).
+      await this.prisma.paymentEvent
+        .createMany({
+          data: [{ provider: provider.name, providerEventId: `rejected:${payloadHash}`, type: 'rejected', processingStatus: 'FAILED', payloadHash, error: err.code || err.name, processedAt: new Date() }],
+          skipDuplicates: true,
+        })
+        .catch(() => null);
+      throw err;
+    }
     const results = [];
-    for (const event of events) results.push(await this.applyEvent({ provider: provider.name, ...event }));
+    for (const event of events) results.push(await this.applyEvent({ provider: provider.name, payloadHash, ...event }));
     return { received: true, results };
+  }
+
+  async #flag(tx, payment, kind, details, providerStatus) {
+    const open = await tx.reconciliationIssue.findFirst({ where: { paymentId: payment.id, kind, status: { in: ['OPEN', 'ACKNOWLEDGED'] } } });
+    if (!open) await tx.reconciliationIssue.create({ data: { paymentId: payment.id, kind, localStatus: payment.status, providerStatus, details } });
+    await this.events.publish({ type: 'RECONCILIATION_ISSUE', companyId: payment.companyId, aggregateType: 'payment', aggregateId: payment.id, payload: { kind } }, tx);
   }
 
   /**
    * Idempotent, transactional state transition:
-   * dedupe event → lock payment → update payment → (subscription: activate +
-   * activation token | charge: protect funds) → domain events → commit.
+   * dedupe (provider, providerEventId) → lock payment → validate amount →
+   * apply → hand off to subscription / AutoPix Pay transaction → domain
+   * events → mark event processed. Ambiguities are FLAGGED, never guessed.
    */
-  async applyEvent({ provider, providerEventId, providerPaymentId, type, status, paidAt, payload }) {
+  async applyEvent({ provider, providerEventId, providerPaymentId, type, status, paidAt, amountCents = null, kind = 'payment', refundProviderId, payload, payloadHash }) {
     const outcome = await this.prisma.$transaction(async (tx) => {
       const inserted = await tx.paymentEvent.createMany({
-        data: [{ provider, providerEventId, providerPaymentId, type: String(type || 'unknown').slice(0, 80), status, payload: payload ?? undefined }],
+        data: [
+          {
+            provider,
+            providerEventId,
+            providerPaymentId,
+            type: String(type || 'unknown').slice(0, 80),
+            status,
+            payload: payload ?? undefined,
+            payloadHash: payloadHash ?? PaymentService.hashPayload(payload),
+            metadata: amountCents != null ? { amountCents } : undefined,
+          },
+        ],
         skipDuplicates: true,
       });
       if (inserted.count === 0) return { duplicate: true };
+      const finish = (processingStatus, { paymentId = null, error = null } = {}) =>
+        tx.paymentEvent.update({
+          where: { provider_providerEventId: { provider, providerEventId } },
+          data: { processed: processingStatus === 'PROCESSED', processingStatus, paymentId, error, processedAt: new Date() },
+        });
 
       const locked = await tx.$queryRaw`
         SELECT id FROM "Payment" WHERE provider = ${provider} AND "providerPaymentId" = ${providerPaymentId} FOR UPDATE`;
-      if (!locked.length) return { ignored: 'payment_not_found' };
+      if (!locked.length) {
+        await finish('IGNORED', { error: 'payment_not_found' });
+        return { ignored: 'payment_not_found' };
+      }
       const payment = await tx.payment.findUnique({
         where: { id: locked[0].id },
-        include: { subscription: true, company: { include: { users: { orderBy: { createdAt: 'asc' }, take: 1 } } } },
+        include: { subscription: true, transaction: true, company: { include: { users: { orderBy: { createdAt: 'asc' }, take: 1 } } } },
       });
-      const markProcessed = () =>
-        tx.paymentEvent.update({
-          where: { provider_providerEventId: { provider, providerEventId } },
-          data: { processed: true, paymentId: payment.id },
-        });
       const base = { companyId: payment.companyId, aggregateType: 'payment', aggregateId: payment.id };
 
+      // Refund lifecycle events (provider-confirmed only).
+      if (kind === 'refund') {
+        const r = await this.refunds.applyProviderEvent(tx, payment, { refundProviderId, status, amountCents });
+        await finish(r.flagged ? 'FLAGGED' : 'PROCESSED', { paymentId: payment.id, error: r.flagged || null });
+        return { refund: true, paymentId: payment.id, ...r };
+      }
+
       if (status === 'CONFIRMED') {
-        if (payment.status === 'CONFIRMED') {
-          await markProcessed();
+        if (['CONFIRMED', 'REFUNDED'].includes(payment.status)) {
+          await finish('PROCESSED', { paymentId: payment.id });
           return { alreadyConfirmed: true, paymentId: payment.id };
+        }
+        if (payment.status !== 'PENDING') {
+          // Paid after we considered it expired/cancelled: real money, needs a human.
+          await this.#flag(tx, payment, 'LATE_PAYMENT', { amountCents }, status);
+          await finish('FLAGGED', { paymentId: payment.id, error: 'late_payment' });
+          return { flagged: 'late_payment', paymentId: payment.id };
+        }
+        if (amountCents != null && amountCents !== payment.amountCents) {
+          await tx.payment.update({ where: { id: payment.id }, data: { failureCode: 'AMOUNT_MISMATCH' } });
+          await this.#flag(tx, payment, 'AMOUNT_MISMATCH', { expected: payment.amountCents, received: amountCents }, status);
+          await finish('FLAGGED', { paymentId: payment.id, error: 'amount_mismatch' });
+          return { flagged: 'amount_mismatch', paymentId: payment.id };
         }
         const now = new Date();
         let activation = null;
 
         if (payment.kind === 'CHARGE') {
-          await tx.payment.update({ where: { id: payment.id }, data: { status: 'CONFIRMED', paidAt: paidAt || now, protectionStatus: 'HELD' } });
-          await this.events.publish(
-            {
-              ...base,
-              type: 'PAYMENT_RECEIVED',
-              payload: { amountCents: payment.amountCents, reference: payment.reference, kind: 'CHARGE' },
-              activity: {
-                type: 'PAYMENT',
-                title: `Pix recebido · ${formatCents(payment.amountCents)}`,
-                description: `${payment.reference} · ${payment.description || ''}`.trim(),
-                source: provider,
-                severity: 'SUCCESS',
-                metadata: { paymentId: payment.id },
-              },
+          await tx.payment.update({
+            where: { id: payment.id },
+            data: { status: 'CONFIRMED', paidAt: paidAt || now, protectionStatus: payment.transaction?.protectedFlow ? 'HELD' : 'NONE' },
+          });
+          const event = {
+            type: 'PAYMENT_RECEIVED',
+            payload: { amountCents: payment.amountCents, reference: payment.reference, kind: 'CHARGE', link: payment.transactionId ? deepLinks.transaction(payment.transactionId) : deepLinks.payment(payment.id) },
+            activity: {
+              type: 'PAYMENT',
+              title: `Pix recebido · ${formatCents(payment.amountCents)}`,
+              description: `${payment.reference} · ${payment.description || ''}`.trim(),
+              source: 'AutoPix Pay',
+              severity: 'SUCCESS',
+              metadata: { paymentId: payment.id },
             },
-            tx,
-          );
-          await this.events.publish(
-            { ...base, type: 'PAYMENT_PROTECTED', payload: { amountCents: payment.amountCents, reference: payment.reference } },
-            tx,
-          );
+          };
+          if (payment.transaction && this.transactions) {
+            await this.transactions.publishBoth(payment.transaction, event, tx);
+            await this.transactions.onPaymentConfirmed(tx, payment);
+          } else {
+            await this.events.publish({ ...base, ...event }, tx);
+          }
         } else {
           await tx.payment.update({ where: { id: payment.id }, data: { status: 'CONFIRMED', paidAt: paidAt || now } });
           const sub = payment.subscription;
@@ -520,38 +497,37 @@ export class PaymentService {
             tx,
           );
         }
-        await markProcessed();
+        await this.audit?.log({ action: 'PAYMENT_CONFIRMED', source: 'SYSTEM', companyId: payment.companyId, transactionId: payment.transactionId, paymentId: payment.id, metadata: { provider, providerEventId, amountCents: payment.amountCents } }, tx);
+        await finish('PROCESSED', { paymentId: payment.id });
         return { confirmed: true, paymentId: payment.id, activation };
       }
 
-      const terminal = { FAILED: 1, EXPIRED: 1, CANCELED: 1 };
-      if (terminal[status] && payment.status === 'PENDING') {
+      if (['FAILED', 'EXPIRED', 'CANCELED'].includes(status) && payment.status === 'PENDING') {
         await tx.payment.update({ where: { id: payment.id }, data: { status } });
-      } else if (status === 'REFUNDED' && payment.status === 'CONFIRMED') {
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: { status: 'REFUNDED', refundedAt: new Date(), ...(payment.kind === 'CHARGE' ? { protectionStatus: 'REFUNDED' } : {}) },
-        });
-        if (payment.kind === 'SUBSCRIPTION') {
-          await tx.subscription.update({ where: { id: payment.subscriptionId }, data: { status: 'CANCELED', canceledAt: new Date() } });
+        if (payment.kind === 'CHARGE') {
+          const event = {
+            type: status === 'EXPIRED' ? 'PAYMENT_EXPIRED' : 'PAYMENT_CANCELLED',
+            payload: { amountCents: payment.amountCents, reference: payment.reference, link: payment.transactionId ? deepLinks.transaction(payment.transactionId) : null },
+            activity: { type: 'PAYMENT', title: status === 'EXPIRED' ? 'Pix expirado' : 'Cobrança cancelada', description: `${payment.reference} · ${formatCents(payment.amountCents)}`, source: 'AutoPix Pay' },
+          };
+          if (payment.transaction && this.transactions) {
+            await this.transactions.publishBoth(payment.transaction, event, tx, { buyerActivity: null });
+            await this.transactions.onPaymentLapsed(tx, payment, status);
+          } else await this.events.publish({ ...base, ...event }, tx);
         }
-        await this.events.publish(
-          {
-            ...base,
-            type: 'PAYMENT_REFUNDED',
-            payload: { amountCents: payment.amountCents, kind: payment.kind },
-            activity: {
-              type: 'PAYMENT',
-              title: 'Pagamento estornado',
-              description: payment.kind === 'SUBSCRIPTION' ? 'A assinatura foi cancelada após o estorno.' : payment.reference,
-              source: provider,
-              severity: 'WARNING',
-            },
-          },
-          tx,
-        );
+      } else if (status === 'REFUNDED' && payment.status === 'CONFIRMED') {
+        // Status-only "refunded" signal (providers without refund events):
+        // complete OUR in-flight refunds; anything else is external → human.
+        const inflight = await tx.refund.findMany({ where: { paymentId: payment.id, status: { in: ['REQUESTED', 'PROCESSING'] } } });
+        if (inflight.length && this.refunds) {
+          for (const r of inflight) await this.refunds.complete(r.id, { source: 'SYSTEM' }, tx);
+        } else {
+          await this.#flag(tx, payment, 'EXTERNAL_REFUND', { note: 'Provedor informou estorno não solicitado pelo AutoPix.' }, status);
+          await finish('FLAGGED', { paymentId: payment.id, error: 'external_refund' });
+          return { flagged: 'external_refund', paymentId: payment.id };
+        }
       }
-      await markProcessed();
+      await finish('PROCESSED', { paymentId: payment.id });
       return { updated: true, paymentId: payment.id, status };
     });
 

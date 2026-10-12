@@ -128,7 +128,7 @@ export class WhatsAppCommandService {
       if (pending.intent === 'CREATE_PIX') {
         const payment = out.result.payment;
         return this.messenger.send(connection, 'sendPaymentNotification', [
-          { payment, title: '✅ Pix gerado', link: deepLinks.payment(payment.id), includePixCode: true },
+          { payment, title: '💳 Cobrança AutoPix criada', link: out.result.transaction ? deepLinks.transaction(out.result.transaction.id) : deepLinks.payment(payment.id), includePixCode: true },
         ]);
       }
       return this.messenger.reply(connection, describeResult(pending.intent, out.result));

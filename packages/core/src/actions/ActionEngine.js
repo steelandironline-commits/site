@@ -26,6 +26,7 @@ function sanitize(value, depth = 0) {
  *   { name, description, kind: 'command'|'query', schema (zod),
  *     channels: ['WEB','API','WHATSAPP'], roles: [...],
  *     requiresActiveSubscription, allowOnboarding, sensitive, summarize(input),
+ *     platformAdmin (User.isPlatformAdmin required, replaces roles),
  *     handler(ctx, input) }
  */
 export class ActionEngine {
@@ -110,7 +111,9 @@ export class ActionEngine {
 
       // 2. Authorization
       if (!def.channels.includes(channel)) throw forbidden('Esta ação não está disponível neste canal.');
-      if (!def.roles.includes(user.role)) throw forbidden();
+      if (def.platformAdmin) {
+        if (!user.isPlatformAdmin) throw forbidden('Acesso restrito à administração da plataforma.');
+      } else if (!def.roles.includes(user.role)) throw forbidden();
 
       // 3. Validation
       const parsed = def.schema.parse(input ?? {});
@@ -152,6 +155,7 @@ export class ActionEngine {
         company,
         channel,
         actor,
+        meta,
       };
       const result = await def.handler(ctx, effectiveInput);
       await log('SUCCEEDED', { result: summarizeResult(result) });

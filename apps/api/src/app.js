@@ -24,6 +24,7 @@ import { actionRoutes } from './routes/actions.js';
 import { whatsappRoutes, whatsappWebhookRoutes } from './routes/whatsapp.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { freightRoutes, workforceRoutes, eventRoutes } from './routes/domains.js';
+import { payRoutes, adminRoutes } from './routes/pay.js';
 
 /** All business services come from the shared platform composition root. */
 export function buildServices(opts = {}) {
@@ -65,7 +66,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
     cors({
       origin: (origin, cb) => cb(null, !origin || origin === new URL(config.appUrl).origin),
       credentials: true,
-      allowedHeaders: ['Content-Type', 'X-Requested-With', 'Last-Event-ID', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'X-Requested-With', 'Last-Event-ID', 'Authorization', 'X-AutoPix-Client'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     }),
   );
@@ -101,6 +102,8 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/freight', freightRoutes(ctx));
   app.use('/api/workforce', workforceRoutes(ctx));
   app.use('/api/events', eventRoutes(ctx));
+  app.use('/api/pay', payRoutes(ctx));
+  app.use('/api/admin', adminRoutes(ctx));
   app.use('/api', notFoundApi);
 
   // Production: serve the built SPA from the same origin.

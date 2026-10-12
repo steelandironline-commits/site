@@ -12,6 +12,7 @@ const SESSION_INCLUDE = {
       name: true,
       status: true,
       role: true,
+      isPlatformAdmin: true,
       companyId: true,
       company: { select: { id: true, name: true, onboardingStep: true, onboardingCompletedAt: true } },
     },

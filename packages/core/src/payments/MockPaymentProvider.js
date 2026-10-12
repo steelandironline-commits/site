@@ -1,5 +1,6 @@
 import QRCode from 'qrcode';
-import { PaymentProvider, WebhookSignatureError, header } from './PaymentProvider.js';
+import { PaymentProvider, WebhookSignatureError, header, NO_CAPABILITIES } from './PaymentProvider.js';
+import { FinancialError } from './errors.js';
 import { buildBrCode } from './brcode.js';
 import { generateToken, hmacHex, safeEqual } from '../security/tokens.js';
 
@@ -15,13 +16,49 @@ export const MOCK_SIGNATURE_HEADER = 'x-autopix-signature';
  */
 export class MockPaymentProvider extends PaymentProvider {
   name = 'mock';
+  label = 'Provedor de teste (mock)';
+  isSandbox = true;
 
-  constructor({ webhookSecret, isProduction = false } = {}) {
+  /**
+   * @param {object} o
+   * @param {string[]} [o.capabilities] e.g. ['protectedFlow','payout','split'] —
+   *   lets development/tests exercise every flow. Defaults to Pix + refund only.
+   */
+  constructor({ webhookSecret, isProduction = false, capabilities = [] } = {}) {
     super();
     if (!webhookSecret) throw new Error('MockPaymentProvider requires a webhook secret');
     this.webhookSecret = webhookSecret;
     this.supportsSimulation = !isProduction;
     this.state = new Map();
+    this.extra = new Set(capabilities);
+    this.refunds = new Map();
+    this.payouts = new Map();
+  }
+
+  getCapabilities() {
+    const caps = { ...NO_CAPABILITIES, pix: true, pixWebhook: true, paymentStatus: true, refund: true, partialRefund: true };
+    for (const c of this.extra) if (c in caps) caps[c] = true;
+    return { capabilities: caps, reasons: {} };
+  }
+
+  async getPixCharge(providerPaymentId) {
+    return this.getPaymentStatus(providerPaymentId);
+  }
+
+  async cancelPixCharge(providerPaymentId) {
+    this.state.set(providerPaymentId, { ...(this.state.get(providerPaymentId) || {}), status: 'CANCELED' });
+    return { status: 'CANCELED' };
+  }
+
+  async createSplit({ allocations, idempotencyKey }) {
+    if (!this.has('split')) throw new FinancialError('SPLIT_NOT_SUPPORTED');
+    return { providerSplitId: `mock_split_${idempotencyKey}`, allocations: allocations.map((a, i) => ({ ...a, providerAllocationId: `mock_alloc_${idempotencyKey}_${i}`, status: 'PROCESSING' })) };
+  }
+
+  async createPayout({ amountCents, idempotencyKey }) {
+    if (!this.has('payout')) throw new FinancialError('PAYOUT_NOT_SUPPORTED');
+    if (!this.payouts.has(idempotencyKey)) this.payouts.set(idempotencyKey, { providerPayoutId: `mock_po_${generateToken(8)}`, amountCents, status: 'COMPLETED' });
+    return this.payouts.get(idempotencyKey);
   }
 
   async createPixCharge({ paymentId, amountCents, description, expiresAt }) {
@@ -38,22 +75,32 @@ export class MockPaymentProvider extends PaymentProvider {
       /^data:image\/png;base64,/,
       '',
     );
-    this.state.set(providerPaymentId, { status: 'PENDING' });
+    this.state.set(providerPaymentId, { status: 'PENDING', amountCents });
     return { providerPaymentId, status: 'PENDING', qrCodeBase64, copyPaste, expiresAt, metadata: { mock: true } };
   }
 
   async getPaymentStatus(providerPaymentId) {
-    return { status: this.state.get(providerPaymentId)?.status ?? 'PENDING', paidAt: null };
+    const st = this.state.get(providerPaymentId);
+    return { status: st?.status ?? 'PENDING', paidAt: null, amountCents: st?.amountCents ?? null };
   }
 
-  async releaseFunds({ amountCents, pixKey }) {
-    if (!pixKey) throw new Error('pixKey required');
-    return { transferId: `mock_tr_${generateToken(8)}`, amountCents };
+  async refundPayment(providerPaymentId, { amountCents, idempotencyKey } = {}) {
+    // Idempotent per key, like real providers.
+    if (!this.refunds.has(idempotencyKey)) {
+      this.refunds.set(idempotencyKey, { providerRefundId: `mock_rf_${idempotencyKey}`, status: 'PROCESSING', amountCents, providerPaymentId });
+    }
+    return this.refunds.get(idempotencyKey);
   }
 
-  async refundPayment(providerPaymentId) {
-    this.state.set(providerPaymentId, { status: 'REFUNDED' });
-    return { refunded: true };
+  /** Test helper: the provider finishes processing a refund. */
+  completeRefund(idempotencyKey) {
+    const r = this.refunds.get(idempotencyKey);
+    if (r) r.status = 'COMPLETED';
+  }
+
+  async getRefundStatus(providerPaymentId, providerRefundId) {
+    const r = [...this.refunds.values()].find((x) => x.providerRefundId === providerRefundId);
+    return { status: r?.status || 'FAILED' };
   }
 
   sign(rawBody) {
@@ -61,11 +108,11 @@ export class MockPaymentProvider extends PaymentProvider {
   }
 
   /** Build a signed webhook request for local simulation and tests. */
-  buildWebhook(providerPaymentId, status = 'CONFIRMED', eventId = `evt_${generateToken(10)}`) {
+  buildWebhook(providerPaymentId, status = 'CONFIRMED', eventId = `evt_${generateToken(10)}`, { amountCents } = {}) {
     const body = {
       id: eventId,
       type: 'payment.updated',
-      data: { paymentId: providerPaymentId, status, paidAt: status === 'CONFIRMED' ? new Date().toISOString() : null },
+      data: { paymentId: providerPaymentId, status, paidAt: status === 'CONFIRMED' ? new Date().toISOString() : null, amountCents: amountCents ?? this.state.get(providerPaymentId)?.amountCents ?? null },
     };
     const rawBody = JSON.stringify(body);
     return { headers: { [MOCK_SIGNATURE_HEADER]: this.sign(rawBody), 'content-type': 'application/json' }, rawBody, body };
@@ -81,9 +128,9 @@ export class MockPaymentProvider extends PaymentProvider {
     } catch {
       throw new WebhookSignatureError('Malformed webhook body');
     }
-    const { paymentId, status, paidAt } = body.data || {};
+    const { paymentId, status, paidAt, amountCents } = body.data || {};
     if (!body.id || !paymentId || !status) return [];
-    this.state.set(paymentId, { status });
+    this.state.set(paymentId, { ...(this.state.get(paymentId) || {}), status });
     return [
       {
         providerEventId: body.id,
@@ -91,6 +138,7 @@ export class MockPaymentProvider extends PaymentProvider {
         type: body.type || 'payment.updated',
         status,
         paidAt: paidAt ? new Date(paidAt) : null,
+        amountCents: Number.isInteger(amountCents) ? amountCents : null,
         payload: { id: body.id, type: body.type, status },
       },
     ];

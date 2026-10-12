@@ -8,9 +8,16 @@ export function paymentRoutes({ payments, actions, limiters }) {
   const r = Router();
   r.use(limiters.payments);
 
-  /** Create (or reuse) the Pix charge for the session's company. */
+  /**
+   * Create (or reuse) a Pix charge. The amount is ALWAYS computed on the
+   * server: the plan price for the subscription, or the AutoPix Pay
+   * transaction amount when `transactionId` is given. Client amounts are ignored.
+   */
   r.post('/pix', requireOnboardingSession, async (req, res) => {
-    const { result } = await runAction(actions, req, 'CREATE_SUBSCRIPTION_PIX', {});
+    const { transactionId } = parse(z.object({ transactionId: z.string().trim().min(1).max(64).optional() }).passthrough(), req.body);
+    const { result } = transactionId
+      ? await runAction(actions, req, 'CREATE_TRANSACTION_PIX', { id: transactionId })
+      : await runAction(actions, req, 'CREATE_SUBSCRIPTION_PIX', {});
     res.status(201).json(result);
   });
 

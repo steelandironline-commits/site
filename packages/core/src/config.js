@@ -42,8 +42,30 @@ const schema = z.object({
   PAYMENT_PROVIDER: z
     .string()
     .optional()
-    .transform((v) => (v || 'mock').toLowerCase())
-    .pipe(z.enum(['mock', 'mercadopago', 'asaas'])),
+    .transform((v) => (v || 'mock').toLowerCase().replace(/-/g, '_'))
+    .pipe(z.enum(['mock', 'mercadopago', 'asaas', 'banco_do_brasil'])),
+  MOCK_PAYMENT_CAPABILITIES: optional,
+  BB_ENVIRONMENT: z
+    .string()
+    .optional()
+    .transform((v) => (v || 'sandbox').toLowerCase())
+    .pipe(z.enum(['sandbox', 'production'])),
+  BB_CLIENT_ID: optional,
+  BB_CLIENT_SECRET: optional,
+  BB_DEVELOPER_APPLICATION_KEY: optional,
+  BB_PIX_KEY: optional,
+  BB_API_BASE_URL: optional,
+  BB_OAUTH_URL: optional,
+  BB_OAUTH_SCOPES: optional,
+  BB_APP_KEY_PARAM: optional,
+  BB_WEBHOOK_SECRET: optional,
+  BB_MTLS_CERT_BASE64: optional,
+  BB_MTLS_KEY_BASE64: optional,
+  BB_PAY_ENABLED: bool(false),
+  BB_SPLIT_ENABLED: bool(false),
+  BB_PAYOUT_ENABLED: bool(false),
+  BB_PROTECTED_PAYMENT_ENABLED: bool(false),
+  BB_PIX_EXPIRATION_SECONDS: z.coerce.number().int().min(60).max(86400 * 30).default(3600),
   PAYMENT_ACCESS_TOKEN: optional,
   PAYMENT_WEBHOOK_SECRET: optional,
   PAYMENT_API_URL: optional,
@@ -133,6 +155,31 @@ export function loadConfig(env = process.env) {
       apiUrl: e.PAYMENT_API_URL,
     },
     demoMode: e.DEMO_MODE,
+    mockCapabilities: (e.MOCK_PAYMENT_CAPABILITIES || '').split(',').map((s) => s.trim()).filter(Boolean),
+    bb: (() => {
+      const sandbox = e.BB_ENVIRONMENT !== 'production';
+      return {
+        environment: e.BB_ENVIRONMENT,
+        clientId: e.BB_CLIENT_ID,
+        clientSecret: e.BB_CLIENT_SECRET,
+        appKey: e.BB_DEVELOPER_APPLICATION_KEY,
+        pixKey: e.BB_PIX_KEY,
+        // Defaults follow BB's public developer documentation; override when your app differs.
+        apiBaseUrl: (e.BB_API_BASE_URL || (sandbox ? 'https://api.hm.bb.com.br/pix/v2' : 'https://api-pix.bb.com.br/pix/v2')).replace(/\/$/, ''),
+        oauthUrl: e.BB_OAUTH_URL || (sandbox ? 'https://oauth.sandbox.bb.com.br/oauth/token' : 'https://oauth.bb.com.br/oauth/token'),
+        scopes: e.BB_OAUTH_SCOPES || 'cob.read cob.write pix.read pix.write',
+        appKeyParam: e.BB_APP_KEY_PARAM || (sandbox ? 'gw-dev-app-key' : 'gw-app-key'),
+        webhookSecret: e.BB_WEBHOOK_SECRET,
+        mtls: e.BB_MTLS_CERT_BASE64 && e.BB_MTLS_KEY_BASE64 ? { certBase64: e.BB_MTLS_CERT_BASE64, keyBase64: e.BB_MTLS_KEY_BASE64 } : null,
+        flags: {
+          bbPay: e.BB_PAY_ENABLED,
+          split: e.BB_SPLIT_ENABLED,
+          payout: e.BB_PAYOUT_ENABLED,
+          protectedFlow: e.BB_PROTECTED_PAYMENT_ENABLED,
+        },
+        pixExpirationSeconds: e.BB_PIX_EXPIRATION_SECONDS,
+      };
+    })(),
     embeddedWorker: e.EMBEDDED_WORKER,
     search: {
       intervalMinutes: e.SEARCH_INTERVAL_MINUTES,
@@ -193,8 +240,21 @@ export function loadConfig(env = process.env) {
     if (cfg.payment.provider === 'mock') {
       errors.push('PAYMENT_PROVIDER=mock is not allowed in production (payments must never be simulated)');
     }
-    if (!cfg.payment.accessToken) errors.push('PAYMENT_ACCESS_TOKEN is required in production');
-    if (!cfg.payment.webhookSecret) errors.push('PAYMENT_WEBHOOK_SECRET is required in production');
+    if (cfg.payment.provider === 'banco_do_brasil') {
+      const bb = cfg.bb;
+      for (const [k, v] of Object.entries({ BB_CLIENT_ID: bb.clientId, BB_CLIENT_SECRET: bb.clientSecret, BB_DEVELOPER_APPLICATION_KEY: bb.appKey, BB_PIX_KEY: bb.pixKey, BB_WEBHOOK_SECRET: bb.webhookSecret })) {
+        if (!v) errors.push(`${k} is required when PAYMENT_PROVIDER=banco_do_brasil`);
+      }
+      if (bb.webhookSecret && bb.webhookSecret.length < 32) errors.push('BB_WEBHOOK_SECRET must be at least 32 characters');
+      const looksSandbox = bb.environment === 'sandbox' || /sandbox|\.hm\.bb|homolog/i.test(`${bb.apiBaseUrl} ${bb.oauthUrl}`);
+      // A production deployment must not silently run on homologation money,
+      // except an explicit DEMO deployment where every payment is labelled SANDBOX.
+      if (looksSandbox && !e.DEMO_MODE) errors.push('Banco do Brasil sandbox configuration refused in production (set BB_ENVIRONMENT=production, or DEMO_MODE=true for a labelled demo)');
+      if (!looksSandbox && bb.environment === 'production' && /sandbox|\.hm\./i.test(bb.apiBaseUrl)) errors.push('BB_API_BASE_URL points to a sandbox host');
+    } else {
+      if (!cfg.payment.accessToken) errors.push('PAYMENT_ACCESS_TOKEN is required in production');
+      if (!cfg.payment.webhookSecret) errors.push('PAYMENT_WEBHOOK_SECRET is required in production');
+    }
     if (!e.APP_URL) errors.push('APP_URL is required in production');
   }
   if (errors.length) {

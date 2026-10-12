@@ -12,14 +12,35 @@ export const DOMAIN_EVENTS = {
   WORKFORCE_DEMAND_CREATED: { category: 'WORKFORCE', title: 'Demanda de equipe criada', silent: true },
   WORKFORCE_MATCH_CREATED: { category: 'WORKFORCE', title: 'Profissional compatível' },
   WORKFORCE_MATCH_UPDATED: { category: 'WORKFORCE', title: 'Profissional atualizado', silent: true },
-  SERVICE_COMPLETED: { category: 'PAYMENTS', title: 'Serviço concluído' },
-  PAYMENT_CREATED: { category: 'PAYMENTS', title: 'Pix gerado' },
-  PAYMENT_RECEIVED: { category: 'PAYMENTS', title: 'Pagamento recebido' },
-  PAYMENT_PROTECTED: { category: 'PAYMENTS', title: 'Pagamento protegido' },
-  PAYMENT_RELEASE_REQUESTED: { category: 'PAYMENTS', title: 'Liberação solicitada' },
-  PAYMENT_RELEASED: { category: 'PAYMENTS', title: 'Pagamento liberado' },
-  PAYMENT_REFUNDED: { category: 'PAYMENTS', title: 'Pagamento estornado' },
-  PAYMENT_DISPUTED: { category: 'PAYMENTS', title: 'Disputa aberta' },
+  SERVICE_STARTED: { category: 'PAYMENTS', title: 'Serviço iniciado', silent: true },
+  SERVICE_COMPLETED: { category: 'PAYMENTS', title: 'Prestador informou conclusão' },
+  SERVICE_CONFIRMED: { category: 'PAYMENTS', title: 'Cliente confirmou a conclusão' },
+  TRANSACTION_CREATED: { category: 'PAYMENTS', title: 'Negócio criado', silent: true },
+  PAYMENT_CREATED: { category: 'PAYMENTS', title: 'Cobrança AutoPix criada' },
+  PAYMENT_RECEIVED: { category: 'PAYMENTS', title: 'Pix recebido' },
+  PAYMENT_EXPIRED: { category: 'PAYMENTS', title: 'Pix expirado' },
+  PAYMENT_CANCELLED: { category: 'PAYMENTS', title: 'Cobrança cancelada' },
+  PAYMENT_REFUNDED: { category: 'PAYMENTS', title: 'Reembolso concluído' },
+  REFUND_REQUESTED: { category: 'PAYMENTS', title: 'Reembolso solicitado', silent: true },
+  REFUND_COMPLETED: { category: 'PAYMENTS', title: 'Reembolso concluído', silent: true },
+  PAYOUT_CREATED: { category: 'PAYMENTS', title: 'Repasse solicitado ao parceiro financeiro' },
+  PAYOUT_CONFIRMED: { category: 'PAYMENTS', title: 'Repasse confirmado' },
+  SPLIT_PROCESSED: { category: 'PAYMENTS', title: 'Divisão do pagamento processada' },
+  PROTECTED_PAYMENT_CREATED: { category: 'PAYMENTS', title: 'Pagamento protegido' },
+  PROTECTED_PAYMENT_RELEASE_REQUESTED: { category: 'PAYMENTS', title: 'Pagamento pronto para liberação' },
+  PROTECTED_PAYMENT_RELEASED: { category: 'PAYMENTS', title: 'Pagamento liberado' },
+  PROTECTED_PAYMENT_DISPUTED: { category: 'PAYMENTS', title: 'Disputa aberta' },
+  DISPUTE_OPENED: { category: 'PAYMENTS', title: 'Disputa aberta' },
+  DISPUTE_UPDATED: { category: 'PAYMENTS', title: 'Disputa atualizada', silent: true },
+  DISPUTE_RESOLVED: { category: 'PAYMENTS', title: 'Disputa resolvida' },
+  RECONCILIATION_ISSUE: { category: 'SYSTEM', title: 'Divergência financeira', silent: true },
+  DRIVER_EN_ROUTE_PICKUP: { category: 'FREIGHT', title: 'Motorista a caminho da coleta' },
+  DRIVER_ARRIVED_PICKUP: { category: 'FREIGHT', title: 'Motorista chegou à coleta' },
+  CARGO_LOADED: { category: 'FREIGHT', title: 'Carga carregada' },
+  TRIP_STARTED: { category: 'FREIGHT', title: 'Viagem iniciada', silent: true },
+  NEAR_DESTINATION: { category: 'FREIGHT', title: 'Transporte próximo ao destino' },
+  DRIVER_ARRIVED_DESTINATION: { category: 'FREIGHT', title: 'O transporte chegou ao destino' },
+  DELIVERY_CONFIRMED: { category: 'FREIGHT', title: 'Entrega confirmada' },
   AGENT_ERROR: { category: 'AGENTS', title: 'Erro em agente' },
   AGENTS_PAUSED: { category: 'AGENTS', title: 'Agentes pausados', silent: true },
   AGENTS_STARTED: { category: 'AGENTS', title: 'Agentes iniciados', silent: true },
@@ -66,6 +87,7 @@ export const deepLinks = {
   freightMatch: (id) => `/app/freight/matches/${id}`,
   workforceMatch: (id) => `/app/workforce/matches/${id}`,
   payment: (id) => `/app/payments/${id}`,
+  transaction: (id) => `/app/pay/transactions/${id}`,
   challenge: (id) => `/app/confirm/${id}`,
 };
 
@@ -77,3 +99,52 @@ export const PROTECTION_STATUS_LABELS = {
   DISPUTED: 'Em disputa',
   REFUNDED: 'Estornado',
 };
+
+/** AutoPix Pay transaction statuses (pt-BR). */
+export const TRANSACTION_STATUS_LABELS = {
+  DRAFT: 'Rascunho',
+  AWAITING_PAYMENT: 'Aguardando pagamento',
+  PAID: 'Pago',
+  PROTECTED: 'Pagamento protegido',
+  READY_TO_RELEASE: 'Pronto para liberação',
+  RELEASED: 'Liberado',
+  REFUNDED: 'Reembolsado',
+  DISPUTED: 'Em disputa',
+  CANCELLED: 'Cancelado',
+};
+
+export const TRANSACTION_TYPE_LABELS = { SALES: 'Venda', FREIGHT: 'Frete', WORKFORCE: 'Mão de obra', SERVICE: 'Serviço', SUBSCRIPTION: 'Assinatura' };
+
+export const SETTLEMENT_STATUS_LABELS = {
+  NOT_APPLICABLE: '—',
+  HELD_BY_PROVIDER: 'Retido pelo parceiro financeiro',
+  SPLIT_PENDING: 'Divisão pendente',
+  SPLIT_PROCESSING: 'Divisão em processamento',
+  PAYOUT_PENDING: 'Repasse pendente',
+  PAYOUT_PROCESSING: 'Repasse em processamento',
+  PAYOUT_COMPLETED: 'Repasse concluído',
+  PENDING_PROVIDER_CAPABILITY: 'Repasse manual pendente (parceiro sem split/repasse)',
+  RELEASING: 'Liberando…',
+  RELEASE_FAILED: 'Falha na liberação',
+  REFUNDED: 'Reembolsado',
+};
+
+/** Checkout states exposed to clients. */
+export const CHECKOUT_STATES = ['CREATED', 'WAITING_PAYMENT', 'PAID', 'EXPIRED', 'CANCELLED', 'REFUNDED', 'ERROR'];
+export function checkoutState(payment) {
+  if (!payment) return 'CREATED';
+  switch (payment.status) {
+    case 'PENDING':
+      return payment.pixCopyPaste ? 'WAITING_PAYMENT' : 'CREATED';
+    case 'CONFIRMED':
+      return 'PAID';
+    case 'EXPIRED':
+      return 'EXPIRED';
+    case 'CANCELED':
+      return 'CANCELLED';
+    case 'REFUNDED':
+      return 'REFUNDED';
+    default:
+      return 'ERROR';
+  }
+}

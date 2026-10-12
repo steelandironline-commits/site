@@ -12,7 +12,7 @@ export async function describeSession({ prisma, config }, req) {
   });
   return {
     scope: req.session.scope,
-    user: { id: req.user.id, name: req.user.name, email: req.user.email, status: req.user.status, role: req.user.role },
+    user: { id: req.user.id, name: req.user.name, email: req.user.email, status: req.user.status, role: req.user.role, isPlatformAdmin: Boolean(req.user.isPlatformAdmin) },
     company: req.user.company,
     subscription,
     demoMode: config.demoMode,

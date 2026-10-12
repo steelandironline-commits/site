@@ -11,7 +11,7 @@ import { buildPlatform } from '../platform.js';
  * Background worker loop. Runs in its own Railway service (apps/worker) or
  * embedded in the API process when EMBEDDED_WORKER=true.
  */
-export function startWorker({ pollMs = 3000, scheduleMs = 60_000, concurrency = 2 } = {}) {
+export function startWorker({ pollMs = 3000, scheduleMs = 60_000, reconcileMs = 60_000, concurrency = 2 } = {}) {
   const prisma = getPrisma();
   const config = getConfig();
   const queue = new JobQueue({ prisma });
@@ -100,12 +100,26 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, concurrency = 
     if (!stopping) timers.push(setTimeout(scheduleLoop, scheduleMs));
   }
 
+  // PaymentReconciliationJob: missed webhooks, refunds in flight, divergences.
+  async function reconcileLoop() {
+    if (stopping) return;
+    try {
+      const r = await platform.reconciliation.run();
+      if (r.repaired || r.flagged || r.errors) logger.info('reconciliation run', r);
+    } catch (err) {
+      logger.error('reconciliation failed', { code: err.code || err.name });
+    }
+    if (!stopping) timers.push(setTimeout(reconcileLoop, reconcileMs));
+  }
+
   (async () => {
     await ensureAgents(prisma);
+    await platform.commissions.ensureDefaults();
     logger.info('worker started', { demoMode: config.demoMode, intervalMinutes: config.search.intervalMinutes });
     scheduleLoop();
     pollLoop();
     eventLoop();
+    reconcileLoop();
   })().catch((err) => logger.error('worker boot failed', { err }));
 
   return {

@@ -72,7 +72,11 @@ export class WhatsAppNotifier {
         out = await this.messenger.send(connection, 'sendWorkforceMatchNotification', [{ match: entity, link: message.url }], opts);
         break;
       default:
-        if (event.aggregateType === 'payment' && entity) {
+        if (event.aggregateType === 'transaction' || event.aggregateType === 'freightMatch') {
+          // Financial/trip updates: text + deep link only. Release is never a WhatsApp button.
+          const link = this.messenger.provider.link(message.url);
+          out = await this.messenger.reply(connection, [message.title, message.body, message.cta ? `[${message.cta}] ${link}` : link].filter(Boolean).join('\n'), opts);
+        } else if (event.aggregateType === 'payment' && entity) {
           out = await this.messenger.send(connection, 'sendPaymentNotification', [{ payment: entity, title: message.title, link: message.url }], opts);
         } else {
           out = await this.messenger.reply(connection, `${message.title}\n${message.body}\n${this.messenger.provider.link(message.url)}`.trim(), opts);

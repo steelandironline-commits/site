@@ -47,6 +47,104 @@ enum PaymentStatus {
   CANCELED
 }
 
+enum PaymentEventStatus {
+  RECEIVED
+  PROCESSED
+  DUPLICATE
+  IGNORED
+  FAILED
+  FLAGGED
+}
+
+enum TripStatus {
+  NOT_STARTED
+  EN_ROUTE_PICKUP
+  AT_PICKUP
+  LOADED
+  IN_TRANSIT
+  AT_DESTINATION
+  DELIVERED
+}
+
+enum TripEventType {
+  DRIVER_EN_ROUTE_PICKUP
+  DRIVER_ARRIVED_PICKUP
+  CARGO_LOADED
+  TRIP_STARTED
+  NEAR_DESTINATION
+  DRIVER_ARRIVED_DESTINATION
+  DELIVERY_CONFIRMED
+  LOCATION_UPDATE
+}
+
+enum TransactionType {
+  SALES
+  FREIGHT
+  WORKFORCE
+  SERVICE
+  SUBSCRIPTION
+}
+
+enum TransactionStatus {
+  DRAFT
+  AWAITING_PAYMENT
+  PAID
+  PROTECTED
+  READY_TO_RELEASE
+  RELEASED
+  REFUNDED
+  DISPUTED
+  CANCELLED
+}
+
+enum AllocationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum RefundStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum PayoutStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  BUYER_RESPONSE
+  SELLER_RESPONSE
+  RESOLVED_BUYER
+  RESOLVED_SELLER
+  CANCELLED
+}
+
+enum AuditSource {
+  WEB
+  PWA
+  WHATSAPP
+  SYSTEM
+  WORKER
+  ADMIN
+  API
+}
+
+enum IssueStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  AUTO_REPAIRED
+}
+
 enum PaymentKind {
   SUBSCRIPTION
   CHARGE
@@ -239,6 +337,7 @@ model User {
   company           Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   lastLoginAt       DateTime?
   passwordChangedAt DateTime?
+  isPlatformAdmin   Boolean    @default(false)
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
@@ -340,38 +439,47 @@ model Subscription {
 }
 
 model Payment {
-  id                String           @id @default(cuid())
-  subscriptionId    String?
-  subscription      Subscription?    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  kind              PaymentKind      @default(SUBSCRIPTION)
-  reference         String?          @unique
-  description       String?
-  payerName         String?
-  payerDocument     String?
-  payerEmail        String?
-  protectionStatus  ProtectionStatus @default(NONE)
-  releasedAt        DateTime?
-  refundedAt        DateTime?
-  disputeReason     String?
-  relatedType       String?
-  relatedId         String?
-  createdByUserId   String?
-  companyId         String
-  company           Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  provider          String
-  providerPaymentId String?
-  amountCents       Int
-  currency          String           @default("BRL")
-  method            String           @default("PIX")
-  status            PaymentStatus    @default(PENDING)
-  pixQrCodeBase64   String?
-  pixCopyPaste      String?
-  expiresAt         DateTime?
-  paidAt            DateTime?
-  idempotencyKey    String           @unique
-  metadata          Json?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  id                   String                  @id @default(cuid())
+  subscriptionId       String?
+  subscription         Subscription?           @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  kind                 PaymentKind             @default(SUBSCRIPTION)
+  reference            String?                 @unique
+  description          String?
+  payerName            String?
+  payerDocument        String?
+  payerEmail           String?
+  protectionStatus     ProtectionStatus        @default(NONE)
+  releasedAt           DateTime?
+  refundedAt           DateTime?
+  disputeReason        String?
+  relatedType          String?
+  relatedId            String?
+  createdByUserId      String?
+  txid                 String?
+  isSandbox            Boolean                 @default(false)
+  refundedCents        Int                     @default(0)
+  failureCode          String?
+  transactionId        String?                 @unique
+  transaction          MarketplaceTransaction? @relation("TransactionPayment", fields: [transactionId], references: [id], onDelete: SetNull)
+  allocations          PaymentAllocation[]
+  refunds              Refund[]
+  reconciliationIssues ReconciliationIssue[]
+  companyId            String
+  company              Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider             String
+  providerPaymentId    String?
+  amountCents          Int
+  currency             String                  @default("BRL")
+  method               String                  @default("PIX")
+  status               PaymentStatus           @default(PENDING)
+  pixQrCodeBase64      String?
+  pixCopyPaste         String?
+  expiresAt            DateTime?
+  paidAt               DateTime?
+  idempotencyKey       String                  @unique
+  metadata             Json?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
   events PaymentEvent[]
 
@@ -381,19 +489,25 @@ model Payment {
 }
 
 model PaymentEvent {
-  id                String   @id @default(cuid())
+  id                String             @id @default(cuid())
   paymentId         String?
-  payment           Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  payment           Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   provider          String
   providerEventId   String
   providerPaymentId String?
   type              String
   status            String?
-  processed         Boolean  @default(false)
+  processed         Boolean            @default(false)
+  processingStatus  PaymentEventStatus @default(RECEIVED)
   payload           Json?
-  createdAt         DateTime @default(now())
+  payloadHash       String?
+  metadata          Json?
+  error             String?
+  createdAt         DateTime           @default(now())
+  processedAt       DateTime?
 
   @@unique([provider, providerEventId])
+  @@index([processingStatus, createdAt])
   @@index([providerPaymentId])
 }
 
@@ -773,24 +887,33 @@ model FreightRequest {
 }
 
 model FreightMatch {
-  id           String             @id @default(cuid())
-  companyId    String
-  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  requestId    String?
-  request      FreightRequest?    @relation(fields: [requestId], references: [id], onDelete: SetNull)
-  origin       String
-  destination  String
-  pickupDate   DateTime?
-  cargo        String?
-  weightKg     Int?
-  price        Int?
-  isReturnLoad Boolean            @default(false)
-  carrierName  String?
-  source       String
-  status       FreightMatchStatus @default(NEW)
-  isDemo       Boolean            @default(false)
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id                    String             @id @default(cuid())
+  companyId             String
+  company               Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requestId             String?
+  request               FreightRequest?    @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  origin                String
+  destination           String
+  pickupDate            DateTime?
+  cargo                 String?
+  weightKg              Int?
+  price                 Int?
+  isReturnLoad          Boolean            @default(false)
+  carrierName           String?
+  pickupLat             Float?
+  pickupLng             Float?
+  destLat               Float?
+  destLng               Float?
+  tripStatus            TripStatus         @default(NOT_STARTED)
+  trackingConsentAt     DateTime?
+  trackingConsentUserId String?
+  source                String
+  status                FreightMatchStatus @default(NEW)
+  isDemo                Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  tripEvents TripEvent[]
 
   @@index([companyId, status])
 }
@@ -835,4 +958,204 @@ model WorkforceMatch {
 
   @@index([companyId, status])
   @@index([demandId])
+}
+
+// ===================================================================
+// AutoPix Pay — marketplace financial layer (provider-independent)
+// ===================================================================
+
+model MarketplaceTransaction {
+  id                 String            @id @default(cuid())
+  type               TransactionType
+  status             TransactionStatus @default(DRAFT)
+  description        String
+  sellerCompanyId    String
+  sellerUserId       String?
+  buyerCompanyId     String?
+  buyerUserId        String?
+  buyerName          String?
+  buyerEmail         String?
+  referenceType      String?
+  referenceId        String?
+  grossAmount        Int
+  commissionAmount   Int
+  providerFeesAmount Int               @default(0)
+  sellerNetAmount    Int
+  commissionRuleId   String?
+  commissionRateBps  Int
+  currency           String            @default("BRL")
+  protectedFlow      Boolean           @default(false)
+  settlementStatus   String            @default("NOT_APPLICABLE")
+  serviceStartedAt   DateTime?
+  sellerCompletedAt  DateTime?
+  buyerConfirmedAt   DateTime?
+  releasedAt         DateTime?
+  cancelledAt        DateTime?
+  isSandbox          Boolean           @default(false)
+  isDemo             Boolean           @default(false)
+  metadata           Json?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  payment  Payment?             @relation("TransactionPayment")
+  timeline TransactionEvent[]
+  disputes TransactionDispute[]
+  payouts  Payout[]
+
+  @@index([sellerCompanyId, createdAt])
+  @@index([buyerCompanyId, createdAt])
+  @@index([status])
+  @@index([referenceType, referenceId])
+}
+
+model TransactionEvent {
+  id            String                 @id @default(cuid())
+  transactionId String
+  transaction   MarketplaceTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  type          String
+  title         String
+  actorUserId   String?
+  metadata      Json?
+  createdAt     DateTime               @default(now())
+
+  @@index([transactionId, createdAt])
+}
+
+model CommissionRule {
+  id               String           @id @default(cuid())
+  name             String
+  transactionType  TransactionType?
+  companyId        String?
+  rateBps          Int
+  fixedAmountCents Int              @default(0)
+  minimumCents     Int?
+  maximumCents     Int?
+  currency         String           @default("BRL")
+  active           Boolean          @default(true)
+  priority         Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([active, transactionType])
+}
+
+model PaymentAllocation {
+  id                   String           @id @default(cuid())
+  paymentId            String
+  payment              Payment          @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  beneficiaryType      String
+  beneficiaryReference String
+  grossShare           Int
+  netShare             Int
+  providerAllocationId String?
+  status               AllocationStatus @default(PENDING)
+  metadata             Json?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([paymentId])
+}
+
+model Refund {
+  id                String       @id @default(cuid())
+  paymentId         String
+  payment           Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  transactionId     String?
+  amountCents       Int
+  reason            String?
+  status            RefundStatus @default(REQUESTED)
+  providerRefundId  String?
+  idempotencyKey    String       @unique
+  requestedByUserId String?
+  error             String?
+  createdAt         DateTime     @default(now())
+  completedAt       DateTime?
+
+  @@index([status, createdAt])
+}
+
+model Payout {
+  id               String                 @id @default(cuid())
+  transactionId    String
+  transaction      MarketplaceTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  amountCents      Int
+  status           PayoutStatus           @default(REQUESTED)
+  providerPayoutId String?
+  idempotencyKey   String                 @unique
+  error            String?
+  createdAt        DateTime               @default(now())
+  completedAt      DateTime?
+
+  @@index([status])
+}
+
+model TransactionDispute {
+  id               String                 @id @default(cuid())
+  transactionId    String
+  transaction      MarketplaceTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  openedByUserId   String
+  reason           String
+  description      String?
+  status           DisputeStatus          @default(OPEN)
+  metadata         Json?
+  resolvedByUserId String?
+  resolutionNote   String?
+  createdAt        DateTime               @default(now())
+  resolvedAt       DateTime?
+
+  @@index([status, createdAt])
+}
+
+/// Append-only (UPDATE/DELETE blocked by a database trigger).
+model FinancialAuditLog {
+  id            String      @id @default(cuid())
+  userId        String?
+  companyId     String?
+  transactionId String?
+  paymentId     String?
+  action        String
+  source        AuditSource
+  ipAddressHash String?
+  userAgent     String?
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([transactionId])
+  @@index([paymentId])
+}
+
+model ReconciliationIssue {
+  id               String      @id @default(cuid())
+  paymentId        String?
+  payment          Payment?    @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  refundId         String?
+  kind             String
+  localStatus      String?
+  providerStatus   String?
+  details          Json?
+  status           IssueStatus @default(OPEN)
+  resolvedByUserId String?
+  resolutionNote   String?
+  createdAt        DateTime    @default(now())
+  resolvedAt       DateTime?
+
+  @@index([status, createdAt])
+  @@index([paymentId, kind])
+}
+
+model TripEvent {
+  id               String        @id @default(cuid())
+  freightMatchId   String
+  freightMatch     FreightMatch  @relation(fields: [freightMatchId], references: [id], onDelete: Cascade)
+  companyId        String
+  type             TripEventType
+  latitude         Float?
+  longitude        Float?
+  accuracyM        Float?
+  source           String
+  recordedByUserId String?
+  createdAt        DateTime      @default(now())
+
+  @@index([freightMatchId, createdAt])
 }

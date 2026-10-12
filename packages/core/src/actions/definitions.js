@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { companyUpdateSchema, formatCents, formatRange, OPPORTUNITY_STATUSES } from '@autopix/shared';
 import { conflict } from '../errors.js';
+import { auditSourceFor } from '../finance/FinancialAuditService.js';
 
 const id = z.string().trim().min(1).max(64);
 const byId = z.object({ id });
@@ -183,72 +184,241 @@ export function registerCoreActions(engine) {
     handler: async (ctx) => ({ payment: await s().payments.createPixCharge({ user: ctx.user, company: ctx.company }) }),
   });
 
+  // ------------------------------------------------------- AutoPix Pay
+  const src = (ctx) => auditSourceFor(ctx.channel, ctx.actor);
+  const txRef = z.object({ id });
+  const txResult = async (ctx, txId) => (await s().transactions.get(txId, { companyId: ctx.company.id, isPlatformAdmin: ctx.user.isPlatformAdmin })).transaction;
+
+  engine.register({
+    name: 'CREATE_TRANSACTION',
+    description: 'Cria um negócio no AutoPix Pay (valor calculado no servidor, comissão aplicada).',
+    schema: z.object({
+      type: z.enum(['SALES', 'FREIGHT', 'WORKFORCE', 'SERVICE']).optional(),
+      referenceType: z.enum(['opportunity', 'freightMatch', 'workforceMatch']).optional().nullable(),
+      referenceId: id.optional().nullable(),
+      grossCents: money.optional(),
+      description: z.string().trim().max(140).optional().nullable(),
+      buyerEmail: z.string().trim().email().max(254).optional().nullable(),
+      buyerName: z.string().trim().max(120).optional().nullable(),
+    }),
+    requiresActiveSubscription: true,
+    summarize: (i) => (i.grossCents ? `Criar negócio de ${formatCents(i.grossCents)}` : 'Criar negócio'),
+    handler: async (ctx, i) => ({ transaction: await s().transactions.create({ user: ctx.user, company: ctx.company, ...i }) }),
+  });
+
+  engine.register({
+    name: 'CREATE_TRANSACTION_PIX',
+    description: 'Gera (ou reutiliza) o Pix da transação. O valor vem da transação, nunca do cliente.',
+    schema: txRef,
+    requiresActiveSubscription: true,
+    handler: async (ctx, { id: txId }) => ({ payment: await s().transactions.createPix({ user: ctx.user, company: ctx.company, id: txId }) }),
+  });
+
   engine.register({
     name: 'CREATE_PIX',
-    description: 'Gera uma cobrança Pix protegida.',
+    description: 'Cria uma cobrança AutoPix Pay (serviço) e gera o Pix.',
     schema: z.object({
       amountCents: money,
       description: z.string().trim().max(140).optional().nullable(),
       payerName: z.string().trim().max(120).optional().nullable(),
-      payerDocument: z.string().trim().max(20).optional().nullable(),
       payerEmail: z.string().trim().email().max(254).optional().nullable(),
-      relatedType: z.enum(['opportunity', 'freightMatch', 'workforceMatch']).optional().nullable(),
-      relatedId: id.optional().nullable(),
     }),
     requiresActiveSubscription: true,
     summarize: (i) => `Gerar Pix de ${formatCents(i.amountCents)}`,
-    inputDoc: { amountCents: 'integer, cents', description: 'optional', payerName: 'optional', payerDocument: 'CPF/CNPJ, optional' },
-    handler: async (ctx, i) => ({
-      payment: await s().payments.createCharge({
+    inputDoc: { amountCents: 'integer, cents', description: 'optional', payerName: 'optional', payerEmail: 'optional' },
+    handler: async (ctx, i) => {
+      const transaction = await s().transactions.create({
         user: ctx.user,
         company: ctx.company,
-        amountCents: i.amountCents,
+        type: 'SERVICE',
+        grossCents: i.amountCents,
         description: i.description,
-        payer: { name: i.payerName, document: i.payerDocument ? i.payerDocument.replace(/\D/g, '') : null, email: i.payerEmail },
-        relatedType: i.relatedType,
-        relatedId: i.relatedId,
-      }),
-    }),
+        buyerName: i.payerName,
+        buyerEmail: i.payerEmail,
+      });
+      const payment = await s().transactions.createPix({ user: ctx.user, company: ctx.company, id: transaction.id });
+      return { transaction, payment };
+    },
   });
 
   engine.register({
-    name: 'REQUEST_PAYMENT_RELEASE',
-    description: 'Solicita a liberação de um pagamento protegido (serviço concluído).',
-    schema: z.object({ id, reason: z.string().trim().max(300).optional() }),
-    requiresActiveSubscription: true,
-    handler: async (ctx, { id: paymentId, reason }) => ({
-      payment: await s().payments.requestRelease({ companyId: ctx.company.id, userId: ctx.user.id, paymentId, reason }),
+    name: 'START_SERVICE',
+    description: 'Informa o início do serviço (após pagamento confirmado).',
+    schema: txRef,
+    handler: async (ctx, { id: txId }) => ({ transaction: await s().transactions.startService({ user: ctx.user, company: ctx.company, id: txId }) }),
+  });
+
+  engine.register({
+    name: 'REPORT_COMPLETION',
+    description: 'Prestador informa a conclusão do serviço.',
+    schema: txRef,
+    handler: async (ctx, { id: txId }) => ({ transaction: await s().transactions.reportCompletion({ user: ctx.user, company: ctx.company, id: txId }) }),
+  });
+
+  engine.register({
+    name: 'REQUEST_RELEASE',
+    description: 'Prestador pede ao cliente a confirmação para liberar o pagamento protegido.',
+    schema: txRef,
+    handler: async (ctx, { id: txId }) => ({ transaction: await s().transactions.requestRelease({ user: ctx.user, company: ctx.company, id: txId }) }),
+  });
+
+  engine.register({
+    name: 'CONFIRM_COMPLETION',
+    description: 'Cliente confirma a conclusão (não libera dinheiro por si só).',
+    schema: txRef,
+    channels: ['WEB', 'API'],
+    handler: async (ctx, { id: txId }) => ({
+      transaction: await s().protectedPayments.confirmCompletion({ user: ctx.user, company: ctx.company, id: txId, source: src(ctx), ip: ctx.meta?.ip }),
     }),
   });
 
+  // Never from WhatsApp, never by an LLM: sensitive + step-up + web/app session only.
   engine.register({
     name: 'RELEASE_PAYMENT',
-    description: 'Libera os fundos protegidos para a chave Pix da empresa.',
-    schema: byId,
+    description: 'Libera o pagamento protegido ao prestador pelo fluxo autorizado do parceiro financeiro.',
+    schema: txRef,
     roles: ['OWNER'],
+    channels: ['WEB', 'API'],
     sensitive: true,
-    requiresActiveSubscription: true,
-    summarize: () => 'Liberar pagamento protegido para a sua chave Pix',
-    handler: async (ctx, { id: paymentId }) => ({ payment: await s().payments.release({ company: ctx.company, userId: ctx.user.id, paymentId }) }),
+    summarize: () => 'Liberar pagamento protegido ao prestador',
+    handler: async (ctx, { id: txId }) => ({
+      transaction: await s().protectedPayments.release({ user: ctx.user, company: ctx.company, id: txId, source: src(ctx), ip: ctx.meta?.ip }),
+    }),
   });
 
   engine.register({
     name: 'REFUND_PAYMENT',
-    description: 'Estorna uma cobrança confirmada.',
-    schema: byId,
+    description: 'Reembolsa (total ou parcial) um pagamento confirmado. Concluído só após confirmação do parceiro financeiro.',
+    schema: z.object({ id, amountCents: money.optional(), reason: z.string().trim().max(300).optional() }),
     roles: ['OWNER'],
+    channels: ['WEB', 'API'],
     sensitive: true,
-    summarize: () => 'Estornar pagamento',
-    handler: async (ctx, { id: paymentId }) => ({ payment: await s().payments.refund({ companyId: ctx.company.id, userId: ctx.user.id, paymentId }) }),
+    summarize: (i) => (i.amountCents ? `Reembolsar ${formatCents(i.amountCents)}` : 'Reembolsar o valor integral'),
+    handler: async (ctx, i) => ({
+      refund: await s().refunds.request({ user: ctx.user, company: ctx.company, transactionId: i.id, amountCents: i.amountCents, reason: i.reason, source: src(ctx), ip: ctx.meta?.ip }),
+    }),
   });
 
   engine.register({
     name: 'OPEN_DISPUTE',
-    description: 'Abre disputa e congela a liberação de um pagamento protegido.',
-    schema: z.object({ id, reason: z.string().trim().min(5).max(500) }),
-    handler: async (ctx, { id: paymentId, reason }) => ({
-      payment: await s().payments.openDispute({ companyId: ctx.company.id, userId: ctx.user.id, paymentId, reason }),
+    description: 'Abre disputa e congela a liberação.',
+    schema: z.object({ id, reason: z.string().trim().min(5).max(500), description: z.string().trim().max(2000).optional() }),
+    channels: ['WEB', 'API'],
+    handler: async (ctx, i) => ({
+      dispute: await s().disputes.open({ user: ctx.user, company: ctx.company, id: i.id, reason: i.reason, description: i.description, source: src(ctx), ip: ctx.meta?.ip }),
     }),
+  });
+
+  engine.register({
+    name: 'RESPOND_DISPUTE',
+    description: 'Registra a manifestação de uma das partes na disputa.',
+    schema: z.object({ id, message: z.string().trim().min(2).max(2000) }),
+    channels: ['WEB', 'API'],
+    handler: async (ctx, i) => ({ dispute: await s().disputes.respond({ user: ctx.user, company: ctx.company, disputeId: i.id, message: i.message, source: src(ctx) }) }),
+  });
+
+  // Human decision only (platform admin, step-up). AI may summarize, never decide.
+  engine.register({
+    name: 'RESOLVE_DISPUTE',
+    description: 'Resolve uma disputa (administração da plataforma).',
+    schema: z.object({ id, outcome: z.enum(['BUYER', 'SELLER', 'CANCEL']), note: z.string().trim().min(10).max(2000), refundAmountCents: money.optional() }),
+    platformAdmin: true,
+    channels: ['WEB', 'API'],
+    sensitive: true,
+    summarize: (i) => `Resolver disputa: ${{ BUYER: 'a favor do cliente (reembolso)', SELLER: 'a favor do prestador', CANCEL: 'encerrar sem decisão' }[i.outcome]}`,
+    handler: async (ctx, i) => s().disputes.resolve({ admin: ctx.user, disputeId: i.id, outcome: i.outcome, note: i.note, refundAmountCents: i.refundAmountCents, ip: ctx.meta?.ip }),
+  });
+
+  engine.register({
+    name: 'CANCEL_TRANSACTION',
+    description: 'Cancela o negócio antes do pagamento.',
+    schema: txRef,
+    handler: async (ctx, { id: txId }) => ({ transaction: await s().transactions.cancel({ user: ctx.user, company: ctx.company, id: txId }) }),
+  });
+
+  // ------------------------------------------------------- freight trips
+  const tripRef = z.object({ matchId: id });
+  engine.register({
+    name: 'CONSENT_TRIP_TRACKING',
+    description: 'Autoriza o compartilhamento de localização apenas para esta viagem.',
+    schema: tripRef,
+    channels: ['WEB', 'API'],
+    handler: async (ctx, { matchId }) => ({ match: await s().trips.consent({ user: ctx.user, company: ctx.company, matchId }) }),
+  });
+  engine.register({
+    name: 'REVOKE_TRIP_TRACKING',
+    description: 'Interrompe o compartilhamento de localização.',
+    schema: tripRef,
+    handler: async (ctx, { matchId }) => ({ match: await s().trips.revokeConsent({ company: ctx.company, matchId }) }),
+  });
+  engine.register({
+    name: 'START_TRIP',
+    description: 'Motorista a caminho da coleta.',
+    schema: tripRef,
+    handler: async (ctx, { matchId }) => ({ match: await s().trips.start({ user: ctx.user, company: ctx.company, matchId, source: src(ctx) }) }),
+  });
+  engine.register({
+    name: 'MARK_CARGO_LOADED',
+    description: 'Registra a carga carregada e inicia a viagem.',
+    schema: tripRef,
+    handler: async (ctx, { matchId }) => ({ match: await s().trips.markLoaded({ user: ctx.user, company: ctx.company, matchId, source: src(ctx) }) }),
+  });
+  engine.register({
+    name: 'RECORD_LOCATION',
+    description: 'Registra a localização do motorista (requer consentimento). Nunca libera pagamento.',
+    kind: 'command',
+    schema: z.object({ matchId: id, latitude: z.coerce.number(), longitude: z.coerce.number(), accuracyM: z.coerce.number().min(0).max(100_000).optional().nullable() }),
+    channels: ['WEB', 'API'],
+    handler: async (ctx, i) => s().trips.recordLocation({ user: ctx.user, company: ctx.company, ...i, source: ctx.actor?.client === 'pwa' ? 'PWA' : 'WEB' }),
+  });
+  engine.register({
+    name: 'CONFIRM_DELIVERY',
+    description: 'Cliente confirma a entrega do frete (não libera dinheiro por si só).',
+    schema: txRef,
+    channels: ['WEB', 'API'],
+    handler: async (ctx, { id: txId }) => ({
+      transaction: await s().trips.confirmDelivery({ user: ctx.user, company: ctx.company, transactionId: txId, source: src(ctx), ip: ctx.meta?.ip }),
+    }),
+  });
+
+  // ---------------------------------------------------- platform admin
+  engine.register({
+    name: 'UPDATE_COMMISSION_RULE',
+    description: 'Cria ou altera uma regra de comissão (administração).',
+    schema: z.object({
+      id: id.optional(),
+      name: z.string().trim().min(3).max(80),
+      transactionType: z.enum(['SALES', 'FREIGHT', 'WORKFORCE', 'SERVICE', 'SUBSCRIPTION']).optional().nullable(),
+      companyId: id.optional().nullable(),
+      rateBps: z.coerce.number().int().min(0).max(10_000),
+      fixedAmountCents: z.coerce.number().int().min(0).max(1_000_000).default(0),
+      minimumCents: z.coerce.number().int().min(0).optional().nullable(),
+      maximumCents: z.coerce.number().int().min(0).optional().nullable(),
+      priority: z.coerce.number().int().min(0).max(100).default(0),
+      active: z.boolean().default(true),
+    }),
+    platformAdmin: true,
+    channels: ['WEB', 'API'],
+    sensitive: true,
+    summarize: (i) => `Regra de comissão “${i.name}”: ${(i.rateBps / 100).toLocaleString('pt-BR')}%`,
+    handler: async (ctx, i) => ({ rule: await s().commissions.upsert(i, { user: ctx.user, audit: s().audit, ip: ctx.meta?.ip }) }),
+  });
+
+  engine.register({
+    name: 'RESOLVE_RECONCILIATION_ISSUE',
+    description: 'Reconhece ou encerra uma divergência (anotação; não move dinheiro).',
+    schema: z.object({ id, status: z.enum(['ACKNOWLEDGED', 'RESOLVED']), note: z.string().trim().max(2000).optional() }),
+    platformAdmin: true,
+    channels: ['WEB', 'API'],
+    handler: async (ctx, i) => ({ issue: await s().admin.updateIssue(ctx.user, { ...i, ip: ctx.meta?.ip }) }),
+  });
+
+  engine.register({
+    name: 'GET_TRANSACTION',
+    description: 'Detalhe de uma transação AutoPix Pay.',
+    kind: 'query',
+    schema: txRef,
+    handler: async (ctx, { id: txId }) => ({ transaction: await txResult(ctx, txId) }),
   });
 
   engine.register({
@@ -264,6 +434,7 @@ export function registerCoreActions(engine) {
     summarize: (i) => `Alterar chave Pix de recebimento (${i.pixKeyType})`,
     handler: async (ctx, { pixKey, pixKeyType }) => {
       await ctx.prisma.company.update({ where: { id: ctx.company.id }, data: { payoutPixKey: pixKey, payoutPixKeyType: pixKeyType } });
+      await s().audit.log({ action: 'BANK_DESTINATION_CHANGED', source: auditSourceFor(ctx.channel, ctx.actor), userId: ctx.user.id, companyId: ctx.company.id, ip: ctx.meta?.ip, metadata: { pixKeyType, last4: pixKey.slice(-4) } });
       await ctx.events.activity.record({
         companyId: ctx.company.id,
         userId: ctx.user.id,
@@ -380,6 +551,16 @@ export function describeResult(action, result) {
       return result.matches.length
         ? `👷 Demanda criada. ${result.matches.length} profissional(is) compatível(is).`
         : '👷 Demanda criada. Avisaremos quando houver profissionais compatíveis.';
+    case 'START_SERVICE':
+      return '🛠 Início do serviço registrado.';
+    case 'REPORT_COMPLETION':
+      return '✅ Conclusão informada. O cliente confirma no app AutoPix.';
+    case 'REQUEST_RELEASE':
+      return '📨 Pedido de liberação enviado ao cliente. A liberação é confirmada no app AutoPix.';
+    case 'START_TRIP':
+      return '🚚 Viagem registrada: a caminho da coleta.';
+    case 'MARK_CARGO_LOADED':
+      return '📦 Carga carregada. Viagem iniciada.';
     case 'GET_OPEN_PIPELINE_VALUE':
       return `💼 ${result.count} negócio(s) em aberto · potencial ${formatRange(result.min, result.max)}.`;
     default:

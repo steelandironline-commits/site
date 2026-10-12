@@ -39,6 +39,17 @@ export async function setupApp(overrides = {}) {
 }
 
 const TABLES = [
+  // AutoPix Pay (FinancialAuditLog blocks UPDATE/DELETE, not TRUNCATE — test-only reset)
+  'FinancialAuditLog',
+  'ReconciliationIssue',
+  'TripEvent',
+  'TransactionDispute',
+  'Payout',
+  'Refund',
+  'PaymentAllocation',
+  'TransactionEvent',
+  'MarketplaceTransaction',
+  'CommissionRule',
   'NotificationDelivery',
   'DomainEvent',
   'ActionLog',

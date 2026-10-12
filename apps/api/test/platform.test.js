@@ -133,7 +133,8 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect(reply).toContain('R$ 1.400,00');
     expect(reply).toContain(payment.reference);
     expect(reply).toContain(payment.pixCopyPaste);
-    expect(reply).toContain(`/app/payments/${payment.id}`);
+    expect(payment.transactionId).toBeTruthy(); // WhatsApp CREATE_PIX → AutoPix Pay SERVICE transaction
+    expect(reply).toContain(`/app/pay/transactions/${payment.transactionId}`);
     expect(reply).not.toMatch(/secret|token/i);
     expect(await ctx.prisma.actionLog.count({ where: { action: 'CREATE_PIX', channel: 'WHATSAPP', status: 'SUCCEEDED' } })).toBe(1);
 
@@ -144,15 +145,17 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect((await r.send(wh.rawBody)).status).toBe(200);
 
     const paid = await ctx.prisma.payment.findUnique({ where: { id: payment.id } });
-    expect(paid).toMatchObject({ status: 'CONFIRMED', protectionStatus: 'HELD' });
-    expect(await ctx.prisma.domainEvent.count({ where: { type: 'PAYMENT_RECEIVED', aggregateId: payment.id } })).toBe(1);
-    expect(await ctx.prisma.domainEvent.count({ where: { type: 'PAYMENT_PROTECTED', aggregateId: payment.id } })).toBe(1);
+    // Mock default capabilities: no protectedFlow → nothing is "held" by AutoPix.
+    expect(paid).toMatchObject({ status: 'CONFIRMED', protectionStatus: 'NONE' });
+    expect(await ctx.prisma.domainEvent.count({ where: { type: 'PAYMENT_RECEIVED', aggregateId: payment.transactionId } })).toBe(1);
+    const tx = await ctx.prisma.marketplaceTransaction.findUnique({ where: { id: payment.transactionId } });
+    expect(tx).toMatchObject({ status: 'PAID', type: 'SERVICE', grossAmount: 140000, commissionAmount: 2100, sellerNetAmount: 137900, settlementStatus: 'PENDING_PROVIDER_CAPABILITY' });
 
     // PAYMENT_RECEIVED appears on the web dashboard.
     const feed = await user.c.get('/api/activity?type=PAYMENT');
     expect(feed.body.items.some((e) => e.title === 'Pix recebido · R$ 1.400,00' && e.metadata.eventType === 'PAYMENT_RECEIVED')).toBe(true);
     const detail = await user.c.get(`/api/payments/${payment.id}`);
-    expect(detail.body.payment).toMatchObject({ kind: 'CHARGE', protectionStatus: 'HELD' });
+    expect(detail.body.payment).toMatchObject({ kind: 'CHARGE', protectionStatus: 'NONE', checkoutState: 'PAID' });
     // Subscription untouched by a customer charge.
     expect((await ctx.prisma.subscription.findUnique({ where: { companyId: user.companyId } })).status).toBe('ACTIVE');
   });
@@ -207,16 +210,12 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     for (const [k, v] of Object.entries(wh.headers)) r.set(k, v);
     await r.send(wh.rawBody);
 
-    // Via WhatsApp channel the engine refuses to execute; it only issues a challenge.
+    // RELEASE_PAYMENT is not even available on the WhatsApp channel.
     const conn = await ctx.prisma.whatsAppConnection.findFirst();
-    const viaWa = await ctx.services.actions.execute({
-      action: 'RELEASE_PAYMENT',
-      input: { id: payment.id },
-      channel: 'WHATSAPP',
-      actor: { userId: conn.userId, whatsappConnectionId: conn.id },
-    });
-    expect(viaWa.status).toBe('CONFIRMATION_REQUIRED');
-    expect((await ctx.prisma.payment.findUnique({ where: { id: payment.id } })).protectionStatus).toBe('HELD');
+    await expect(
+      ctx.services.actions.execute({ action: 'RELEASE_PAYMENT', input: { id: payment.transactionId }, channel: 'WHATSAPP', actor: { userId: conn.userId, whatsappConnectionId: conn.id } }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(await ctx.prisma.sensitiveActionChallenge.count({ where: { action: 'RELEASE_PAYMENT' } })).toBe(0);
 
     // Bank details change is itself sensitive.
     const bank = await user.c.post('/api/actions/CHANGE_BANK_DETAILS', { input: { pixKey: 'financeiro@empresa.example', pixKeyType: 'EMAIL' } });
@@ -230,17 +229,18 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect((await ctx.prisma.company.findUnique({ where: { id: user.companyId } })).payoutPixKey).toBe('financeiro@empresa.example');
     expect((await user.c.post(`/api/challenges/${bank.body.challenge.id}/confirm`, { password: STRONG_PASSWORD })).status).toBe(409);
 
-    // Release from the web: challenge → password → RELEASED.
-    const rel = await user.c.post('/api/actions/RELEASE_PAYMENT', { input: { id: payment.id } });
+    // From the web: challenge first; another user's session can never confirm it.
+    const rel = await user.c.post('/api/actions/RELEASE_PAYMENT', { input: { id: payment.transactionId } });
     expect(rel.status).toBe(202);
     expect(rel.body.challenge.confirmPath).toBe(`/app/confirm/${rel.body.challenge.id}`);
-    const done = await user.c.post(`/api/challenges/${rel.body.challenge.id}/confirm`, { password: STRONG_PASSWORD });
-    expect(done.body.result.payment.protectionStatus).toBe('RELEASED');
-    expect(await ctx.prisma.domainEvent.count({ where: { type: 'PAYMENT_RELEASED' } })).toBe(1);
-
-    // The WhatsApp-requested challenge cannot be confirmed by another user's session.
     const intruder = await createActiveUser(ctx.app);
-    expect((await intruder.c.post(`/api/challenges/${viaWa.challenge.id}/confirm`, { password: STRONG_PASSWORD })).status).toBe(404);
+    expect((await intruder.c.post(`/api/challenges/${rel.body.challenge.id}/confirm`, { password: STRONG_PASSWORD })).status).toBe(404);
+    // Even confirmed, a provider without protected flow refuses: nothing is faked.
+    const done = await user.c.post(`/api/challenges/${rel.body.challenge.id}/confirm`, { password: STRONG_PASSWORD });
+    expect(done.status).toBe(409);
+    expect(done.body.error.code).toBe('PROTECTED_FLOW_NOT_SUPPORTED');
+    expect(await ctx.prisma.payout.count()).toBe(0);
+    expect((await ctx.prisma.marketplaceTransaction.findUnique({ where: { id: payment.transactionId } })).status).toBe('PAID');
   });
 
   // ------------------------------------------------------------------

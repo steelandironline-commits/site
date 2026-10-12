@@ -1,4 +1,4 @@
-import { PaymentProvider, PaymentProviderError, WebhookSignatureError, header } from './PaymentProvider.js';
+import { PaymentProvider, PaymentProviderError, WebhookSignatureError, header, NO_CAPABILITIES } from './PaymentProvider.js';
 import { safeEqual } from '../security/tokens.js';
 
 const STATUS_MAP = {
@@ -96,6 +96,7 @@ export class AsaasPaymentProvider extends PaymentProvider {
     return {
       status: AsaasPaymentProvider.normalizeStatus(data.status),
       paidAt: data.paymentDate ? new Date(data.paymentDate) : null,
+      amountCents: data.value != null ? Math.round(Number(data.value) * 100) : null,
       raw: { status: data.status },
     };
   }
@@ -118,24 +119,25 @@ export class AsaasPaymentProvider extends PaymentProvider {
     ];
   }
 
-  /** Pix transfer to the merchant key (POST /transfers). */
-  async releaseFunds({ amountCents, pixKey, pixKeyType, description }) {
-    const data = await this.#request('/transfers', {
-      method: 'POST',
-      body: {
-        value: Number((amountCents / 100).toFixed(2)),
-        operationType: 'PIX',
-        pixAddressKey: pixKey,
-        pixAddressKeyType: pixKeyType || 'EVP',
-        description: description || 'AutoPix — liberação de pagamento protegido',
-      },
-    });
-    return { transferId: String(data.id) };
+  getCapabilities() {
+    return {
+      capabilities: { ...NO_CAPABILITIES, pix: true, pixWebhook: true, paymentStatus: true, refund: true, partialRefund: true },
+      // Transfers from the AutoPix balance would be an unofficial escrow — not used.
+      reasons: { split: 'Split Asaas não integrado', payout: 'Repasse a partir do saldo da plataforma não é permitido', protectedFlow: 'Não habilitado' },
+    };
   }
 
-  async refundPayment(providerPaymentId) {
-    await this.#request(`/payments/${encodeURIComponent(providerPaymentId)}/refund`, { method: 'POST', body: {} });
-    return { refunded: true };
+  async refundPayment(providerPaymentId, { amountCents, reason } = {}) {
+    const data = await this.#request(`/payments/${encodeURIComponent(providerPaymentId)}/refund`, {
+      method: 'POST',
+      body: { ...(amountCents ? { value: Number((amountCents / 100).toFixed(2)) } : {}), description: reason || 'Reembolso AutoPix' },
+    });
+    return { providerRefundId: String(data.id || providerPaymentId), status: 'PROCESSING' };
+  }
+
+  async getRefundStatus(providerPaymentId) {
+    const { status } = await this.getPaymentStatus(providerPaymentId);
+    return { status: status === 'REFUNDED' ? 'COMPLETED' : 'PROCESSING' };
   }
 
   async cancelSubscription(subscription) {

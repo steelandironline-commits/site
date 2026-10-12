@@ -1,4 +1,4 @@
-import { PaymentProvider, PaymentProviderError, WebhookSignatureError, header } from './PaymentProvider.js';
+import { PaymentProvider, PaymentProviderError, WebhookSignatureError, header, NO_CAPABILITIES } from './PaymentProvider.js';
 import { hmacHex, safeEqual } from '../security/tokens.js';
 
 const STATUS_MAP = {
@@ -98,17 +98,30 @@ export class MercadoPagoPaymentProvider extends PaymentProvider {
     return {
       status: MercadoPagoPaymentProvider.normalizeStatus(data.status),
       paidAt: data.date_approved ? new Date(data.date_approved) : null,
+      amountCents: data.transaction_amount != null ? Math.round(Number(data.transaction_amount) * 100) : null,
       raw: { status: data.status, status_detail: data.status_detail },
     };
   }
 
-  async refundPayment(providerPaymentId) {
-    await this.#request(`/v1/payments/${encodeURIComponent(providerPaymentId)}/refunds`, {
+  getCapabilities() {
+    return {
+      capabilities: { ...NO_CAPABILITIES, pix: true, pixWebhook: true, paymentStatus: true, refund: true, partialRefund: true },
+      reasons: { split: 'Split Mercado Pago (marketplace) não integrado', payout: 'Não suportado', protectedFlow: 'Não habilitado' },
+    };
+  }
+
+  async refundPayment(providerPaymentId, { amountCents, idempotencyKey } = {}) {
+    const data = await this.#request(`/v1/payments/${encodeURIComponent(providerPaymentId)}/refunds`, {
       method: 'POST',
-      body: {},
-      idempotencyKey: `refund-${providerPaymentId}`,
+      body: amountCents ? { amount: Number((amountCents / 100).toFixed(2)) } : {},
+      idempotencyKey: idempotencyKey || `refund-${providerPaymentId}`,
     });
-    return { refunded: true };
+    return { providerRefundId: String(data.id), status: data.status === 'approved' ? 'COMPLETED' : 'PROCESSING' };
+  }
+
+  async getRefundStatus(providerPaymentId) {
+    const { status } = await this.getPaymentStatus(providerPaymentId);
+    return { status: status === 'REFUNDED' ? 'COMPLETED' : 'PROCESSING' };
   }
 
   verifySignature({ headers, dataId }) {

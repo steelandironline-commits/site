@@ -3,12 +3,14 @@ import express from 'express';
 import { logger } from '@autopix/core';
 
 /**
- * POST /api/webhooks/payment/:provider
+ * POST /api/webhooks/payment/:provider  (e.g. /payment/banco-do-brasil)
  * Mounted with a raw body parser so signatures are checked on exact bytes.
+ * Idempotent: (provider, providerEventId) is unique; the body is never logged.
  */
 export function webhookRoutes({ payments }) {
   const r = Router();
-  r.post('/payment/:provider', express.raw({ type: '*/*', limit: '256kb' }), async (req, res) => {
+  // BACEN Pix webhooks are delivered to `<registered url>/pix` → same handler.
+  r.post(['/payment/:provider', '/payment/:provider/pix'], express.raw({ type: '*/*', limit: '256kb' }), async (req, res) => {
     const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
     let body = {};
     try {
