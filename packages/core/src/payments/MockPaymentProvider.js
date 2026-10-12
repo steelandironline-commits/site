@@ -46,6 +46,16 @@ export class MockPaymentProvider extends PaymentProvider {
     return { status: this.state.get(providerPaymentId)?.status ?? 'PENDING', paidAt: null };
   }
 
+  async releaseFunds({ amountCents, pixKey }) {
+    if (!pixKey) throw new Error('pixKey required');
+    return { transferId: `mock_tr_${generateToken(8)}`, amountCents };
+  }
+
+  async refundPayment(providerPaymentId) {
+    this.state.set(providerPaymentId, { status: 'REFUNDED' });
+    return { refunded: true };
+  }
+
   sign(rawBody) {
     return hmacHex(this.webhookSecret, rawBody);
   }

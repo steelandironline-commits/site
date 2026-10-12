@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { conflict } from '@autopix/core';
 import { parse } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/session.js';
+import { runAction } from '../actor.js';
 
-export function agentRoutes({ agents, queue, prisma, config, activity }) {
+export function agentRoutes({ agents, prisma, config, actions }) {
   const r = Router();
   r.use(requireAuth);
 
@@ -14,7 +14,8 @@ export function agentRoutes({ agents, queue, prisma, config, activity }) {
       orderBy: { createdAt: 'desc' },
       select: { id: true, status: true, trigger: true, runAt: true, startedAt: true, finishedAt: true, companiesAnalyzed: true, opportunitiesCreated: true },
     });
-    res.json({ items: await agents.list(req.user.companyId), latestJob, intervalMinutes: config.search.intervalMinutes });
+    const company = await prisma.company.findUnique({ where: { id: req.user.companyId }, select: { agentsPaused: true } });
+    res.json({ items: await agents.list(req.user.companyId), latestJob, intervalMinutes: config.search.intervalMinutes, paused: company.agentsPaused });
   });
 
   r.get('/runs', async (req, res) => {
@@ -28,22 +29,15 @@ export function agentRoutes({ agents, queue, prisma, config, activity }) {
     res.json({ items: await agents.runs(req.user.companyId, q) });
   });
 
-  /** "Buscar agora": queue an immediate search (never runs in the request). */
+  /** "Buscar agora" → START_AGENT (queues a job; never runs in the request). */
   r.post('/run', async (req, res) => {
-    const sub = await prisma.subscription.findUnique({ where: { companyId: req.user.companyId } });
-    if (sub?.status !== 'ACTIVE') throw conflict('Sua assinatura não está ativa.');
-    const { job, created } = await queue.enqueue(req.user.companyId, { trigger: 'MANUAL', isDemo: config.demoMode });
-    if (created) {
-      await activity.record({
-        companyId: req.user.companyId,
-        userId: req.user.id,
-        type: 'SYSTEM',
-        title: 'Busca manual solicitada',
-        description: 'Os agentes vão iniciar um novo ciclo em instantes.',
-        source: 'user',
-      });
-    }
-    res.status(created ? 201 : 200).json({ job: { id: job.id, status: job.status }, created });
+    const out = await runAction(actions, req, 'START_AGENT', {});
+    res.status(out.result.created ? 201 : 200).json(out.result);
+  });
+
+  r.post('/pause', async (req, res) => {
+    const out = await runAction(actions, req, 'PAUSE_AGENT', {});
+    res.json(out.result);
   });
 
   return r;

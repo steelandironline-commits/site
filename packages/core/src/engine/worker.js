@@ -5,7 +5,7 @@ import { JobQueue } from './jobQueue.js';
 import { Scheduler } from './scheduler.js';
 import { AgentOrchestrator } from './AgentOrchestrator.js';
 import { ensureAgents } from '../services/agentRegistry.js';
-import { ActivityService } from '../services/activityService.js';
+import { buildPlatform } from '../platform.js';
 
 /**
  * Background worker loop. Runs in its own Railway service (apps/worker) or
@@ -16,8 +16,9 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, concurrency = 
   const config = getConfig();
   const queue = new JobQueue({ prisma });
   const scheduler = new Scheduler({ prisma, config });
-  const orchestrator = new AgentOrchestrator({ prisma, config });
-  const activity = new ActivityService({ prisma });
+  const platform = buildPlatform({ prisma, config });
+  const events = platform.events;
+  const orchestrator = new AgentOrchestrator({ prisma, config, events });
 
   let stopping = false;
   let running = 0;
@@ -41,16 +42,22 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, concurrency = 
     } catch (err) {
       logger.error('job failed', { jobId: job.id, err });
       await queue.fail(job, err).catch(() => {});
-      await activity
-        .record({
+      await events
+        .publish({
+          type: 'AGENT_ERROR',
           companyId: job.companyId,
-          jobId: job.id,
-          type: 'AGENT',
-          title: 'Falha em um ciclo de busca',
-          description: 'O ciclo será repetido automaticamente.',
-          source: 'AgentOrchestrator',
-          severity: 'ERROR',
+          aggregateType: 'searchJob',
+          aggregateId: job.id,
           isDemo: config.demoMode,
+          payload: { attempt: job.attempts },
+          activity: {
+            jobId: job.id,
+            type: 'AGENT',
+            title: 'Falha em um ciclo de busca',
+            description: 'O ciclo será repetido automaticamente.',
+            source: 'AgentOrchestrator',
+            severity: 'ERROR',
+          },
         })
         .catch(() => {});
     } finally {
@@ -72,6 +79,16 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, concurrency = 
     if (!stopping) timers.push(setTimeout(pollLoop, pollMs));
   }
 
+  async function eventLoop() {
+    if (stopping) return;
+    try {
+      await events.dispatchPending();
+    } catch (err) {
+      logger.error('event dispatch failed', { err });
+    }
+    if (!stopping) timers.push(setTimeout(eventLoop, 2000));
+  }
+
   async function scheduleLoop() {
     if (stopping) return;
     try {
@@ -88,6 +105,7 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, concurrency = 
     logger.info('worker started', { demoMode: config.demoMode, intervalMinutes: config.search.intervalMinutes });
     scheduleLoop();
     pollLoop();
+    eventLoop();
   })().catch((err) => logger.error('worker boot failed', { err }));
 
   return {

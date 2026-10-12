@@ -1,20 +1,20 @@
 import { Router } from 'express';
-import { companyUpdateSchema } from '@autopix/shared';
-import { parse } from '../middleware/validate.js';
-import { requireAuth, requireRole } from '../middleware/session.js';
+import { requireAuth } from '../middleware/session.js';
+import { runAction } from '../actor.js';
 
-export function companyRoutes({ companies }) {
+export function companyRoutes({ companies, actions }) {
   const r = Router();
   r.use(requireAuth);
 
   r.get('/', async (req, res) => {
-    res.json({ company: await companies.get(req.user.companyId) });
+    const { payoutPixKey, ...company } = await companies.get(req.user.companyId);
+    res.json({ company: { ...company, payoutPixKeyLast4: payoutPixKey ? payoutPixKey.slice(-4) : null } });
   });
 
-  r.put('/', requireRole('OWNER', 'ADMIN'), async (req, res) => {
-    const data = parse(companyUpdateSchema, req.body);
-    const result = await companies.update(req.user.companyId, data, { userId: req.user.id });
-    res.json(result);
+  r.put('/', async (req, res) => {
+    const { result } = await runAction(actions, req, 'UPDATE_COMPANY_PROFILE', req.body);
+    const { payoutPixKey, ...company } = result.company;
+    res.json({ ...result, company: { ...company, payoutPixKeyLast4: payoutPixKey ? payoutPixKey.slice(-4) : null } });
   });
 
   return r;

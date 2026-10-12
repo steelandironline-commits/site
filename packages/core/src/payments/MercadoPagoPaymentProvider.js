@@ -102,6 +102,15 @@ export class MercadoPagoPaymentProvider extends PaymentProvider {
     };
   }
 
+  async refundPayment(providerPaymentId) {
+    await this.#request(`/v1/payments/${encodeURIComponent(providerPaymentId)}/refunds`, {
+      method: 'POST',
+      body: {},
+      idempotencyKey: `refund-${providerPaymentId}`,
+    });
+    return { refunded: true };
+  }
+
   verifySignature({ headers, dataId }) {
     const signature = header(headers, 'x-signature');
     const requestId = header(headers, 'x-request-id') || '';

@@ -1,0 +1,130 @@
+import { DOMAIN_EVENTS, deepLinks, formatCents } from '@autopix/shared';
+import { getPrisma } from '../db.js';
+import { getConfig } from '../config.js';
+import { logger } from '../logger.js';
+import { PreferenceService } from './PreferenceService.js';
+
+/** Event → human message + deep link (no secrets, no permanent tokens). */
+export function composeNotification(event, entity) {
+  const meta = DOMAIN_EVENTS[event.type] || {};
+  const p = event.payload || {};
+  switch (event.type) {
+    case 'OPPORTUNITY_CREATED':
+    case 'OPPORTUNITY_HIGH_PRIORITY':
+      return {
+        title: meta.title,
+        body: entity ? `${entity.targetCompanyName} · match ${entity.score}%` : 'Nova oportunidade no painel.',
+        url: deepLinks.opportunity(event.aggregateId),
+      };
+    case 'FREIGHT_MATCH_CREATED':
+    case 'RETURN_LOAD_FOUND':
+    case 'DRIVER_ARRIVED':
+      return { title: meta.title, body: entity ? `${entity.origin} → ${entity.destination}` : '', url: deepLinks.freightMatch(event.aggregateId) };
+    case 'WORKFORCE_MATCH_CREATED':
+      return { title: meta.title, body: entity ? `${entity.professionalName} · ${entity.role}` : '', url: deepLinks.workforceMatch(event.aggregateId) };
+    case 'SENSITIVE_ACTION_REQUESTED':
+      return { title: meta.title, body: p.summary || 'Confirme a ação no app.', url: deepLinks.challenge(event.aggregateId) };
+    default:
+      if (event.aggregateType === 'payment') {
+        return {
+          title: meta.title,
+          body: [p.amountCents ? formatCents(p.amountCents) : null, p.reference].filter(Boolean).join(' · '),
+          url: deepLinks.payment(event.aggregateId),
+        };
+      }
+      return { title: meta.title || event.type, body: '', url: '/app/activity' };
+  }
+}
+
+/**
+ * NotificationRouter — EventEngine handler. For every non-silent event it
+ * fans out to the company's users on each channel they enabled. Deliveries
+ * are unique per (event, user, channel), so retries never double-send.
+ * IN_APP is the activity feed itself (written when the event is published).
+ */
+export class NotificationRouter {
+  constructor({ prisma = getPrisma(), config = getConfig(), preferences, whatsapp, email, push } = {}) {
+    this.prisma = prisma;
+    this.config = config;
+    this.preferences = preferences ?? new PreferenceService({ prisma });
+    this.whatsapp = whatsapp; // WhatsAppNotifier
+    this.email = email; // EmailService
+    this.push = push; // PushService
+  }
+
+  async #entity(event) {
+    const id = event.aggregateId;
+    if (!id) return null;
+    switch (event.aggregateType) {
+      case 'opportunity':
+        return this.prisma.opportunity.findUnique({ where: { id } });
+      case 'freightMatch':
+        return this.prisma.freightMatch.findUnique({ where: { id } });
+      case 'workforceMatch':
+        return this.prisma.workforceMatch.findUnique({ where: { id } });
+      case 'payment':
+        return this.prisma.payment.findUnique({ where: { id } });
+      default:
+        return null;
+    }
+  }
+
+  async handle(event) {
+    const meta = DOMAIN_EVENTS[event.type];
+    if (!meta || meta.silent || !event.companyId) return;
+    // A subscription's own payment events concern the account, not a customer charge.
+    if (event.type === 'PAYMENT_CREATED' && event.payload?.kind === 'SUBSCRIPTION') return;
+    // High-priority supersedes the generic "created" notification on push/WhatsApp.
+    const supersededByHighPriority = event.type === 'OPPORTUNITY_CREATED' && event.payload?.priority === 'HIGH';
+
+    const users = await this.prisma.user.findMany({
+      where: { companyId: event.companyId, status: 'ACTIVE', ...(event.type === 'SENSITIVE_ACTION_REQUESTED' ? { id: event.userId } : {}) },
+      include: { whatsappConnection: true },
+    });
+    const entity = await this.#entity(event);
+    const message = composeNotification(event, entity);
+
+    for (const user of users) {
+      for (const channel of ['WHATSAPP', 'PUSH', 'EMAIL']) {
+        if (supersededByHighPriority && channel !== 'EMAIL') continue;
+        if (!(await this.preferences.isEnabled(user.id, channel, meta.category))) continue;
+        const created = await this.prisma.notificationDelivery.createMany({
+          data: [{ domainEventId: event.id, userId: user.id, channel, status: 'QUEUED' }],
+          skipDuplicates: true,
+        });
+        if (!created.count) continue; // already delivered/attempted
+        let status = 'SKIPPED';
+        let error = null;
+        try {
+          if (channel === 'WHATSAPP') status = await this.#whatsapp(user, event, entity, message);
+          if (channel === 'PUSH') status = this.push ? await this.push.sendToUser(user.id, { ...message, tag: event.type }) : 'SKIPPED';
+          if (channel === 'EMAIL') status = await this.#email(user, message);
+        } catch (err) {
+          status = 'FAILED';
+          error = String(err.message || err).slice(0, 500);
+          logger.warn('notification delivery failed', { channel, eventId: event.id, err });
+        }
+        await this.prisma.notificationDelivery.update({
+          where: { domainEventId_userId_channel: { domainEventId: event.id, userId: user.id, channel } },
+          data: { status, error },
+        });
+      }
+    }
+  }
+
+  async #whatsapp(user, event, entity, message) {
+    const conn = user.whatsappConnection;
+    if (!this.whatsapp || !conn || conn.status !== 'VERIFIED') return 'SKIPPED';
+    return this.whatsapp.notify(conn, event, entity, message);
+  }
+
+  async #email(user, message) {
+    if (!this.email || this.config.email.provider !== 'resend') return 'SKIPPED';
+    const ok = await this.email.send({
+      to: user.email,
+      subject: `AutoPix — ${message.title}`,
+      text: `${message.title}\n${message.body}\n\n${this.config.appUrl}${message.url}`,
+    });
+    return ok ? 'SENT' : 'FAILED';
+  }
+}

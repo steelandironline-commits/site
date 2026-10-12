@@ -47,6 +47,107 @@ enum PaymentStatus {
   CANCELED
 }
 
+enum PaymentKind {
+  SUBSCRIPTION
+  CHARGE
+}
+
+enum ProtectionStatus {
+  NONE
+  HELD
+  RELEASE_REQUESTED
+  RELEASED
+  DISPUTED
+  REFUNDED
+}
+
+enum ActionChannel {
+  WEB
+  WHATSAPP
+  API
+  SYSTEM
+}
+
+enum ActionStatus {
+  SUCCEEDED
+  FAILED
+  REJECTED
+  CONFIRMATION_REQUIRED
+}
+
+enum ChallengeStatus {
+  PENDING
+  CONFIRMED
+  EXECUTED
+  FAILED
+  EXPIRED
+  CANCELED
+}
+
+enum WhatsAppConnectionStatus {
+  PENDING
+  VERIFIED
+  REVOKED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+  RECEIVED
+}
+
+enum NotificationChannel {
+  IN_APP
+  WHATSAPP
+  EMAIL
+  PUSH
+}
+
+enum NotificationCategory {
+  OPPORTUNITIES
+  FREIGHT
+  WORKFORCE
+  PAYMENTS
+  SYSTEM
+  AGENTS
+}
+
+enum FreightRequestStatus {
+  OPEN
+  CLOSED
+  CANCELED
+}
+
+enum FreightMatchStatus {
+  NEW
+  ACCEPTED
+  REJECTED
+  DRIVER_ARRIVED
+  COMPLETED
+  EXPIRED
+}
+
+enum WorkforceDemandStatus {
+  OPEN
+  FILLED
+  CANCELED
+}
+
+enum WorkforceMatchStatus {
+  SUGGESTED
+  INVITED
+  ACCEPTED
+  DECLINED
+  COMPLETED
+}
+
 enum OpportunityStatus {
   NEW
   RESEARCHING
@@ -128,20 +229,24 @@ enum SourceType {
 }
 
 model User {
-  id                String       @id @default(cuid())
-  email             String       @unique
+  id                String     @id @default(cuid())
+  email             String     @unique
   name              String
   passwordHash      String?
-  status            UserStatus   @default(PENDING_PAYMENT)
-  role              UserRole     @default(OWNER)
+  status            UserStatus @default(PENDING_PAYMENT)
+  role              UserRole   @default(OWNER)
   companyId         String
-  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company           Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   lastLoginAt       DateTime?
   passwordChangedAt DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   sessions            Session[]
+  whatsappConnection  WhatsAppConnection?
+  notificationPrefs   NotificationPreference[]
+  pushSubscriptions   PushSubscription[]
+  challenges          SensitiveActionChallenge[]
   activationTokens    ActivationToken[]
   passwordResetTokens PasswordResetToken[]
   activityEvents      ActivityEvent[]
@@ -185,20 +290,29 @@ model Company {
   preferredIndustries   String[]  @default([])
   excludedIndustries    String[]  @default([])
   keywords              String[]  @default([])
+  agentsPaused          Boolean   @default(false)
+  payoutPixKey          String?
+  payoutPixKeyType      String?
   onboardingStep        Int       @default(0)
   onboardingCompletedAt DateTime?
   searchConfigVersion   Int       @default(1)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  users          User[]
-  subscription   Subscription?
-  payments       Payment[]
-  opportunities  Opportunity[]
-  activityEvents ActivityEvent[]
-  agentRuns      AgentRun[]
-  signals        CompanySignal[]
-  searchJobs     SearchJob[]
+  users            User[]
+  subscription     Subscription?
+  payments         Payment[]
+  opportunities    Opportunity[]
+  activityEvents   ActivityEvent[]
+  agentRuns        AgentRun[]
+  signals          CompanySignal[]
+  searchJobs       SearchJob[]
+  domainEvents     DomainEvent[]
+  actionLogs       ActionLog[]
+  freightRequests  FreightRequest[]
+  freightMatches   FreightMatch[]
+  workforceDemands WorkforceDemand[]
+  workforceMatches WorkforceMatch[]
 
   @@index([cnpj])
 }
@@ -226,25 +340,38 @@ model Subscription {
 }
 
 model Payment {
-  id                String        @id @default(cuid())
-  subscriptionId    String
-  subscription      Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id                String           @id @default(cuid())
+  subscriptionId    String?
+  subscription      Subscription?    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  kind              PaymentKind      @default(SUBSCRIPTION)
+  reference         String?          @unique
+  description       String?
+  payerName         String?
+  payerDocument     String?
+  payerEmail        String?
+  protectionStatus  ProtectionStatus @default(NONE)
+  releasedAt        DateTime?
+  refundedAt        DateTime?
+  disputeReason     String?
+  relatedType       String?
+  relatedId         String?
+  createdByUserId   String?
   companyId         String
-  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company           Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   provider          String
   providerPaymentId String?
   amountCents       Int
-  currency          String        @default("BRL")
-  method            String        @default("PIX")
-  status            PaymentStatus @default(PENDING)
+  currency          String           @default("BRL")
+  method            String           @default("PIX")
+  status            PaymentStatus    @default(PENDING)
   pixQrCodeBase64   String?
   pixCopyPaste      String?
   expiresAt         DateTime?
   paidAt            DateTime?
-  idempotencyKey    String        @unique
+  idempotencyKey    String           @unique
   metadata          Json?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   events PaymentEvent[]
 
@@ -467,4 +594,245 @@ model SearchJob {
 
   @@index([status, runAt])
   @@index([companyId, createdAt])
+}
+
+// ===================================================================
+// Platform layer: domain events, actions, challenges, channels
+// ===================================================================
+
+model DomainEvent {
+  id            String    @id @default(cuid())
+  companyId     String?
+  company       Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId        String?
+  type          String
+  aggregateType String?
+  aggregateId   String?
+  payload       Json?
+  isDemo        Boolean   @default(false)
+  attempts      Int       @default(0)
+  lockedAt      DateTime?
+  processedAt   DateTime?
+  error         String?
+  createdAt     DateTime  @default(now())
+
+  deliveries NotificationDelivery[]
+
+  @@index([processedAt, createdAt])
+  @@index([companyId, createdAt])
+  @@index([type])
+}
+
+model ActionLog {
+  id          String        @id @default(cuid())
+  action      String
+  companyId   String?
+  company     Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actorUserId String?
+  channel     ActionChannel
+  status      ActionStatus
+  input       Json?
+  result      Json?
+  error       String?
+  challengeId String?
+  ipAddress   String?
+  durationMs  Int?
+  createdAt   DateTime      @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([action])
+}
+
+model SensitiveActionChallenge {
+  id                 String          @id @default(cuid())
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId          String
+  action             String
+  input              Json
+  summary            String
+  requestedVia       ActionChannel
+  status             ChallengeStatus @default(PENDING)
+  mechanism          String          @default("WEB_PASSWORD")
+  attempts           Int             @default(0)
+  expiresAt          DateTime
+  confirmedAt        DateTime?
+  confirmedSessionId String?
+  result             Json?
+  createdAt          DateTime        @default(now())
+
+  @@index([userId, status])
+}
+
+model WhatsAppConnection {
+  id                    String                   @id @default(cuid())
+  userId                String                   @unique
+  user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber           String                   @unique
+  provider              String
+  providerContactId     String?
+  verifiedAt            DateTime?
+  status                WhatsAppConnectionStatus @default(PENDING)
+  verificationCodeHash  String?
+  verificationExpiresAt DateTime?
+  verificationAttempts  Int                      @default(0)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  messages        WhatsAppMessage[]
+  pendingCommands WhatsAppPendingCommand[]
+}
+
+model WhatsAppMessage {
+  id                String              @id @default(cuid())
+  connectionId      String?
+  connection        WhatsAppConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  direction         MessageDirection
+  phoneNumber       String
+  kind              String
+  body              Json?
+  providerMessageId String?             @unique
+  status            MessageStatus
+  error             String?
+  domainEventId     String?
+  createdAt         DateTime            @default(now())
+
+  @@index([connectionId, createdAt])
+}
+
+model WhatsAppPendingCommand {
+  id           String             @id @default(cuid())
+  connectionId String
+  connection   WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  intent       String
+  params       Json
+  summary      String
+  status       String             @default("PENDING")
+  expiresAt    DateTime
+  createdAt    DateTime           @default(now())
+
+  @@index([connectionId, status])
+}
+
+model NotificationPreference {
+  id        String               @id @default(cuid())
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   NotificationChannel
+  category  NotificationCategory
+  enabled   Boolean
+  updatedAt DateTime             @updatedAt
+
+  @@unique([userId, channel, category])
+}
+
+model NotificationDelivery {
+  id            String              @id @default(cuid())
+  domainEventId String
+  domainEvent   DomainEvent         @relation(fields: [domainEventId], references: [id], onDelete: Cascade)
+  userId        String
+  channel       NotificationChannel
+  status        MessageStatus
+  error         String?
+  createdAt     DateTime            @default(now())
+
+  @@unique([domainEventId, userId, channel])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ----------------------------------------------------------- freight
+
+model FreightRequest {
+  id          String               @id @default(cuid())
+  companyId   String
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  origin      String
+  destination String
+  date        DateTime?
+  cargo       String?
+  status      FreightRequestStatus @default(OPEN)
+  isDemo      Boolean              @default(false)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  matches FreightMatch[]
+
+  @@index([companyId, createdAt])
+}
+
+model FreightMatch {
+  id           String             @id @default(cuid())
+  companyId    String
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requestId    String?
+  request      FreightRequest?    @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  origin       String
+  destination  String
+  pickupDate   DateTime?
+  cargo        String?
+  weightKg     Int?
+  price        Int?
+  isReturnLoad Boolean            @default(false)
+  carrierName  String?
+  source       String
+  status       FreightMatchStatus @default(NEW)
+  isDemo       Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([companyId, status])
+}
+
+// --------------------------------------------------------- workforce
+
+model WorkforceDemand {
+  id        String                @id @default(cuid())
+  companyId String
+  company   Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role      String
+  quantity  Int
+  startDate DateTime?
+  location  String?
+  notes     String?
+  status    WorkforceDemandStatus @default(OPEN)
+  isDemo    Boolean               @default(false)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  matches WorkforceMatch[]
+
+  @@index([companyId, createdAt])
+}
+
+model WorkforceMatch {
+  id               String               @id @default(cuid())
+  companyId        String
+  company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  demandId         String
+  demand           WorkforceDemand      @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  professionalName String
+  role             String
+  city             String?
+  experienceYears  Int?
+  rating           Float?
+  source           String
+  status           WorkforceMatchStatus @default(SUGGESTED)
+  isDemo           Boolean              @default(false)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([companyId, status])
+  @@index([demandId])
 }

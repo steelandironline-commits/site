@@ -2,8 +2,9 @@ import { Router } from 'express';
 import { opportunityQuerySchema, opportunityUpdateSchema } from '@autopix/shared';
 import { parse } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/session.js';
+import { runAction } from '../actor.js';
 
-export function opportunityRoutes({ opportunities }) {
+export function opportunityRoutes({ opportunities, actions }) {
   const r = Router();
   r.use(requireAuth);
 
@@ -17,9 +18,14 @@ export function opportunityRoutes({ opportunities }) {
   });
 
   r.patch('/:id', async (req, res) => {
+    // Compatibility route: each field maps to an ActionEngine action.
     const data = parse(opportunityUpdateSchema, req.body);
-    const opportunity = await opportunities.update(req.user.companyId, req.params.id, data, { userId: req.user.id });
-    res.json({ opportunity });
+    const id = req.params.id;
+    let out;
+    if (data.status) out = await runAction(actions, req, 'SET_OPPORTUNITY_STATUS', { id, status: data.status });
+    if (data.notes !== undefined) out = await runAction(actions, req, 'UPDATE_OPPORTUNITY_NOTES', { id, notes: data.notes });
+    if (data.generateApproach) out = await runAction(actions, req, 'GENERATE_APPROACH', { id });
+    res.json({ opportunity: out?.result?.opportunity ?? (await opportunities.get(req.user.companyId, id)) });
   });
 
   return r;

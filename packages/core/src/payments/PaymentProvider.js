@@ -47,6 +47,21 @@ export class PaymentProvider {
     throw new Error(`${this.name}.handleWebhook not implemented`);
   }
 
+  /**
+   * Pay out held funds to the merchant's Pix key (protected payments).
+   * @returns {Promise<{transferId:string}>}
+   */
+  // eslint-disable-next-line no-unused-vars
+  async releaseFunds({ amountCents, pixKey, pixKeyType, description }) {
+    throw new PaymentProviderError(`${this.name} não suporta liberação de fundos`, { provider: this.name });
+  }
+
+  /** Refund a confirmed charge. */
+  // eslint-disable-next-line no-unused-vars
+  async refundPayment(providerPaymentId) {
+    throw new PaymentProviderError(`${this.name} não suporta estorno`, { provider: this.name });
+  }
+
   /** One-off Pix has nothing to cancel at the vendor; recurring adapters override. */
   // eslint-disable-next-line no-unused-vars
   async cancelSubscription(subscription) {

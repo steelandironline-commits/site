@@ -4,22 +4,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import {
-  getConfig,
-  getPrisma,
-  ROOT_DIR,
-  EmailService,
-  ActivityService,
-  AuthService,
-  CompanyService,
-  OnboardingService,
-  OpportunityService,
-  PaymentService,
-  SubscriptionService,
-  DashboardService,
-  AgentService,
-  JobQueue,
-} from '@autopix/core';
+import { getConfig, getPrisma, ROOT_DIR, buildPlatform } from '@autopix/core';
 import { buildLimiters, csrfGuard } from './middleware/security.js';
 import { loadSession } from './middleware/session.js';
 import { errorHandler, notFoundApi } from './middleware/errors.js';
@@ -35,24 +20,14 @@ import { paymentRoutes } from './routes/payments.js';
 import { webhookRoutes } from './routes/webhooks.js';
 import { subscriptionRoutes } from './routes/subscription.js';
 import { systemRoutes } from './routes/system.js';
+import { actionRoutes } from './routes/actions.js';
+import { whatsappRoutes, whatsappWebhookRoutes } from './routes/whatsapp.js';
+import { notificationRoutes } from './routes/notifications.js';
+import { freightRoutes, workforceRoutes, eventRoutes } from './routes/domains.js';
 
-export function buildServices({ config = getConfig(), prisma = getPrisma(), email } = {}) {
-  email ??= new EmailService({ config });
-  return {
-    config,
-    prisma,
-    email,
-    activity: new ActivityService({ prisma }),
-    auth: new AuthService({ prisma, config, email }),
-    companies: new CompanyService({ prisma, config }),
-    onboarding: new OnboardingService({ prisma, config }),
-    opportunities: new OpportunityService({ prisma }),
-    payments: new PaymentService({ prisma, config, email }),
-    subscriptions: new SubscriptionService({ prisma, config }),
-    dashboard: new DashboardService({ prisma }),
-    agents: new AgentService({ prisma, config }),
-    queue: new JobQueue({ prisma }),
-  };
+/** All business services come from the shared platform composition root. */
+export function buildServices(opts = {}) {
+  return buildPlatform(opts);
 }
 
 export function createApp({ services = buildServices(), hub = null, serveWeb = true } = {}) {
@@ -90,12 +65,13 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
     cors({
       origin: (origin, cb) => cb(null, !origin || origin === new URL(config.appUrl).origin),
       credentials: true,
-      allowedHeaders: ['Content-Type', 'X-Requested-With', 'Last-Event-ID'],
+      allowedHeaders: ['Content-Type', 'X-Requested-With', 'Last-Event-ID', 'Authorization'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     }),
   );
 
   // Webhooks need the raw body → mounted before the JSON parser.
+  app.use('/api/webhooks', whatsappWebhookRoutes(ctx));
   app.use('/api/webhooks', webhookRoutes(ctx));
 
   app.use(express.json({ limit: '100kb' }));
@@ -119,6 +95,12 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/dashboard', dashboardRoutes(ctx));
   app.use('/api/payments', paymentRoutes(ctx));
   app.use('/api/subscription', subscriptionRoutes(ctx));
+  app.use('/api', actionRoutes(ctx));
+  app.use('/api/whatsapp', whatsappRoutes(ctx));
+  app.use('/api/notifications', notificationRoutes(ctx));
+  app.use('/api/freight', freightRoutes(ctx));
+  app.use('/api/workforce', workforceRoutes(ctx));
+  app.use('/api/events', eventRoutes(ctx));
   app.use('/api', notFoundApi);
 
   // Production: serve the built SPA from the same origin.

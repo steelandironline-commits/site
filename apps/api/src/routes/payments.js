@@ -1,21 +1,22 @@
 import { Router } from 'express';
-import { notFound } from '@autopix/core';
+import { z } from 'zod';
 import { requireAuth, requireOnboardingSession } from '../middleware/session.js';
+import { runAction } from '../actor.js';
+import { parse } from '../middleware/validate.js';
 
-export function paymentRoutes({ payments, prisma, limiters }) {
+export function paymentRoutes({ payments, actions, limiters }) {
   const r = Router();
   r.use(limiters.payments);
 
   /** Create (or reuse) the Pix charge for the session's company. */
   r.post('/pix', requireOnboardingSession, async (req, res) => {
-    const company = await prisma.company.findUnique({ where: { id: req.user.companyId } });
-    if (!company) throw notFound('Empresa não encontrada.');
-    const payment = await payments.createPixCharge({ user: req.user, company });
-    res.status(201).json({ payment });
+    const { result } = await runAction(actions, req, 'CREATE_SUBSCRIPTION_PIX', {});
+    res.status(201).json(result);
   });
 
   r.get('/', requireAuth, async (req, res) => {
-    res.json({ items: await payments.listPayments(req.user.companyId) });
+    const { kind } = parse(z.object({ kind: z.enum(['SUBSCRIPTION', 'CHARGE']).optional() }), req.query);
+    res.json({ items: await payments.listPayments(req.user.companyId, { kind }) });
   });
 
   r.get('/:id', requireOnboardingSession, async (req, res) => {

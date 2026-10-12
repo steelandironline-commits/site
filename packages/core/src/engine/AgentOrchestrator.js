@@ -3,6 +3,7 @@ import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { logger } from '../logger.js';
 import { ActivityService } from '../services/activityService.js';
+import { EventEngine } from '../events/EventEngine.js';
 import { getAgentMap } from '../services/agentRegistry.js';
 import { buildSourceAdapters } from './sources/index.js';
 import { OpportunityDiscoveryService } from './OpportunityDiscoveryService.js';
@@ -23,8 +24,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * activity event is persisted; nothing is emitted that did not happen.
  */
 export class AgentOrchestrator {
-  constructor({ prisma = getPrisma(), config = getConfig(), adapters, pacingMs } = {}) {
+  constructor({ prisma = getPrisma(), config = getConfig(), adapters, pacingMs, events } = {}) {
     this.prisma = prisma;
+    this.events = events ?? new EventEngine({ prisma });
     this.config = config;
     this.adapters = adapters ?? buildSourceAdapters(config);
     this.discovery = new OpportunityDiscoveryService({ adapters: this.adapters });
@@ -76,6 +78,9 @@ export class AgentOrchestrator {
     const sub = await this.prisma.subscription.findUnique({ where: { companyId: job.companyId } });
     if (sub?.status !== 'ACTIVE') {
       return { skipped: 'subscription_inactive', companiesAnalyzed: 0, signalsDetected: 0, opportunitiesCreated: 0 };
+    }
+    if (profile.agentsPaused) {
+      return { skipped: 'agents_paused', companiesAnalyzed: 0, signalsDetected: 0, opportunitiesCreated: 0 };
     }
 
     // Never run the demo pipeline when DEMO_MODE is off (and vice-versa).
@@ -327,27 +332,53 @@ export class AgentOrchestrator {
 
         m.created += 1;
         stats.opportunitiesCreated += 1;
-        await this.#event(job, {
-          agentKey: 'SALES',
-          type: 'OPPORTUNITY',
-          opportunityId: opportunity.id,
-          title: 'Oportunidade criada',
-          description: `${label} · ${formatBRL(scored.estimate.min)} – ${formatBRL(scored.estimate.max)}`,
-          source: 'Sales Intelligence',
-          severity: 'SUCCESS',
-          metadata: { score: scored.score, estimatedMax: scored.estimate.max, priority: scored.priority },
-        });
-        if (scored.priority === 'HIGH') {
-          await this.#event(job, {
-            agentKey: 'SCORING',
+        const oppPayload = {
+          score: scored.score,
+          priority: scored.priority,
+          estimatedMin: scored.estimate.min,
+          estimatedMax: scored.estimate.max,
+          link: `/app/opportunities/${opportunity.id}`,
+        };
+        await this.events.publish({
+          type: 'OPPORTUNITY_CREATED',
+          companyId: job.companyId,
+          aggregateType: 'opportunity',
+          aggregateId: opportunity.id,
+          isDemo,
+          payload: oppPayload,
+          activity: {
+            agentKey: 'SALES',
             type: 'OPPORTUNITY',
             opportunityId: opportunity.id,
-            title: `Lead classificado como ${PRIORITY_LABELS.HIGH.toLowerCase()} prioridade`,
-            description: label,
-            source: 'Scoring Agent',
+            jobId: job.id,
+            title: 'Oportunidade criada',
+            description: `${label} · ${formatBRL(scored.estimate.min)} – ${formatBRL(scored.estimate.max)}`,
+            source: 'Sales Intelligence',
             severity: 'SUCCESS',
-            pace: 0.6,
+            metadata: { score: scored.score, estimatedMax: scored.estimate.max, priority: scored.priority },
+          },
+        });
+        await this.#pace();
+        if (scored.priority === 'HIGH') {
+          await this.events.publish({
+            type: 'OPPORTUNITY_HIGH_PRIORITY',
+            companyId: job.companyId,
+            aggregateType: 'opportunity',
+            aggregateId: opportunity.id,
+            isDemo,
+            payload: oppPayload,
+            activity: {
+              agentKey: 'SCORING',
+              type: 'OPPORTUNITY',
+              opportunityId: opportunity.id,
+              jobId: job.id,
+              title: `Lead classificado como ${PRIORITY_LABELS.HIGH.toLowerCase()} prioridade`,
+              description: label,
+              source: 'Scoring Agent',
+              severity: 'SUCCESS',
+            },
           });
+          await this.#pace(0.6);
         }
         await this.#event(job, {
           agentKey: 'SALES',

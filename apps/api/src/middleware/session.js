@@ -19,20 +19,27 @@ export function clearSessionCookie(res, config) {
 }
 
 /** Resolve the session cookie (if any) into req.session / req.user. */
+/**
+ * Browser clients use the HTTP-only cookie. Native/non-browser clients send
+ * `Authorization: Bearer <token>` (issued by POST /api/auth/native/login).
+ */
 export function loadSession({ auth, config }) {
   return async (req, res, next) => {
-    const token = req.cookies?.[config.session.cookieName];
+    const header = req.get('authorization') || '';
+    const bearer = /^Bearer\s+([A-Za-z0-9_-]{20,200})$/.exec(header)?.[1];
+    const token = bearer || req.cookies?.[config.session.cookieName];
     if (!token) return next();
+    req.authVia = bearer ? 'bearer' : 'cookie';
     try {
       const session = await auth.resolveSession(token);
       if (!session) {
-        clearSessionCookie(res, config);
+        if (!bearer) clearSessionCookie(res, config);
         return next();
       }
       req.session = session;
       req.user = session.user;
       req.sessionToken = token;
-      if (session.refreshed) setSessionCookie(res, config, token, session.expiresAt);
+      if (session.refreshed && !bearer) setSessionCookie(res, config, token, session.expiresAt);
       return next();
     } catch (err) {
       return next(err);

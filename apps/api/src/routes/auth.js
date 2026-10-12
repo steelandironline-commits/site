@@ -14,8 +14,16 @@ export function authRoutes({ auth, config, limiters }) {
     res.json({ user: { id: user.id, name: user.name, email: user.email } });
   });
 
+  /** Native/non-browser clients: returns a bearer token instead of a cookie. */
+  r.post('/native/login', limiters.login, async (req, res) => {
+    const { email, password } = parse(loginSchema, req.body);
+    const { token, session, user } = await auth.login(email, password, meta(req));
+    res.json({ token, tokenType: 'Bearer', expiresAt: session.expiresAt, user: { id: user.id, name: user.name, email: user.email } });
+  });
+
   r.post('/logout', async (req, res) => {
-    await auth.revokeSessionByToken(req.cookies?.[config.session.cookieName]);
+    const bearer = /^Bearer\s+(\S+)$/.exec(req.get('authorization') || '')?.[1];
+    await auth.revokeSessionByToken(bearer || req.cookies?.[config.session.cookieName]);
     clearSessionCookie(res, config);
     res.json({ ok: true });
   });

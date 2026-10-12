@@ -63,6 +63,30 @@ const schema = z.object({
     .pipe(z.enum(['console', 'resend'])),
   EMAIL_API_KEY: optional,
   EMAIL_FROM: optional,
+  WHATSAPP_PROVIDER: z
+    .string()
+    .optional()
+    .transform((v) => (v || '').toLowerCase() || undefined)
+    .pipe(z.enum(['cloud', 'mock', 'disabled']).optional()),
+  WHATSAPP_ACCESS_TOKEN: optional,
+  WHATSAPP_PHONE_NUMBER_ID: optional,
+  WHATSAPP_APP_SECRET: optional,
+  WHATSAPP_VERIFY_TOKEN: optional,
+  WHATSAPP_BUSINESS_NUMBER: optional,
+  WHATSAPP_API_VERSION: optional,
+  WHATSAPP_TEMPLATE_OPPORTUNITY: optional,
+  WHATSAPP_TEMPLATE_PAYMENT: optional,
+  WHATSAPP_TEMPLATE_FREIGHT: optional,
+  WHATSAPP_TEMPLATE_WORKFORCE: optional,
+  WHATSAPP_TEMPLATE_LANGUAGE: optional,
+  WEB_PUSH_PUBLIC_KEY: optional,
+  WEB_PUSH_PRIVATE_KEY: optional,
+  WEB_PUSH_SUBJECT: optional,
+  INTENT_PARSER: z
+    .string()
+    .optional()
+    .transform((v) => (v || 'rules').toLowerCase())
+    .pipe(z.enum(['rules', 'llm'])),
 });
 
 function ephemeralSecret() {
@@ -123,6 +147,36 @@ export function loadConfig(env = process.env) {
       apiKey: e.EMAIL_API_KEY,
       from: e.EMAIL_FROM || 'AutoPix <nao-responda@autopix.com.br>',
     },
+    whatsapp: (() => {
+      const cloudReady = Boolean(e.WHATSAPP_ACCESS_TOKEN && e.WHATSAPP_PHONE_NUMBER_ID && e.WHATSAPP_APP_SECRET);
+      // Default: real Cloud API when credentials exist, mock in dev/test, disabled in production.
+      let provider = e.WHATSAPP_PROVIDER || (cloudReady ? 'cloud' : isProduction ? 'disabled' : 'mock');
+      if (provider === 'mock' && isProduction) provider = 'disabled';
+      if (provider === 'cloud' && !cloudReady) provider = 'disabled';
+      return {
+        provider,
+        accessToken: e.WHATSAPP_ACCESS_TOKEN,
+        phoneNumberId: e.WHATSAPP_PHONE_NUMBER_ID,
+        appSecret: e.WHATSAPP_APP_SECRET,
+        verifyToken: e.WHATSAPP_VERIFY_TOKEN,
+        businessNumber: e.WHATSAPP_BUSINESS_NUMBER ? e.WHATSAPP_BUSINESS_NUMBER.replace(/\D/g, '') : null,
+        apiVersion: e.WHATSAPP_API_VERSION || 'v21.0',
+        templates: {
+          opportunity: e.WHATSAPP_TEMPLATE_OPPORTUNITY,
+          payment: e.WHATSAPP_TEMPLATE_PAYMENT,
+          freight: e.WHATSAPP_TEMPLATE_FREIGHT,
+          workforce: e.WHATSAPP_TEMPLATE_WORKFORCE,
+          language: e.WHATSAPP_TEMPLATE_LANGUAGE || 'pt_BR',
+        },
+      };
+    })(),
+    push: {
+      publicKey: e.WEB_PUSH_PUBLIC_KEY,
+      privateKey: e.WEB_PUSH_PRIVATE_KEY,
+      subject: e.WEB_PUSH_SUBJECT || 'mailto:suporte@autopix.com.br',
+      enabled: Boolean(e.WEB_PUSH_PUBLIC_KEY && e.WEB_PUSH_PRIVATE_KEY),
+    },
+    intentParser: e.INTENT_PARSER,
     session: {
       cookieName: 'ap_session',
       ttlMs: 1000 * 60 * 60 * 24 * 7,

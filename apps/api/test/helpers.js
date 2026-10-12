@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { loadConfig, setConfig, getPrisma, ensureAgents, resetPaymentProviders, resetAgentCache, EmailService } from '@autopix/core';
+import { loadConfig, setConfig, getPrisma, ensureAgents, resetPaymentProviders, resetAgentCache, resetWhatsAppProvider, EmailService } from '@autopix/core';
 import { buildServices, createApp } from '../src/app.js';
 
 export const hasDb = Boolean(process.env.DATABASE_URL);
@@ -28,6 +28,7 @@ export async function setupApp(overrides = {}) {
   const config = setConfig(testConfig(overrides));
   resetPaymentProviders();
   resetAgentCache();
+  resetWhatsAppProvider();
   const prisma = getPrisma();
   await ensureAgents(prisma);
   const email = new EmailService({ config });
@@ -38,6 +39,19 @@ export async function setupApp(overrides = {}) {
 }
 
 const TABLES = [
+  'NotificationDelivery',
+  'DomainEvent',
+  'ActionLog',
+  'SensitiveActionChallenge',
+  'WhatsAppPendingCommand',
+  'WhatsAppMessage',
+  'WhatsAppConnection',
+  'NotificationPreference',
+  'PushSubscription',
+  'FreightMatch',
+  'FreightRequest',
+  'WorkforceMatch',
+  'WorkforceDemand',
   'PaymentEvent',
   'Payment',
   'Subscription',

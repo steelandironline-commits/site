@@ -16,7 +16,8 @@ export class AgentService {
     const agents = await getAgentMap(this.prisma);
     const since = new Date(Date.now() - DAY);
     const sub = await this.prisma.subscription.findUnique({ where: { companyId }, select: { status: true } });
-    const active = sub?.status === 'ACTIVE';
+    const company = await this.prisma.company.findUnique({ where: { id: companyId }, select: { agentsPaused: true } });
+    const active = sub?.status === 'ACTIVE' && !company?.agentsPaused;
 
     const result = [];
     for (const def of AGENTS) {

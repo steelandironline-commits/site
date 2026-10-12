@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { requireAuth, requireRole } from '../middleware/session.js';
+import { requireAuth } from '../middleware/session.js';
+import { runAction } from '../actor.js';
 
-export function subscriptionRoutes({ subscriptions }) {
+export function subscriptionRoutes({ subscriptions, actions }) {
   const r = Router();
   r.use(requireAuth);
 
@@ -9,12 +10,12 @@ export function subscriptionRoutes({ subscriptions }) {
     res.json({ subscription: await subscriptions.get(req.user.companyId) });
   });
 
-  r.post('/cancel', requireRole('OWNER'), async (req, res) => {
-    res.json({ subscription: await subscriptions.cancel(req.user.companyId, req.user.id) });
+  r.post('/cancel', async (req, res) => {
+    res.json((await runAction(actions, req, 'CANCEL_SUBSCRIPTION', {})).result);
   });
 
-  r.post('/resume', requireRole('OWNER'), async (req, res) => {
-    res.json({ subscription: await subscriptions.resume(req.user.companyId, req.user.id) });
+  r.post('/resume', async (req, res) => {
+    res.json((await runAction(actions, req, 'RESUME_SUBSCRIPTION', {})).result);
   });
 
   return r;

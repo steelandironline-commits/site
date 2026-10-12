@@ -17,6 +17,8 @@ export function csrfGuard(config) {
   return (req, res, next) => {
     if (SAFE.has(req.method)) return next();
     if (req.path.startsWith('/webhooks/')) return next();
+    // Bearer-token clients (native apps) carry no ambient credentials.
+    if (/^Bearer\s+/i.test(req.get('authorization') || '') && !req.cookies?.[config.session.cookieName]) return next();
     const origin = req.get('origin');
     if (origin && !allowed.has(origin)) return next(forbidden('Origem não permitida.'));
     if (req.get('x-requested-with') !== 'autopix') return next(forbidden('Requisição não permitida.'));

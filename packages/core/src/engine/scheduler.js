@@ -23,7 +23,10 @@ export class Scheduler {
     const recovered = await this.queue.recoverStale();
     const cutoff = new Date(Date.now() - this.config.search.intervalMinutes * 60_000);
 
-    const active = await this.prisma.subscription.findMany({ where: { status: 'ACTIVE' }, select: { companyId: true } });
+    const active = await this.prisma.subscription.findMany({
+      where: { status: 'ACTIVE', company: { agentsPaused: false } },
+      select: { companyId: true },
+    });
     let enqueued = 0;
     for (const { companyId } of active) {
       const recent = await this.prisma.searchJob.findFirst({

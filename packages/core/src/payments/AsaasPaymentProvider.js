@@ -118,6 +118,26 @@ export class AsaasPaymentProvider extends PaymentProvider {
     ];
   }
 
+  /** Pix transfer to the merchant key (POST /transfers). */
+  async releaseFunds({ amountCents, pixKey, pixKeyType, description }) {
+    const data = await this.#request('/transfers', {
+      method: 'POST',
+      body: {
+        value: Number((amountCents / 100).toFixed(2)),
+        operationType: 'PIX',
+        pixAddressKey: pixKey,
+        pixAddressKeyType: pixKeyType || 'EVP',
+        description: description || 'AutoPix — liberação de pagamento protegido',
+      },
+    });
+    return { transferId: String(data.id) };
+  }
+
+  async refundPayment(providerPaymentId) {
+    await this.#request(`/payments/${encodeURIComponent(providerPaymentId)}/refund`, { method: 'POST', body: {} });
+    return { refunded: true };
+  }
+
   async cancelSubscription(subscription) {
     if (subscription?.providerSubscriptionId) {
       await this.#request(`/subscriptions/${encodeURIComponent(subscription.providerSubscriptionId)}`, { method: 'DELETE' });

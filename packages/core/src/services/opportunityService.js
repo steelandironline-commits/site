@@ -2,6 +2,7 @@ import { getPrisma } from '../db.js';
 import { notFound } from '../errors.js';
 import { ActivityService } from './activityService.js';
 import { SalesIntelligenceService } from '../engine/SalesIntelligenceService.js';
+import { EventEngine } from '../events/EventEngine.js';
 import { OPPORTUNITY_STATUS_LABELS } from '@autopix/shared';
 
 const LIST_SELECT = {
@@ -27,8 +28,9 @@ const LIST_SELECT = {
 };
 
 export class OpportunityService {
-  constructor({ prisma = getPrisma() } = {}) {
+  constructor({ prisma = getPrisma(), events } = {}) {
     this.prisma = prisma;
+    this.events = events ?? new EventEngine({ prisma });
     this.activity = new ActivityService({ prisma });
     this.sales = new SalesIntelligenceService();
   }
@@ -77,7 +79,7 @@ export class OpportunityService {
     return opportunity;
   }
 
-  async update(companyId, id, { status, notes, generateApproach }, { userId } = {}) {
+  async update(companyId, id, { status, notes, generateApproach }, { userId, channel = 'WEB' } = {}) {
     const current = await this.prisma.opportunity.findFirst({ where: { id, companyId } });
     if (!current) throw notFound('Oportunidade não encontrada.');
     const data = {};
@@ -112,7 +114,7 @@ export class OpportunityService {
         source: 'user',
         severity: data.status === 'WON' ? 'SUCCESS' : 'INFO',
         isDemo: current.isDemo,
-        metadata: { from: current.status, to: data.status },
+        metadata: { from: current.status, to: data.status, channel },
       });
     }
     if (data.suggestedApproach) {
@@ -140,6 +142,15 @@ export class OpportunityService {
         isDemo: current.isDemo,
       });
     }
+    await this.events.publish({
+      type: 'OPPORTUNITY_UPDATED',
+      companyId,
+      userId,
+      aggregateType: 'opportunity',
+      aggregateId: id,
+      isDemo: current.isDemo,
+      payload: { changed: Object.keys(data), status: data.status ?? current.status, channel },
+    });
     return this.get(companyId, id);
   }
 }
