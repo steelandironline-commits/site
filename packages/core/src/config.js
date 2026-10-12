@@ -80,6 +80,8 @@ const schema = z.object({
     .optional()
     .transform((v) => (v || 'commission').toLowerCase())
     .pipe(z.enum(['commission', 'subscription'])),
+  // One-time signup fee for companies in the commission model (0 waives it).
+  COMPANY_SIGNUP_FEE_CENTS: z.coerce.number().int().min(0).max(10_000_000).default(20000),
   PORT: z.coerce.number().int().positive().default(3000),
   EMBEDDED_WORKER: bool(false),
   SEARCH_INTERVAL_MINUTES: z.coerce.number().int().min(5).max(10080).default(60),
@@ -165,7 +167,7 @@ export function loadConfig(env = process.env) {
       apiUrl: e.PAYMENT_API_URL,
     },
     demoMode: e.DEMO_MODE,
-    billing: { model: e.BILLING_MODEL },
+    billing: { model: e.BILLING_MODEL, companySignupFeeCents: e.COMPANY_SIGNUP_FEE_CENTS },
     mockCapabilities: (e.MOCK_PAYMENT_CAPABILITIES || '').split(',').map((s) => s.trim()).filter(Boolean),
     bb: (() => {
       const sandbox = e.BB_ENVIRONMENT !== 'production';

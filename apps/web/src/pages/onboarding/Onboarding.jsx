@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check, Lock } from 'lucide-react';
-import { BR_STATES, INDUSTRY_SUGGESTIONS, formatCnpj, isValidCnpj, onlyDigits } from '@autopix/shared';
+import { ArrowLeft, ArrowRight, Building2, Check, Lock, UserRound } from 'lucide-react';
+import { BR_STATES, INDUSTRY_SUGGESTIONS, PRICING, formatCents, formatCnpj, isValidCnpj, onlyDigits } from '@autopix/shared';
 import { api, post, put } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { safeStorage } from '../../lib/hooks.js';
@@ -27,8 +27,17 @@ const STEPS = [
   { key: 'ticket', title: 'Qual o ticket médio?', subtitle: 'E qual o menor negócio que vale a sua atenção.', fields: ['averageTicket', 'minimumDeal'] },
   { key: 'keywords', title: 'Palavras-chave', subtitle: 'Termos que indicam demanda pelo que você faz.', fields: ['keywords'] },
   { key: 'presence', title: 'Presença digital', subtitle: 'Ajuda os agentes a entender seu posicionamento.', fields: ['website', 'instagram', 'phone'] },
-  { key: 'company', title: 'Dados da empresa', subtitle: 'Necessário para emitir a cobrança Pix.', fields: ['name', 'cnpj'] },
+  { key: 'company', title: 'Dados da empresa', subtitle: 'Usados no contrato e na cobrança Pix.', fields: ['name', 'cnpj'] },
 ];
+
+/** Professionals (pessoa física): a short, free signup. */
+const PERSON_STEPS = [
+  { key: 'start', title: 'Vamos começar.', subtitle: 'Profissional se cadastra grátis. Leva menos de um minuto.' },
+  { key: 'work', title: 'Qual é o seu trabalho?', subtitle: 'Profissão e serviços que você faz. Assim chegam vagas e serviços certos para você.', fields: ['services', 'description'] },
+  { key: 'where', title: 'Onde você trabalha?', subtitle: 'Cidade, regiões e até onde você se desloca.', fields: ['city', 'state', 'serviceLocations', 'serviceRadiusKm'] },
+  { key: 'contact', title: 'Como falar com você?', subtitle: 'Opcional. Usado só para avisos de vagas e serviços.', fields: ['phone'] },
+];
+const stepsFor = (type) => (type === 'PERSON' ? PERSON_STEPS : STEPS);
 
 const EMPTY = {
   name: '',
@@ -52,6 +61,7 @@ const EMPTY = {
 };
 
 const ANALYSIS = ['Perfil comercial', 'Mercado', 'Segmentos', 'Região', 'Ticket', 'Sinais'];
+const PERSON_ANALYSIS = ['Perfil profissional', 'Região', 'Vagas', 'Serviços', 'Fretes'];
 
 function fromCompany(c) {
   if (!c) return {};
@@ -78,10 +88,12 @@ function toPayload(form, fields) {
 function validate(stepKey, form, account) {
   const e = {};
   if (stepKey === 'start') {
+    if (!account.accountType) e.accountType = 'Escolha profissional ou empresa';
     if (account.name.trim().length < 2) e.name = 'Informe seu nome';
     if (!/^\S+@\S+\.\S+$/.test(account.email.trim())) e.email = 'E-mail inválido';
-    if (account.companyName.trim().length < 2) e.companyName = 'Informe o nome da empresa';
+    if (account.accountType === 'COMPANY' && account.companyName.trim().length < 2) e.companyName = 'Informe o nome da empresa';
   }
+  if (stepKey === 'work' && !form.services.length) e.services = 'Adicione sua profissão ou um serviço';
   if (stepKey === 'sells' && !form.products.length && !form.description.trim()) e.products = 'Adicione pelo menos um produto ou uma descrição';
   if (stepKey === 'services' && !form.services.length && !form.products.length) e.services = 'Adicione pelo menos um serviço';
   if (stepKey === 'customer' && form.idealCustomer.trim().length < 3) e.idealCustomer = 'Descreva seu cliente ideal';
@@ -99,10 +111,10 @@ function MoneyInput({ value, onChange, ...rest }) {
 }
 
 /* -------------------------------------------------------------- finish */
-function Analysis({ onDone }) {
+function Analysis({ onDone, items = ANALYSIS }) {
   const [done, setDone] = useState(0);
   useEffect(() => {
-    if (done >= ANALYSIS.length) {
+    if (done >= items.length) {
       const t = setTimeout(onDone, 700);
       return () => clearTimeout(t);
     }
@@ -114,7 +126,7 @@ function Analysis({ onDone }) {
       <LogoMark size={56} animated />
       <h1 className={s.analysisTitle}>Entendendo seu mercado...</h1>
       <ul className={s.analysisList}>
-        {ANALYSIS.map((label, i) => (
+        {items.map((label, i) => (
           <motion.li
             key={label}
             className={i < done ? s.aDone : i === done ? s.aActive : ''}
@@ -136,15 +148,17 @@ function Analysis({ onDone }) {
   );
 }
 
-function Ready({ companyName }) {
+function Ready({ companyName, accountType }) {
   const navigate = useNavigate();
   const { config } = useSession();
   const subscription = config?.billing?.model === 'subscription';
-  const fee = config?.billing?.commissionLabel || '2%';
+  const commission = config?.billing?.commissionLabel || PRICING.commissionLabel;
+  const feeCents = accountType === 'COMPANY' ? (config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents) : 0;
+  const pay = subscription || feeCents > 0;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  // Commission model: no charge at signup — straight to creating the password.
+  // Professionals (and companies when the fee is waived): straight to creating the password.
   const finish = async () => {
     setBusy(true);
     setError(null);
@@ -158,20 +172,33 @@ function Ready({ companyName }) {
     }
   };
 
+  let title = 'Cadastro concluído. Falta só a sua senha.';
+  let text = `Os agentes de ${companyName || 'sua empresa'} começam a procurar clientes, cargas e profissionais assim que você criar a senha.`;
+  let foot = `Sem mensalidade · ${commission} só sobre contratos fechados`;
+  if (accountType === 'PERSON') {
+    text = 'Vagas, serviços e fretes da sua região começam a chegar assim que você criar a senha.';
+    foot = `Grátis para profissionais · ${commission} só sobre contratos fechados`;
+  }
+  if (subscription) {
+    title = 'Seu TemPix está pronto para ser ativado.';
+    text = `Os agentes de ${companyName || 'sua empresa'} começam a procurar oportunidades assim que o Pix for confirmado.`;
+    foot = 'R$ 597,00/mês · Sem fidelidade · Cancele quando quiser';
+  } else if (feeCents > 0) {
+    title = 'Falta só a taxa única de cadastro.';
+    text = `${formatCents(feeCents)}, uma vez só. Sem mensalidade e sem renovação: depois disso, o TemPix só fica com ${commission} dos contratos que a ${companyName || 'sua empresa'} fechar.`;
+    foot = `Menos de R$ ${(feeCents / 100 / 365).toFixed(2).replace('.', ',')} por dia no primeiro ano · nada de mensalidade depois`;
+  }
+
   return (
     <motion.div className={s.ready} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
       <span className={s.readyIcon}>
         <Check size={26} />
       </span>
-      <h1 className={s.readyTitle}>{subscription ? 'Seu TemPix está pronto para ser ativado.' : 'Cadastro concluído. Falta só a sua senha.'}</h1>
-      <p className={s.readyText}>
-        {subscription
-          ? `Os agentes de ${companyName || 'sua empresa'} começam a procurar oportunidades assim que o Pix for confirmado.`
-          : `Os agentes de ${companyName || 'sua empresa'} começam a procurar clientes, cargas e profissionais assim que você criar a senha.`}
-      </p>
-      {subscription ? (
+      <h1 className={s.readyTitle}>{title}</h1>
+      <p className={s.readyText}>{text}</p>
+      {pay ? (
         <Button to="/checkout" size="lg" iconRight={ArrowRight}>
-          PAGAR COM PIX
+          {subscription ? 'PAGAR COM PIX' : `PAGAR ${formatCents(feeCents)} COM PIX`}
         </Button>
       ) : (
         <Button size="lg" iconRight={ArrowRight} onClick={finish} loading={busy}>
@@ -184,8 +211,7 @@ function Ready({ companyName }) {
         </p>
       )}
       <p className={s.readySafe}>
-        <Lock size={13} aria-hidden="true" />{' '}
-        {subscription ? 'R$ 597,00/mês · Sem fidelidade · Cancele quando quiser' : `Sem mensalidade · ${fee} só sobre contratos fechados`}
+        <Lock size={13} aria-hidden="true" /> {foot}
       </p>
     </motion.div>
   );
@@ -194,12 +220,14 @@ function Ready({ companyName }) {
 /* ---------------------------------------------------------------- page */
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { refresh, me, loading: sessionLoading } = useSession();
+  const { refresh, me, config, loading: sessionLoading } = useSession();
   const storage = useMemo(() => safeStorage(), []);
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [form, setForm] = useState(EMPTY);
-  const [account, setAccount] = useState({ name: '', email: '', companyName: '' });
+  const [params] = useSearchParams();
+  const preset = { profissional: 'PERSON', empresa: 'COMPANY' }[params.get('tipo')] || '';
+  const [account, setAccount] = useState({ accountType: preset, name: '', email: '', companyName: '' });
   const [errors, setErrors] = useState({});
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -225,12 +253,13 @@ export default function Onboarding() {
         const st = await api('/api/onboarding', { quiet401: true });
         if (st.user.status === 'ACTIVE') return navigate('/app', { replace: true });
         setHasSession(true);
-        setAccount({ name: st.user.name, email: st.user.email, companyName: st.company.name });
+        const type = st.company.accountType || 'COMPANY';
+        setAccount({ accountType: type, name: st.user.name, email: st.user.email, companyName: type === 'COMPANY' ? st.company.name : '' });
         setForm((f) => ({ ...f, ...fromCompany(st.company), ...(draft?.form || {}) }));
         if (st.company.onboardingCompletedAt) setPhase('ready');
-        else setStep(Math.min(Math.max(1, st.company.onboardingStep), STEPS.length - 1));
+        else setStep(Math.min(Math.max(1, st.company.onboardingStep), stepsFor(type).length - 1));
       } catch {
-        if (draft?.account) setAccount(draft.account);
+        if (draft?.account) setAccount((a) => ({ ...a, ...draft.account, accountType: preset || draft.account.accountType || '' }));
       } finally {
         setBooting(false);
       }
@@ -253,7 +282,9 @@ export default function Onboarding() {
     if (!booting) headingRef.current?.focus({ preventScroll: true });
   }, [step, booting]);
 
-  const current = STEPS[step];
+  const steps = stepsFor(account.accountType);
+  const current = steps[step];
+  const feeLabel = formatCents(config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v?.target ? v.target.value : v }));
 
   const next = useCallback(async () => {
@@ -265,12 +296,18 @@ export default function Onboarding() {
     try {
       if (current.key === 'start') {
         if (!hasSession) {
-          await post('/api/onboarding/start', account);
+          const company = account.accountType === 'COMPANY';
+          await post('/api/onboarding/start', {
+            accountType: account.accountType,
+            name: account.name,
+            email: account.email,
+            ...(company ? { companyName: account.companyName } : {}),
+          });
           setHasSession(true);
-          setForm((f) => ({ ...f, name: f.name || account.companyName }));
+          setForm((f) => ({ ...f, name: f.name || (company ? account.companyName : account.name) }));
         }
       } else {
-        const last = step === STEPS.length - 1;
+        const last = step === steps.length - 1;
         await put('/api/onboarding/step', { step: step + 1, data: toPayload(form, current.fields), complete: last });
         if (last) {
           try {
@@ -295,7 +332,7 @@ export default function Onboarding() {
     } finally {
       setSaving(false);
     }
-  }, [current, form, account, hasSession, step, refresh, storage]);
+  }, [current, form, account, hasSession, step, steps, refresh, storage]);
 
   const back = () => {
     setErrors({});
@@ -309,7 +346,7 @@ export default function Onboarding() {
     next();
   };
 
-  const progress = ((step + (phase !== 'form' ? 1 : 0)) / STEPS.length) * 100;
+  const progress = ((step + (phase !== 'form' ? 1 : 0)) / steps.length) * 100;
 
   return (
     <div className={s.page}>
@@ -318,7 +355,7 @@ export default function Onboarding() {
           <Logo />
         </Link>
         <span className={s.counter}>
-          {phase === 'form' ? `${String(step + 1).padStart(2, '0')} / ${String(STEPS.length).padStart(2, '0')}` : 'Concluído'}
+          {phase === 'form' ? `${String(step + 1).padStart(2, '0')} / ${String(steps.length).padStart(2, '0')}` : 'Concluído'}
         </span>
       </header>
       <div className={s.progress} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label="Progresso do cadastro">
@@ -327,8 +364,10 @@ export default function Onboarding() {
 
       <main className={s.main}>
         <AnimatePresence mode="wait" custom={dir}>
-          {phase === 'analysis' && <Analysis key="analysis" onDone={() => setPhase('ready')} />}
-          {phase === 'ready' && <Ready key="ready" companyName={form.name || account.companyName} />}
+          {phase === 'analysis' && (
+            <Analysis key="analysis" items={account.accountType === 'PERSON' ? PERSON_ANALYSIS : ANALYSIS} onDone={() => setPhase('ready')} />
+          )}
+          {phase === 'ready' && <Ready key="ready" accountType={account.accountType} companyName={form.name || account.companyName} />}
           {phase === 'form' && !booting && (
             <motion.form
               key={current.key}
@@ -355,6 +394,31 @@ export default function Onboarding() {
               <div className={s.fields}>
                 {current.key === 'start' && (
                   <>
+                    <div className={s.typeChoice} role="radiogroup" aria-label="Tipo de cadastro">
+                      {[
+                        { type: 'PERSON', Icon: UserRound, title: 'Sou profissional', note: 'Pessoa física · cadastro grátis' },
+                        { type: 'COMPANY', Icon: Building2, title: 'Sou empresa', note: `CNPJ · taxa única de ${feeLabel}` },
+                      ].map(({ type, Icon, title, note }) => (
+                        <button
+                          key={type}
+                          type="button"
+                          role="radio"
+                          aria-checked={account.accountType === type}
+                          className={account.accountType === type ? s.typeOn : undefined}
+                          disabled={hasSession}
+                          onClick={() => setAccount({ ...account, accountType: type })}
+                        >
+                          <Icon size={20} aria-hidden="true" />
+                          <strong>{title}</strong>
+                          <span>{note}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {errors.accountType && (
+                      <p className={s.formError} role="alert">
+                        {errors.accountType}
+                      </p>
+                    )}
                     <Field label="Seu nome" error={errors.name}>
                       {(a) => (
                         <Input {...a} autoComplete="name" value={account.name} disabled={hasSession} onChange={(e) => setAccount({ ...account, name: e.target.value })} />
@@ -373,18 +437,45 @@ export default function Onboarding() {
                         />
                       )}
                     </Field>
-                    <Field label="Nome da empresa" error={errors.companyName}>
+                    {account.accountType === 'COMPANY' && (
+                      <Field label="Nome da empresa" error={errors.companyName}>
+                        {(a) => (
+                          <Input
+                            {...a}
+                            autoComplete="organization"
+                            value={account.companyName}
+                            disabled={hasSession}
+                            onChange={(e) => setAccount({ ...account, companyName: e.target.value })}
+                          />
+                        )}
+                      </Field>
+                    )}
+                  </>
+                )}
+
+                {current.key === 'work' && (
+                  <>
+                    <Field label="Profissão e serviços" hint="Pressione Enter para adicionar." error={errors.services}>
                       {(a) => (
-                        <Input
+                        <TagInput
                           {...a}
-                          autoComplete="organization"
-                          value={account.companyName}
-                          disabled={hasSession}
-                          onChange={(e) => setAccount({ ...account, companyName: e.target.value })}
+                          value={form.services}
+                          onChange={set('services')}
+                          placeholder="Ex.: Eletricista, Motorista"
+                          suggestions={['Eletricista', 'Pedreiro', 'Motorista', 'Pintor', 'Encanador', 'Soldador', 'Ajudante geral', 'Operador de empilhadeira']}
                         />
                       )}
                     </Field>
+                    <Field label="Sobre você" optional>
+                      {(a) => <Textarea {...a} value={form.description} onChange={set('description')} placeholder="Experiência, certificações, ferramentas próprias." maxLength={2000} />}
+                    </Field>
                   </>
+                )}
+
+                {current.key === 'contact' && (
+                  <Field label="WhatsApp" optional hint="Só para avisos de vagas e serviços.">
+                    {(a) => <Input {...a} type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="(47) 99999-0000" />}
+                  </Field>
                 )}
 
                 {current.key === 'sells' && (
@@ -533,7 +624,7 @@ export default function Onboarding() {
                   <span />
                 )}
                 <Button type="submit" loading={saving} iconRight={ArrowRight} size="lg">
-                  {step === STEPS.length - 1 ? 'CONCLUIR' : 'CONTINUAR'}
+                  {step === steps.length - 1 ? 'CONCLUIR' : 'CONTINUAR'}
                 </Button>
               </footer>
               {step === 0 && !hasSession && (

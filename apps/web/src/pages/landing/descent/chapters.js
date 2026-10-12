@@ -9,7 +9,7 @@ export const CHAPTERS = [
     rail: 'Início',
     kicker: 'Transporte · Pessoas · Serviços · Pix',
     title: 'Tem emprego, tem rota, tem serviço. TemPix.',
-    body: 'O TemPix encontra clientes, cargas e profissionais para a sua empresa, com pagamento assegurado até a conclusão. Sem mensalidade: só 2% por contrato fechado.',
+    body: 'Clientes, cargas, vagas e serviços com pagamento assegurado até a conclusão. Profissional entra grátis; empresa paga só o cadastro, uma vez, e nunca mensalidade.',
     palette: { top: '#4a6fb5', bottom: '#0e1830', sky: '#b9ccff', ground: '#1c2340', accent: '#8fb2ff' },
   },
   {
@@ -57,7 +57,7 @@ export const CHAPTERS = [
     rail: 'Painel',
     kicker: 'Tem tudo · seu painel',
     title: 'Tudo isso numa tela só.',
-    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Cadastro gratuito: você só paga 2% quando fecha um contrato.',
+    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Sem mensalidade: o TemPix só fica com 2% quando o contrato fecha.',
     palette: { top: '#24365e', bottom: '#0a0b0d', sky: '#c7d6ff', ground: '#10141f', accent: '#2ad1b8' },
   },
 ];

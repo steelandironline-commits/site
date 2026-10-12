@@ -1,4 +1,4 @@
-import { COMMISSION_PLAN_CODE } from '@autopix/shared';
+import { COMMISSION_PLAN_CODE, formatCents } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { badRequest, conflict } from '../errors.js';
@@ -17,7 +17,9 @@ export class OnboardingService {
     this.auth = new AuthService({ prisma, config });
   }
 
-  async start({ name, email, companyName }, meta = {}) {
+  async start({ name, email, companyName, accountType = 'COMPANY' }, meta = {}) {
+    // A professional's account is named after the person.
+    const accountName = accountType === 'PERSON' ? name : companyName;
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing && existing.status !== 'PENDING_PAYMENT') {
       throw conflict('Este e-mail já possui uma conta TemPix. Entre ou recupere sua senha.');
@@ -31,11 +33,11 @@ export class OnboardingService {
         await tx.session.deleteMany({ where: { userId: existing.id } });
         await tx.company.update({
           where: { id: existing.companyId },
-          data: { name: companyName, onboardingStep: 1, onboardingCompletedAt: null },
+          data: { name: accountName, accountType, onboardingStep: 1, onboardingCompletedAt: null },
         });
         user = await tx.user.update({ where: { id: existing.id }, data: { name } });
       } else {
-        const company = await tx.company.create({ data: { name: companyName, onboardingStep: 1 } });
+        const company = await tx.company.create({ data: { name: accountName, accountType, onboardingStep: 1 } });
         user = await tx.user.create({ data: { email, name, companyId: company.id, status: 'PENDING_PAYMENT' } });
       }
       const { token, session } = await this.auth.createSession(user.id, { scope: 'ONBOARDING', ...meta }, tx);
@@ -59,7 +61,14 @@ export class OnboardingService {
       subscription: subscription ? { status: subscription.status } : null,
       latestPayment: payment,
       billingModel: this.config.billing.model,
+      signupFeeCents: this.#signupFee(company),
     };
+  }
+
+  /** Companies pay a one-time signup fee (commission model); professionals don't. */
+  #signupFee(company) {
+    if (this.config.billing.model !== 'commission' || company?.accountType !== 'COMPANY') return 0;
+    return this.config.billing.companySignupFeeCents;
   }
 
   async saveStep(user, { step, data, complete }) {
@@ -72,10 +81,15 @@ export class OnboardingService {
 
     if (complete) {
       const missing = [];
-      if (!next.products.length && !next.services.length) missing.push('produtos ou serviços');
-      if (!next.idealCustomer) missing.push('cliente ideal');
-      if (!next.serviceLocations.length && !next.city) missing.push('região de atendimento');
-      if (!next.cnpj) missing.push('CNPJ');
+      if (company.accountType === 'PERSON') {
+        if (!next.services.length) missing.push('profissão ou serviços');
+        if (!next.serviceLocations.length && !next.city) missing.push('cidade ou região');
+      } else {
+        if (!next.products.length && !next.services.length) missing.push('produtos ou serviços');
+        if (!next.idealCustomer) missing.push('cliente ideal');
+        if (!next.serviceLocations.length && !next.city) missing.push('região de atendimento');
+        if (!next.cnpj) missing.push('CNPJ');
+      }
       if (missing.length) throw badRequest(`Complete: ${missing.join(', ')}.`, { missing });
     }
 
@@ -90,10 +104,11 @@ export class OnboardingService {
   }
 
   /**
-   * Commission model: no subscription and no charge at signup. Once the
-   * company profile is complete, the account's access record is opened and an
-   * activation token is handed to this same onboarding session, so the owner
-   * creates the password next (the password is always chosen by the user).
+   * Commission model: no subscription. Professionals sign up free; companies
+   * pay a one-time signup fee first (its confirmed payment opens the access
+   * record). Once the profile is complete, an activation token is handed to
+   * this same onboarding session, so the owner creates the password next (the
+   * password is always chosen by the user).
    */
   async finish(user) {
     if (this.config.billing.model !== 'commission') throw conflict('Conclua o pagamento para ativar a conta.');
@@ -101,7 +116,19 @@ export class OnboardingService {
     if (fresh.status === 'ACTIVE') return { alreadyActive: true };
     if (fresh.status !== 'PENDING_PAYMENT' && fresh.status !== 'PENDING_ACTIVATION') throw conflict('Onboarding já concluído.');
     const company = await this.prisma.company.findUnique({ where: { id: fresh.companyId } });
-    if (!company.onboardingCompletedAt) throw badRequest('Complete os dados da empresa antes de continuar.');
+    if (!company.onboardingCompletedAt) throw badRequest('Complete os dados do cadastro antes de continuar.');
+    const fee = this.#signupFee(company);
+    if (fee > 0) {
+      const access = await this.prisma.subscription.findUnique({ where: { companyId: company.id } });
+      if (access?.status !== 'ACTIVE') {
+        throw conflict(`Contas de empresa têm taxa única de cadastro de ${formatCents(fee)}. Gere o Pix para concluir.`);
+      }
+      const token = await this.prisma.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: fresh.id }, data: { status: 'PENDING_ACTIVATION' } });
+        return this.auth.issueActivationToken(fresh.id, tx);
+      });
+      return { token };
+    }
     const now = new Date();
     const access = {
       plan: COMMISSION_PLAN_CODE,

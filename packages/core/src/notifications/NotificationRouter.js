@@ -102,7 +102,7 @@ export class NotificationRouter {
     const meta = DOMAIN_EVENTS[event.type];
     if (!meta || meta.silent || !event.companyId) return;
     // A subscription's own payment events concern the account, not a customer charge.
-    if (event.type === 'PAYMENT_CREATED' && event.payload?.kind === 'SUBSCRIPTION') return;
+    if (event.type === 'PAYMENT_CREATED' && ['SUBSCRIPTION', 'SIGNUP_FEE'].includes(event.payload?.kind)) return;
     // High-priority supersedes the generic "created" notification on push/WhatsApp.
     const supersededByHighPriority = event.type === 'OPPORTUNITY_CREATED' && event.payload?.priority === 'HIGH';
 

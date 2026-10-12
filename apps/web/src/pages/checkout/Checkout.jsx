@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Check, Clock, Copy, FlaskConical, Lock, QrCode, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react';
-import { PLAN, formatCents } from '@autopix/shared';
+import { PLAN, PRICING, formatCents } from '@autopix/shared';
 import { api, post } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { useVisibleInterval } from '../../lib/hooks.js';
@@ -174,6 +174,9 @@ export default function Checkout() {
 
   const expired = payment?.status === 'EXPIRED' || (payment?.status === 'PENDING' && countdown?.ms === 0);
   const confirmed = phase !== 'pending';
+  // Commission model: a one-time company signup fee instead of a monthly plan.
+  const oneTime = config?.billing?.model !== 'subscription';
+  const priceCents = oneTime ? (config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents) : PLAN.priceCents;
 
   return (
     <div className={s.page}>
@@ -190,16 +193,16 @@ export default function Checkout() {
       <main className={s.grid}>
         {/* Summary (left on desktop, below on mobile) */}
         <section className={s.summary} aria-labelledby="summary-title">
-          <p className="eyebrow">Assinatura</p>
+          <p className="eyebrow">{oneTime ? 'Taxa de cadastro · empresa' : 'Assinatura'}</p>
           <h1 id="summary-title" className={s.planName}>
             TEMPIX
           </h1>
           <p className={`${s.planPrice} num`}>
-            {formatCents(PLAN.priceCents)}
-            <span>/mês</span>
+            {formatCents(priceCents)}
+            <span>{oneTime ? ' uma vez só' : '/mês'}</span>
           </p>
           <ul className={s.features}>
-            {PLAN.features.slice(0, 6).map((f) => (
+            {(oneTime ? PRICING.company : PLAN.features.slice(0, 6)).map((f) => (
               <li key={f}>
                 <Check size={14} aria-hidden="true" /> {f}
               </li>
@@ -208,19 +211,19 @@ export default function Checkout() {
           <dl className={s.lines}>
             <div>
               <dt>Plano</dt>
-              <dd>TemPix · mensal</dd>
+              <dd>{oneTime ? 'TemPix · empresa' : 'TemPix · mensal'}</dd>
             </div>
             <div>
-              <dt>Período</dt>
-              <dd>30 dias a partir da confirmação</dd>
+              <dt>{oneTime ? 'Mensalidade' : 'Período'}</dt>
+              <dd>{oneTime ? 'Nenhuma, nunca' : '30 dias a partir da confirmação'}</dd>
             </div>
             <div>
-              <dt>Fidelidade</dt>
-              <dd>Nenhuma</dd>
+              <dt>{oneTime ? 'Depois' : 'Fidelidade'}</dt>
+              <dd>{oneTime ? `${PRICING.commissionLabel} só sobre contratos fechados` : 'Nenhuma'}</dd>
             </div>
             <div className={s.total}>
               <dt>Total hoje</dt>
-              <dd className="num">{formatCents(PLAN.priceCents)}</dd>
+              <dd className="num">{formatCents(priceCents)}</dd>
             </div>
           </dl>
           {me?.user && (
@@ -263,7 +266,7 @@ export default function Checkout() {
                           animate={{ opacity: 1, scale: 1 }}
                           className={s.qr}
                           src={`data:image/png;base64,${payment.pixQrCodeBase64}`}
-                          alt="QR Code Pix para pagamento de R$ 597,00"
+                          alt={`QR Code Pix para pagamento de ${formatCents(payment.amountCents)}`}
                           width={260}
                           height={260}
                         />
@@ -334,7 +337,7 @@ export default function Checkout() {
                   <Check size={30} />
                 </motion.span>
                 <h2 className={s.confirmedTitle}>PAGAMENTO CONFIRMADO</h2>
-                <p className={`${s.amount} num`}>{formatCents(payment?.amountCents || PLAN.priceCents)}</p>
+                <p className={`${s.amount} num`}>{formatCents(payment?.amountCents || priceCents)}</p>
                 <AnimatePresence>
                   {phase === 'activating' && (
                     <motion.div className={s.activating} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>

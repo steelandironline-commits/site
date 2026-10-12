@@ -148,6 +148,13 @@ enum IssueStatus {
 enum PaymentKind {
   SUBSCRIPTION
   CHARGE
+  SIGNUP_FEE
+}
+
+/// Empresa (CNPJ) or profissional (pessoa física, free signup).
+enum AccountType {
+  COMPANY
+  PERSON
 }
 
 enum ProtectionStatus {
@@ -370,7 +377,8 @@ model Session {
 }
 
 model Company {
-  id                    String    @id @default(cuid())
+  id                    String      @id @default(cuid())
+  accountType           AccountType @default(COMPANY)
   name                  String
   cnpj                  String?
   website               String?

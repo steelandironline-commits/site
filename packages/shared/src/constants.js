@@ -8,6 +8,23 @@ export const PRICING = Object.freeze({
   model: 'commission',
   commissionRateBps: 200,
   commissionLabel: '2%',
+  /** One-time signup fee for companies (CNPJ). Professionals sign up free. */
+  companySignupFeeCents: 20000,
+  person: [
+    'Cadastro grátis, sem taxa nenhuma',
+    'Receba vagas, serviços e fretes da sua região',
+    'Pagamento assegurado até a conclusão',
+    'Receba por Pix direto na sua conta',
+    'Avisos no WhatsApp e no celular',
+  ],
+  company: [
+    'Taxa única de cadastro: paga uma vez, sem mensalidade',
+    'Clientes, cargas e profissionais para a sua empresa',
+    'Pagamento assegurado até a conclusão',
+    'Cobrança e recebimento por Pix',
+    'Rotas, entregas e contratações no painel',
+    'Alertas no WhatsApp e painel no celular',
+  ],
   features: [
     'Cadastro gratuito, sem mensalidade',
     'Clientes, cargas e vagas para a sua empresa',
@@ -22,6 +39,9 @@ export const PRICING = Object.freeze({
 
 /** Plan code stored on the account-access record in the commission model. */
 export const COMMISSION_PLAN_CODE = 'COMMISSION';
+
+export const ACCOUNT_TYPES = ['COMPANY', 'PERSON'];
+export const ACCOUNT_TYPE_LABELS = { COMPANY: 'Empresa', PERSON: 'Profissional' };
 
 export const PLAN = Object.freeze({
   code: 'AUTOPIX',

@@ -71,11 +71,18 @@ export const companyProfileSchema = z.object({
 
 export const companyUpdateSchema = companyProfileSchema.partial();
 
-export const onboardingStartSchema = z.object({
-  name: trimmed(120).min(2, 'Informe seu nome'),
-  email: emailSchema,
-  companyName: trimmed(120).min(2, 'Informe o nome da empresa'),
-});
+export const onboardingStartSchema = z
+  .object({
+    accountType: z.enum(['COMPANY', 'PERSON']).default('COMPANY'),
+    name: trimmed(120).min(2, 'Informe seu nome'),
+    email: emailSchema,
+    companyName: z.string().trim().max(120).optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.accountType === 'COMPANY' && (!v.companyName || v.companyName.length < 2)) {
+      ctx.addIssue({ code: 'custom', path: ['companyName'], message: 'Informe o nome da empresa' });
+    }
+  });
 
 export const onboardingStepSchema = z.object({
   step: z.coerce.number().int().min(0).max(20),

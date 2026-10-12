@@ -123,7 +123,7 @@ export class RefundService {
       const full = p.refundedCents >= p.amountCents;
       if (full) {
         await tx.payment.update({ where: { id: p.id }, data: { status: 'REFUNDED', refundedAt: new Date(), protectionStatus: p.kind === 'CHARGE' ? 'REFUNDED' : undefined } });
-        if (p.kind === 'SUBSCRIPTION' && p.subscriptionId) await tx.subscription.update({ where: { id: p.subscriptionId }, data: { status: 'CANCELED', canceledAt: new Date() } });
+        if ((p.kind === 'SUBSCRIPTION' || p.kind === 'SIGNUP_FEE') && p.subscriptionId) await tx.subscription.update({ where: { id: p.subscriptionId }, data: { status: 'CANCELED', canceledAt: new Date() } });
       }
       const t = p.transactionId ? await tx.marketplaceTransaction.findUnique({ where: { id: p.transactionId } }) : null;
       if (t) {

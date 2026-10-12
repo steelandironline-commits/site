@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { PRICING } from '@autopix/shared';
+import { PRICING, formatCents } from '@autopix/shared';
 import { Logo } from '../../components/brand/Logo.jsx';
 import { Button, DemoBadge, Dialog, ScoreRing } from '../../components/ui/ui.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
@@ -33,7 +33,7 @@ const reveal = {
 };
 
 /* ------------------------------------------------------------ download */
-/** "Baixe aqui": installs the TemPix app (PWA). iPhone gets the two-tap instructions. */
+/** "Instalar App": installs the TemPix app (PWA). iPhone gets the two-tap instructions. */
 function DownloadButton({ block = false }) {
   const { installed, canPrompt, prompt } = useInstallPrompt();
   const navigate = useNavigate();
@@ -50,11 +50,11 @@ function DownloadButton({ block = false }) {
   return (
     <>
       <Button size={block ? 'lg' : 'sm'} block={block} icon={Download} onClick={onClick} className={block ? undefined : s.navCta}>
-        {block ? 'BAIXE AQUI' : 'Baixe aqui'}
+        {block ? 'INSTALAR APP' : 'Instalar App'}
       </Button>
       <Dialog
         open={Boolean(help)}
-        title="Baixe o app TemPix"
+        title="Instale o app TemPix"
         onClose={() => setHelp(null)}
         actions={
           <Button size="sm" onClick={() => setHelp(null)}>
@@ -329,35 +329,74 @@ function LiveDemo() {
 }
 
 /* --------------------------------------------------------------- pricing */
+const perDay = (cents) => (cents / 100 / 365).toFixed(2).replace('.', ',');
+
 function Pricing() {
   const fee = PRICING.commissionLabel;
+  const { config } = useSession();
+  const signup = config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents;
   return (
     <section id="preco" className={`${s.section} ${s.sectionAlt}`} aria-labelledby="preco-title">
       <div className="container">
         <motion.header className={s.sectionHead} {...reveal}>
           <p className="eyebrow">Preço</p>
-          <h2 id="preco-title">Sem mensalidade. {fee} só quando o contrato fecha.</h2>
+          <h2 id="preco-title">Sem mensalidade. Nunca.</h2>
           <p>
-            Cadastro gratuito. O TemPix cobra uma taxa fixa de {fee} sobre cada contrato entre as partes: cargas, rotas, obras, serviços e
-            vagas.
+            Profissional entra grátis. Empresa paga só um cadastro, uma única vez. Depois, o TemPix só ganha quando você ganha: {fee} dos
+            contratos fechados.
           </p>
         </motion.header>
-        <motion.article className={s.price} {...reveal}>
-          <div className={s.priceTop}>
-            <Logo />
-            <p className={s.priceValue}>
-              {fee.replace('%', '')}
-              <span className={s.pricePer}>% por contrato fechado</span>
-            </p>
-            <p className={s.priceNote}>Exemplo: contrato de R$ 10.000,00 → R$ 200,00 para o TemPix e R$ 9.800,00 para quem executou.</p>
-          </div>
-          <ul className={s.priceList}>
-            {PRICING.features.map((f) => (
-              <li key={f}>
-                <Check size={15} aria-hidden="true" /> {f}
-              </li>
-            ))}
-          </ul>
+        <div className={s.priceGrid}>
+          <motion.article className={s.price} {...reveal}>
+            <div className={s.priceTop}>
+              <p className="eyebrow">Profissional · pessoa física</p>
+              <p className={s.priceValue}>
+                <span className={s.priceCurrency}>R$</span>0<span className={s.pricePer}> para sempre</span>
+              </p>
+              <p className={s.priceNote}>Para trabalhadores e autônomos se identificarem e receberem vagas, serviços e fretes.</p>
+            </div>
+            <ul className={s.priceList}>
+              {PRICING.person.map((f) => (
+                <li key={f}>
+                  <Check size={15} aria-hidden="true" /> {f}
+                </li>
+              ))}
+            </ul>
+            <Button to="/onboarding?tipo=profissional" size="lg" block variant="outline" iconRight={ArrowRight}>
+              CADASTRAR GRÁTIS
+            </Button>
+          </motion.article>
+          <motion.article className={`${s.price} ${s.priceMain}`} {...reveal} transition={{ ...reveal.transition, delay: 0.08 }}>
+            <div className={s.priceTop}>
+              <p className="eyebrow">Empresa · CNPJ</p>
+              <p className={s.priceValue}>
+                <span className={s.priceCurrency}>R$</span>0<span className={s.pricePer}>/mês</span>
+              </p>
+              <p className={s.priceNote}>
+                Cadastro único de {formatCents(signup)}: menos de R$ {perDay(signup)} por dia no primeiro ano, e nada de mensalidade depois.
+              </p>
+            </div>
+            <ul className={s.priceList}>
+              {PRICING.company.map((f) => (
+                <li key={f}>
+                  <Check size={15} aria-hidden="true" /> {f}
+                </li>
+              ))}
+            </ul>
+            <Button to="/onboarding?tipo=empresa" size="lg" block iconRight={ArrowRight}>
+              CADASTRAR EMPRESA
+            </Button>
+          </motion.article>
+        </div>
+        <motion.div className={s.priceFoot} {...reveal}>
+          <p>
+            <strong>Em todo contrato fechado: {fee} fixos.</strong> Exemplo: contrato de R$ 10.000,00 → R$ 200,00 para o TemPix e R$ 9.800,00
+            para quem executou.
+          </p>
+          <p className={s.priceSafe}>
+            <ShieldCheck size={14} aria-hidden="true" /> Pagamento assegurado até a conclusão: em obras, serviços, rotas e transportes, o valor fica
+            protegido na instituição de pagamento parceira e só é liberado quando a conclusão é confirmada.
+          </p>
           <div className={s.priceCtas}>
             <Button to="/login" size="lg" variant="outline">
               FAZER LOGIN
@@ -366,11 +405,7 @@ function Pricing() {
               CADASTRE-SE AGORA
             </Button>
           </div>
-          <p className={s.priceSafe}>
-            <ShieldCheck size={14} aria-hidden="true" /> Pagamento assegurado até a conclusão: em obras, serviços, rotas e transportes, o valor fica
-            protegido na instituição de pagamento parceira e só é liberado quando a conclusão é confirmada.
-          </p>
-        </motion.article>
+        </motion.div>
       </div>
     </section>
   );
@@ -384,7 +419,7 @@ function FinalCta() {
           <h2>
             Tem emprego, tem rota, tem serviço. <span>TemPix.</span>
           </h2>
-          <p className={s.finalSub}>Cadastro gratuito · {PRICING.commissionLabel} só sobre contratos fechados · pagamento assegurado até a conclusão</p>
+          <p className={s.finalSub}>Profissional entra grátis · empresa paga só o cadastro, uma vez · sem mensalidade</p>
           <div className={s.priceCtas}>
             <Button to="/login" size="lg" variant="outline">
               FAZER LOGIN

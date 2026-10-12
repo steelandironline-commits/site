@@ -27,7 +27,12 @@ export function systemRoutes({ config, prisma, hub }) {
       paymentProvider: config.payment.provider,
       simulationAvailable: !config.isProduction && config.payment.provider === 'mock',
       plan: { name: PLAN.name, priceCents: PLAN.priceCents, features: PLAN.features },
-      billing: { model: config.billing.model, commissionRateBps: PRICING.commissionRateBps, commissionLabel: PRICING.commissionLabel },
+      billing: {
+        model: config.billing.model,
+        commissionRateBps: PRICING.commissionRateBps,
+        commissionLabel: PRICING.commissionLabel,
+        companySignupFeeCents: config.billing.model === 'commission' ? config.billing.companySignupFeeCents : 0,
+      },
     });
   });
 

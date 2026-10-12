@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { PLAN, checkoutState, deepLinks, formatCents, PRICING } from '@autopix/shared';
+import { PLAN, checkoutState, deepLinks, formatCents, PRICING, COMMISSION_PLAN_CODE } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { generateToken } from '../security/tokens.js';
@@ -132,12 +132,77 @@ export class PaymentService {
     }
   }
 
+  // ----------------------------------------------- company signup fee (one-time)
+
+  /** Commission model: companies pay a one-time signup fee; nothing recurring. */
+  async #createSignupFeeCharge({ user, company }) {
+    const fee = this.config.billing.companySignupFeeCents;
+    if (company.accountType !== 'COMPANY' || fee <= 0) {
+      throw conflict(`Esta conta não tem taxa de cadastro. O TemPix só cobra ${PRICING.commissionLabel} por contrato fechado.`);
+    }
+    const provider = this.provider();
+    if (provider.name === 'none') throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE); // nothing is recorded
+    let access = await this.prisma.subscription.findUnique({ where: { companyId: company.id } });
+    if (access?.status === 'ACTIVE') throw conflict('A taxa de cadastro já foi paga.');
+    if (!access) {
+      access = await this.prisma.subscription.create({
+        data: { companyId: company.id, plan: COMMISSION_PLAN_CODE, priceCents: 0, provider: provider.name },
+      });
+    }
+    if (provider.name === 'asaas' && !company.cnpj) throw badRequest('Informe o CNPJ da empresa para gerar o Pix.');
+
+    const pending = await this.prisma.payment.findFirst({
+      where: {
+        companyId: company.id,
+        kind: 'SIGNUP_FEE',
+        status: 'PENDING',
+        provider: provider.name,
+        amountCents: fee,
+        expiresAt: { gt: new Date(Date.now() + 60_000) },
+        pixCopyPaste: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: PUBLIC_PAYMENT_SELECT,
+    });
+    if (pending) return pending;
+
+    const expiresAt = new Date(Date.now() + PIX_TTL_MS);
+    const payment = await this.prisma.payment.create({
+      data: {
+        kind: 'SIGNUP_FEE',
+        subscriptionId: access.id,
+        companyId: company.id,
+        provider: provider.name,
+        amountCents: fee,
+        description: 'Taxa de cadastro TemPix · pagamento único',
+        isSandbox: Boolean(provider.isSandbox),
+        idempotencyKey: generateToken(18),
+        createdByUserId: user.id,
+        expiresAt,
+      },
+    });
+    const updated = await this.#issueCharge(payment, {
+      payer: { name: user.name, email: user.email, cnpj: company.cnpj, companyId: company.id },
+      description: payment.description,
+      expiresAt,
+      idempotencyKey: payment.idempotencyKey,
+    });
+    await this.events.activity.record({
+      companyId: company.id,
+      userId: user.id,
+      type: 'PAYMENT',
+      title: 'Cobrança Pix gerada',
+      description: `Taxa de cadastro · ${formatCents(fee)} · pagamento único.`,
+      source: provider.name,
+      metadata: { paymentId: payment.id },
+    });
+    return updated;
+  }
+
   // ------------------------------------------------- subscription checkout
 
   async createPixCharge({ user, company }) {
-    if (this.config.billing.model === 'commission') {
-      throw conflict(`O TemPix não cobra assinatura: a taxa é de ${PRICING.commissionLabel} por contrato fechado.`);
-    }
+    if (this.config.billing.model === 'commission') return this.#createSignupFeeCharge({ user, company });
     const provider = this.provider();
     if (provider.name === 'none') throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE); // nothing is recorded
     let subscription = await this.prisma.subscription.findUnique({ where: { companyId: company.id } });
@@ -455,8 +520,10 @@ export class PaymentService {
         } else {
           await tx.payment.update({ where: { id: payment.id }, data: { status: 'CONFIRMED', paidAt: paidAt || now } });
           const sub = payment.subscription;
+          // A signup fee opens access with no end date; a subscription adds a period.
+          const oneTime = payment.kind === 'SIGNUP_FEE';
           const baseDate = sub.status === 'ACTIVE' && sub.currentPeriodEnd && sub.currentPeriodEnd > now ? sub.currentPeriodEnd : now;
-          const periodEnd = new Date(baseDate.getTime() + PLAN.intervalDays * 24 * 60 * 60 * 1000);
+          const periodEnd = oneTime ? null : new Date(baseDate.getTime() + PLAN.intervalDays * 24 * 60 * 60 * 1000);
           await tx.subscription.update({
             where: { id: sub.id },
             data: {
@@ -479,7 +546,7 @@ export class PaymentService {
             {
               ...base,
               type: 'PAYMENT_RECEIVED',
-              payload: { amountCents: payment.amountCents, kind: 'SUBSCRIPTION' },
+              payload: { amountCents: payment.amountCents, kind: payment.kind },
               activity: {
                 type: 'PAYMENT',
                 title: 'Pagamento confirmado',
@@ -496,7 +563,9 @@ export class PaymentService {
               companyId: payment.companyId,
               type: 'SYSTEM',
               title: 'TemPix ativado',
-              description: `Assinatura ativa até ${periodEnd.toLocaleDateString('pt-BR')}. Agentes iniciando.`,
+              description: oneTime
+                ? 'Taxa de cadastro confirmada. Sem mensalidade. Agentes iniciando.'
+                : `Assinatura ativa até ${periodEnd.toLocaleDateString('pt-BR')}. Agentes iniciando.`,
               source: 'subscription',
               severity: 'SUCCESS',
             },
@@ -551,7 +620,9 @@ export class PaymentService {
   // ---------------------------------------------------- activation hand-off
 
   async claimActivation(paymentId, user) {
-    const payment = await this.prisma.payment.findFirst({ where: { id: paymentId, companyId: user.companyId, kind: 'SUBSCRIPTION' } });
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: paymentId, companyId: user.companyId, kind: { in: ['SUBSCRIPTION', 'SIGNUP_FEE'] } },
+    });
     if (!payment) throw notFound('Pagamento não encontrado.');
     if (payment.status !== 'CONFIRMED') throw conflict('O pagamento ainda não foi confirmado.');
     const fresh = await this.prisma.user.findUnique({ where: { id: user.id } });
