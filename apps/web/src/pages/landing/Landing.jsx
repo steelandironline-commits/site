@@ -1,22 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
-  Building2,
   Check,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Gauge,
-  Globe,
   Menu,
   MessageSquareText,
   Radar,
   ShieldCheck,
-  Target,
   X,
-  Zap,
 } from 'lucide-react';
 import { PLAN, formatCents } from '@autopix/shared';
 import { Logo } from '../../components/brand/Logo.jsx';
@@ -25,9 +19,10 @@ import LazyRadar from '../../components/radar/LazyRadar.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import { PipelineFlow } from '../../components/activity/Flow.jsx';
 import { DEMO_RADAR_NODES, useDemoFeed } from '../../lib/demoFeed.js';
-import { useIsMobile, useMediaQuery } from '../../lib/hooks.js';
+import { useIsMobile } from '../../lib/hooks.js';
 import { useSession } from '../../lib/session.jsx';
 import Cinematic from './Cinematic.jsx';
+import LogicFilm from './LogicFilm.jsx';
 import s from './landing.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -242,184 +237,6 @@ function Product() {
   );
 }
 
-/* ---------------------------------------------------------- how it works */
-const STEPS = [
-  { n: '01', title: 'ENTENDEMOS SUA EMPRESA', text: 'Você diz o que vende e quem quer encontrar.', icon: Building2, detail: ['Produtos e serviços', 'Cliente ideal', 'Região e raio', 'Ticket médio'] },
-  { n: '02', title: 'PROCURAMOS O MERCADO', text: 'O AutoPix monitora fontes comerciais.', icon: Globe, detail: ['Busca web', 'Sites institucionais', 'Notícias regionais', 'Cadastros públicos'] },
-  { n: '03', title: 'DETECTAMOS SINAIS', text: 'Novos projetos. Expansões. Contratações. Compras. Obras. Demandas.', icon: Zap, detail: ['Expansão', 'Obras', 'Compras e cotações', 'Contratações'] },
-  { n: '04', title: 'CLASSIFICAMOS', text: 'Cada oportunidade recebe um score.', icon: Target, detail: ['Setor', 'Serviços compatíveis', 'Localização', 'Força do sinal', 'Valor'] },
-  { n: '05', title: 'VOCÊ VENDE', text: 'As melhores oportunidades chegam ao painel.', icon: ArrowRight, detail: ['Prioridade', 'Contato comercial público', 'Abordagem sugerida', 'Status do funil'] },
-];
-
-/** Mobile: swipeable cards (scroll-snap) with dots and arrows — no cramped tabs. */
-function StepsCarousel() {
-  const track = useRef(null);
-  const [active, setActive] = useState(0);
-
-  const goTo = (i) => {
-    const el = track.current;
-    const card = el?.children[i];
-    if (!card) return;
-    el.scrollTo({ left: card.offsetLeft - el.offsetLeft - 16, behavior: 'smooth' });
-  };
-
-  const onScroll = () => {
-    const el = track.current;
-    if (!el) return;
-    const center = el.scrollLeft + el.clientWidth / 2;
-    let best = 0;
-    let dist = Infinity;
-    [...el.children].forEach((c, i) => {
-      const d = Math.abs(c.offsetLeft - el.offsetLeft + c.clientWidth / 2 - center);
-      if (d < dist) {
-        dist = d;
-        best = i;
-      }
-    });
-    if (best !== active) setActive(best);
-  };
-
-  return (
-    <div className={s.carousel}>
-      <div
-        ref={track}
-        className={s.carouselTrack}
-        onScroll={onScroll}
-        role="group"
-        aria-roledescription="carrossel"
-        aria-label="Etapas do AutoPix"
-      >
-        {STEPS.map((st, i) => (
-          <article
-            key={st.n}
-            className={`${s.stepCard} ${active === i ? s.stepCardActive : ''}`}
-            aria-roledescription="etapa"
-            aria-label={`${i + 1} de ${STEPS.length}: ${st.title}`}
-            onClick={() => goTo(i)}
-          >
-            <span className={s.stepIcon}>
-              <st.icon size={20} aria-hidden="true" />
-            </span>
-            <p className={s.stepNum}>Etapa {st.n}</p>
-            <h3>{st.title}</h3>
-            <p className={s.stepText}>{st.text}</p>
-            <ul className={s.stepDetail}>
-              {st.detail.map((d) => (
-                <li key={d}>
-                  <span aria-hidden="true">›</span> {d}
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </div>
-      <div className={s.carouselNav}>
-        <button type="button" className={s.carouselArrow} onClick={() => goTo(Math.max(0, active - 1))} disabled={active === 0} aria-label="Etapa anterior">
-          <ChevronLeft size={18} />
-        </button>
-        <div className={s.carouselDots} role="tablist" aria-label="Escolher etapa">
-          {STEPS.map((st, i) => (
-            <button
-              key={st.n}
-              type="button"
-              role="tab"
-              aria-selected={active === i}
-              aria-label={`Etapa ${st.n}: ${st.title}`}
-              className={`${s.carouselDot} ${active === i ? s.carouselDotActive : ''}`}
-              onClick={() => goTo(i)}
-            />
-          ))}
-        </div>
-        <button type="button" className={s.carouselArrow} onClick={() => goTo(Math.min(STEPS.length - 1, active + 1))} disabled={active === STEPS.length - 1} aria-label="Próxima etapa">
-          <ChevronRight size={18} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function StepsTabs() {
-  const [active, setActive] = useState(0);
-  const step = STEPS[active];
-  const onKey = (e) => {
-    const delta = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
-    if (!delta) return;
-    e.preventDefault();
-    const next = (active + delta + STEPS.length) % STEPS.length;
-    setActive(next);
-    document.getElementById(`step-tab-${next}`)?.focus();
-  };
-  return (
-    <div className={s.steps}>
-      <div className={s.stepList} role="tablist" aria-label="Etapas" aria-orientation="vertical" onKeyDown={onKey}>
-        {STEPS.map((st, i) => (
-          <button
-            key={st.n}
-            id={`step-tab-${i}`}
-            type="button"
-            role="tab"
-            aria-selected={active === i}
-            aria-controls="step-panel"
-            tabIndex={active === i ? 0 : -1}
-            className={`${s.stepTab} ${active === i ? s.stepTabActive : ''}`}
-            onClick={() => setActive(i)}
-          >
-            <span className={s.stepN}>{st.n}</span>
-            <span className={s.stepT}>{st.title}</span>
-            {active === i && <motion.span layoutId="step-bar" className={s.stepBar} transition={{ duration: 0.35, ease }} />}
-          </button>
-        ))}
-      </div>
-      <div id="step-panel" role="tabpanel" aria-labelledby={`step-tab-${active}`} className={s.stepPanel}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step.n}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.3, ease }}
-            className={s.stepPanelInner}
-          >
-            <span className={s.stepIcon}>
-              <step.icon size={22} aria-hidden="true" />
-            </span>
-            <p className={s.stepNum}>Step {step.n}</p>
-            <h3>{step.title}</h3>
-            <p className={s.stepText}>{step.text}</p>
-            <ul className={s.stepDetail}>
-              {step.detail.map((d, i) => (
-                <motion.li key={d} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.06 * i + 0.1 }}>
-                  <span aria-hidden="true">›</span> {d}
-                </motion.li>
-              ))}
-            </ul>
-            <div className={s.stepProgress} aria-hidden="true">
-              {STEPS.map((_, i) => (
-                <span key={i} className={i <= active ? s.stepProgressOn : ''} />
-              ))}
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-function HowItWorks() {
-  const mobile = useMediaQuery('(max-width: 899px)');
-  return (
-    <section id="como-funciona" className={`${s.section} ${s.sectionAlt}`} aria-labelledby="como-title">
-      <div className="container">
-        <motion.header className={s.sectionHead} {...reveal}>
-          <p className="eyebrow">Como funciona</p>
-          <h2 id="como-title">Do perfil da sua empresa à oportunidade qualificada.</h2>
-        </motion.header>
-        {mobile ? <StepsCarousel /> : <StepsTabs />}
-      </div>
-    </section>
-  );
-}
-
 /* -------------------------------------------------------------- live demo */
 function LiveDemo() {
   const [open, setOpen] = useState(false);
@@ -602,7 +419,7 @@ export default function Landing() {
         <Cinematic />
         <Hero />
         <Product />
-        <HowItWorks />
+        <LogicFilm />
         <LiveDemo />
         <Pricing />
         <FinalCta />

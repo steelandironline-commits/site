@@ -28,6 +28,11 @@
   --primary-soft: rgba(42, 209, 184, 0.1);
   --primary-line: rgba(42, 209, 184, 0.32);
 
+  /* Buttons: matte dark blue */
+  --navy: #1c2a45;
+  --navy-2: #233457;
+  --navy-line: rgba(110, 140, 196, 0.55);
+
   --revenue: #3fbf86;
   --revenue-soft: rgba(63, 191, 134, 0.1);
   --amber: #e5a53b;

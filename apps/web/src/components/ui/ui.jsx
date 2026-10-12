@@ -15,7 +15,11 @@ export const Button = forwardRef(function Button(
     <>
       {loading ? <span className={s.spinner} aria-hidden="true" /> : Icon ? <Icon size={size === 'sm' ? 14 : 16} aria-hidden="true" /> : null}
       <span className={s.btnLabel}>{children}</span>
-      {IconRight && !loading ? <IconRight size={size === 'sm' ? 14 : 16} aria-hidden="true" /> : null}
+      {IconRight && !loading ? (
+        <span className={s.btnChip} aria-hidden="true">
+          <IconRight size={size === 'sm' ? 12 : 14} strokeWidth={2.4} />
+        </span>
+      ) : null}
     </>
   );
   if (to) {

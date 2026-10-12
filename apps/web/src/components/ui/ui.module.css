@@ -50,16 +50,66 @@
   width: 100%;
 }
 
+/* Matte dark blue with black and white details (hairline + chip). */
 .btn-primary {
-  background: var(--primary);
-  color: var(--primary-ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 55%),
+    var(--navy);
+  color: #fff;
+  border-color: rgba(0, 0, 0, 0.75);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 6px 20px -8px rgba(42, 209, 184, 0.55);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 24px -12px rgba(0, 0, 0, 0.9);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 55%),
+    var(--navy-2);
+}
+
+.btn-primary:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    var(--focus);
+}
+
+/* Small round chip for the trailing icon: black on primary, white on light variants. */
+.btnChip {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: -6px;
+  border-radius: 50%;
+  background: #07090c;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  transition: transform 0.2s var(--ease);
+}
+
+.btn-sm .btnChip {
+  width: 18px;
+  height: 18px;
+  margin-right: -4px;
+}
+
+.btn-lg .btnChip {
+  width: 28px;
+  height: 28px;
+  margin-right: -10px;
+}
+
+.btn:hover:not(:disabled) .btnChip {
+  transform: translateX(2px);
+}
+
+.btn-outline .btnChip,
+.btn-secondary .btnChip,
+.btn-ghost .btnChip {
+  background: #fff;
+  color: #07090c;
 }
 
 .btn-secondary {
@@ -91,8 +141,9 @@
 }
 
 .btn-outline:hover:not(:disabled) {
-  border-color: var(--primary-line);
-  color: var(--primary);
+  border-color: var(--navy-line);
+  background: rgba(46, 74, 122, 0.12);
+  color: #fff;
 }
 
 .btn-danger {
