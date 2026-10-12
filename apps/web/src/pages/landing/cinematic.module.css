@@ -211,6 +211,14 @@
   color: var(--text-2);
 }
 
+.actText {
+  max-width: 46ch;
+  margin: 10px auto 0;
+  font-size: clamp(0.9rem, 0.85rem + 0.3vw, 1.05rem);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
 .actKicker span {
   color: var(--primary);
 }
@@ -233,7 +241,7 @@
 .map {
   width: 100%;
   height: auto;
-  max-height: 42vh;
+  max-height: 34vh;
   overflow: visible;
 }
 
@@ -621,4 +629,8 @@
     right: var(--gutter);
     margin-left: 0;
   }
+}
+
+.actKicker svg {
+  color: var(--primary);
 }

@@ -85,10 +85,24 @@ function RailItem({ act, progress, w }) {
   const fill = useTransform(progress, [w[1], w[2]], ['0%', '100%']);
   return (
     <motion.li style={{ opacity: on }}>
+      <span className={s.railLabel}>{act.label}</span>
       <span className={s.railTrack}>
         <motion.i style={{ width: fill }} />
       </span>
     </motion.li>
+  );
+}
+
+/** Scene heading: topic, headline and one line on what the app does there. */
+function SceneHead({ icon: Icon, kicker, title, text }) {
+  return (
+    <header className={s.actHead}>
+      <p className={s.actKicker}>
+        <Icon size={14} aria-hidden="true" /> {kicker}
+      </p>
+      <h2 className={s.actTitle}>{title}</h2>
+      <p className={s.actText}>{text}</p>
+    </header>
   );
 }
 
@@ -122,6 +136,7 @@ function Transporte({ progress }) {
   });
   return (
     <motion.div className={s.scene} style={st}>
+      <SceneHead icon={Truck} kicker="Cargas" title="A carga encontra o caminhão." text="O AutoPix cruza rotas, cargas de retorno e motoristas — e avisa no WhatsApp quando aparece um frete compatível." />
       <div className={s.stage}>
         <svg viewBox="0 0 760 340" className={s.map} role="img" aria-label="Rota ilustrativa de Santos a Campinas">
           <defs>
@@ -173,6 +188,7 @@ function Pessoas({ progress }) {
   const link = useTransform(progress, [0.38, 0.48], [0, 1]);
   return (
     <motion.div className={s.scene} style={st}>
+      <SceneHead icon={HardHat} kicker="Equipes" title="O profissional certo, na hora certa." text="Peça “3 soldadores para segunda” e receba profissionais compatíveis na sua região." />
       <div className={s.stage}>
         <svg viewBox="0 0 760 320" className={s.map} role="img" aria-label="Rede ilustrativa de profissionais">
           {LINKS.map(([a, b]) => (
@@ -219,6 +235,7 @@ function Servicos({ progress }) {
   const st = useWindow(progress, W.servicos);
   return (
     <motion.div className={s.scene} style={st}>
+      <SceneHead icon={Wrench} kicker="AutoPix Pay" title="Do pedido ao Pix, sem atrito." text="Cobrança Pix, acompanhamento do serviço e comissão clara — processados por instituições financeiras parceiras." />
       <div className={`${s.stage} ${s.orders}`}>
         {ORDERS.map((o, i) => (
           <OrderCard key={o.t} o={o} i={i} progress={progress} />
