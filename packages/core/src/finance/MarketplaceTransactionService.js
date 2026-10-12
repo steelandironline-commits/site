@@ -393,7 +393,10 @@ export class MarketplaceTransactionService {
         trip,
       },
       role: role || 'ADMIN',
-      allowedActions: this.allowedActions(t, role, caps.capabilities, { isPlatformAdmin, openDispute }),
+      allowedActions: [
+        ...this.allowedActions(t, role, caps.capabilities, { isPlatformAdmin, openDispute }).filter((a) => !(trip && a === 'CONFIRM_COMPLETION')),
+        ...(trip && role === 'BUYER' && ['PAID', 'PROTECTED'].includes(t.status) && !t.buyerConfirmedAt && ['LOADED', 'IN_TRANSIT', 'AT_DESTINATION'].includes(trip.tripStatus) ? ['CONFIRM_DELIVERY'] : []),
+      ],
       provider: caps,
     };
   }

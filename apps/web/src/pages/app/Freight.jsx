@@ -203,9 +203,11 @@ export function FreightMatchDetail() {
         <Button variant="ghost" href={maps} target="_blank" rel="noopener noreferrer">
           Ver rota
         </Button>
-        <Button variant="ghost" to={`/app/payments?new=1&relatedType=freightMatch&relatedId=${m.id}`}>
-          Cobrar com Pix
-        </Button>
+        {['ACCEPTED', 'DRIVER_ARRIVED'].includes(m.status) && m.price ? (
+          <Button variant="secondary" to={`/app/pay?new=1&referenceType=freightMatch&referenceId=${m.id}`}>
+            Cobrar frete
+          </Button>
+        ) : null}
       </div>
     </>
   );

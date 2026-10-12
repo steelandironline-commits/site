@@ -22,6 +22,14 @@ export class ApiError extends Error {
   }
 }
 
+function isStandalone() {
+  try {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  } catch {
+    return false;
+  }
+}
+
 const listeners = new Set();
 export function onUnauthorized(fn) {
   listeners.add(fn);
@@ -37,6 +45,8 @@ export async function api(path, { method = 'GET', body, signal, quiet401 = false
       headers: {
         Accept: 'application/json',
         'X-Requested-With': 'autopix',
+        // Audit hint only (never used for authorization).
+        'X-AutoPix-Client': isStandalone() ? 'pwa' : 'web',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,

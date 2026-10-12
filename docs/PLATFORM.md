@@ -50,8 +50,14 @@ Registered actions: `ANALYZE_OPPORTUNITY`, `CONTACT_OPPORTUNITY`,
 `REJECT_FREIGHT_MATCH`, `MARK_DRIVER_ARRIVED`, `COMPLETE_FREIGHT`,
 `CREATE_WORKFORCE_DEMAND`, `INVITE_PROFESSIONAL`, `REJECT_PROFESSIONAL`,
 `COMPLETE_WORKFORCE_SERVICE`, `CREATE_SUBSCRIPTION_PIX`, `CREATE_PIX`,
-`REQUEST_PAYMENT_RELEASE`, `RELEASE_PAYMENT`*, `REFUND_PAYMENT`*,
-`OPEN_DISPUTE`, `CHANGE_BANK_DETAILS`*, `START_AGENT`, `PAUSE_AGENT`,
+`CREATE_TRANSACTION`, `CREATE_TRANSACTION_PIX`, `START_SERVICE`,
+`REPORT_COMPLETION`, `REQUEST_RELEASE`, `CONFIRM_COMPLETION`,
+`RELEASE_PAYMENT`*, `REFUND_PAYMENT`*, `OPEN_DISPUTE`, `RESPOND_DISPUTE`,
+`RESOLVE_DISPUTE`* (platform admin), `CANCEL_TRANSACTION`,
+`CONSENT_TRIP_TRACKING`, `REVOKE_TRIP_TRACKING`, `START_TRIP`,
+`MARK_CARGO_LOADED`, `RECORD_LOCATION`, `CONFIRM_DELIVERY`,
+`UPDATE_COMMISSION_RULE`* (platform admin), `RESOLVE_RECONCILIATION_ISSUE`
+(platform admin), `GET_TRANSACTION`, `CHANGE_BANK_DETAILS`*, `START_AGENT`, `PAUSE_AGENT`,
 `UPDATE_COMPANY_PROFILE`, `CANCEL_SUBSCRIPTION`, `RESUME_SUBSCRIPTION`
 (\* sensitive). `GET /api/actions` returns the live catalog.
 
@@ -105,17 +111,16 @@ Event types: `OPPORTUNITY_CREATED`, `OPPORTUNITY_HIGH_PRIORITY`,
 Two kinds share one `PaymentProvider` abstraction:
 
 - `SUBSCRIPTION` — the AutoPix plan (activates the account).
-- `CHARGE` — protected Pix charges a company creates (web or WhatsApp).
-  Confirmed funds are `HELD` (`PAYMENT_PROTECTED`); `REQUEST_PAYMENT_RELEASE`
-  marks a completed service; `RELEASE_PAYMENT` (step-up) transfers to the
-  company's Pix key via `provider.releaseFunds()` (Asaas `/transfers`; Mercado
-  Pago adapter reports it unsupported); `OPEN_DISPUTE` freezes; `REFUND_PAYMENT`
-  (step-up) refunds through the provider.
+- `CHARGE` — AutoPix Pay charges, always linked to a `MarketplaceTransaction`
+  (server-side amount). Everything after payment — protection, release,
+  refunds, disputes, trips, reconciliation — is described in
+  [`AUTOPIX_PAY.md`](AUTOPIX_PAY.md). Release and refunds are sensitive actions
+  and never run from WhatsApp.
 
 ## Deep links
 
 `/app/opportunities/:id`, `/app/freight/matches/:id`, `/app/workforce/matches/:id`,
-`/app/payments/:id`, `/app/confirm/:challengeId`. Links contain only object
+`/app/payments/:id`, `/app/pay/transactions/:id`, `/app/confirm/:challengeId`. Links contain only object
 ids; access always requires the user's session. Unauthenticated visits keep
 the destination through `/login?next=…`.
 

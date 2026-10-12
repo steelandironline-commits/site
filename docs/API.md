@@ -31,8 +31,13 @@ from `POST /auth/native/login` (no CSRF header needed).
 Examples:
 ```http
 POST /api/actions/CONTACT_OPPORTUNITY   { "input": { "id": "opp_…" } }
-POST /api/actions/CREATE_PIX            { "input": { "amountCents": 140000, "description": "Montagem" } }
-POST /api/actions/RELEASE_PAYMENT       { "input": { "id": "pay_…" } }   → 202 challenge
+POST /api/actions/CREATE_TRANSACTION    { "input": { "grossCents": 140000, "description": "Montagem", "buyerEmail": "cliente@x.com" } }
+POST /api/actions/CREATE_TRANSACTION    { "input": { "referenceType": "freightMatch", "referenceId": "fm_…" } }   (amount from the freight)
+POST /api/actions/CREATE_TRANSACTION_PIX { "input": { "id": "tx_…" } }
+POST /api/actions/CREATE_PIX            { "input": { "amountCents": 140000, "description": "Montagem" } }   (SERVICE transaction + Pix)
+POST /api/actions/RELEASE_PAYMENT       { "input": { "id": "tx_…" } }   → 202 challenge (web/app only)
+POST /api/actions/REFUND_PAYMENT        { "input": { "id": "tx_…", "amountCents": 40000 } }   → 202 challenge
+POST /api/actions/RECORD_LOCATION       { "input": { "matchId": "fm_…", "latitude": -22.9, "longitude": -47.06, "accuracyM": 20 } }
 ```
 
 ## Read endpoints
@@ -49,10 +54,21 @@ POST /api/actions/RELEASE_PAYMENT       { "input": { "id": "pay_…" } }   → 2
 | GET | `/freight`, `/freight/matches/:id` |
 | GET | `/workforce`, `/workforce/matches/:id` |
 | GET | `/config`, `/health` |
+| GET | `/pay/capabilities` — provider capabilities + reasons, protected-payment status |
+| GET | `/pay/summary` — RECEBIDO, A LIBERAR, EM PROCESSAMENTO, COMISSÕES |
+| GET | `/pay/transactions?view=all\|charges\|payments\|receivable\|toRelease\|commissions\|history`, `/pay/transactions/:id` (role, allowedActions, timeline, trip) |
+| GET | `/pay/commission/quote?grossCents&type` |
+| GET | `/pay/trips/:matchId` (carrier only) |
+
+Platform admin only (`User.isPlatformAdmin`, 403 otherwise; read-only):
+`/admin/overview`, `/admin/payments`, `/admin/transactions`,
+`/admin/provider-events`, `/admin/failed-webhooks`, `/admin/reconciliation`,
+`/admin/refunds`, `/admin/disputes` (+ `POST /admin/disputes/:id/summary|review`),
+`/admin/payout-failures`, `/admin/commission-rules`, `/admin/audit`.
 
 Compatibility routes (delegate to the ActionEngine): `PATCH /opportunities/:id`,
 `PUT /company`, `POST /agents/run`, `POST /agents/pause`, `POST /subscription/cancel|resume`,
-`POST /payments/pix`.
+`POST /payments/pix` (body `{ transactionId? }` — amount is always computed on the server).
 
 ## WhatsApp & notifications
 | Method | Path | Notes |
@@ -68,6 +84,7 @@ Compatibility routes (delegate to the ActionEngine): `PATCH /opportunities/:id`,
 ## Webhooks (public, signature-verified)
 | Method | Path |
 |---|---|
-| POST | `/webhooks/payment/:provider` (mercadopago, asaas; mock in dev) |
+| POST | `/webhooks/payment/:provider` (mercadopago, asaas, banco-do-brasil; mock in dev) |
+| POST | `/webhooks/payment/banco-do-brasil/pix?token=…` — BACEN suffix; token + charge re-fetch |
 | GET | `/webhooks/whatsapp` — Meta verification (`hub.verify_token`) |
 | POST | `/webhooks/whatsapp` — `X-Hub-Signature-256` |

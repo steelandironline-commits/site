@@ -21,7 +21,6 @@ export default defineRailway((ctx) => {
     PASSWORD_RESET_SECRET: preserve(),
     PAYMENT_PROVIDER: preserve(),
     PAYMENT_ACCESS_TOKEN: preserve(),
-    PAYMENT_WEBHOOK_SECRET: preserve(),
     APP_URL: preserve(),
     API_URL: preserve(),
     DEMO_MODE: prod ? 'false' : 'true',
@@ -36,6 +35,25 @@ export default defineRailway((ctx) => {
     WEB_PUSH_SUBJECT: preserve(),
   };
 
+  // Banco do Brasil: API credentials (status reads, charges, refunds).
+  const bb = {
+    BB_ENVIRONMENT: prod ? 'production' : 'sandbox',
+    BB_CLIENT_ID: preserve(),
+    BB_CLIENT_SECRET: preserve(),
+    BB_DEVELOPER_APPLICATION_KEY: preserve(),
+    BB_PIX_KEY: preserve(),
+    BB_API_BASE_URL: preserve(),
+    BB_OAUTH_URL: preserve(),
+    BB_MTLS_CERT_BASE64: preserve(),
+    BB_MTLS_KEY_BASE64: preserve(),
+    BB_PAY_ENABLED: preserve(),
+    BB_SPLIT_ENABLED: preserve(),
+    BB_PAYOUT_ENABLED: preserve(),
+    BB_PROTECTED_PAYMENT_ENABLED: preserve(),
+  };
+  // Webhook secrets: only the web service receives webhooks.
+  const webhookSecrets = { PAYMENT_WEBHOOK_SECRET: preserve(), BB_WEBHOOK_SECRET: preserve() };
+
   const web = service('autopix-web', {
     source: repo,
     build: 'npm run build',
@@ -43,15 +61,18 @@ export default defineRailway((ctx) => {
     preDeploy: 'npm run db:migrate',
     healthcheck: '/api/health',
     healthcheckTimeout: 60,
-    env: { ...shared, EMAIL_PROVIDER: preserve(), EMAIL_API_KEY: preserve(), EMAIL_FROM: preserve() },
+    env: { ...shared, ...bb, ...webhookSecrets, PROCESS_ROLE: 'web', EMAIL_PROVIDER: preserve(), EMAIL_API_KEY: preserve(), EMAIL_FROM: preserve() },
   });
 
   const worker = service('autopix-worker', {
     source: repo,
     build: 'npm run build',
     start: 'npm run start:worker',
+    // Reconciliation needs BB read/refund access; it never gets webhook secrets.
     env: {
       ...shared,
+      ...bb,
+      PROCESS_ROLE: 'worker',
       SEARCH_PROVIDER: preserve(),
       SEARCH_API_KEY: preserve(),
       NEWS_SOURCE_ENABLED: preserve(),

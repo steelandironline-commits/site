@@ -25,6 +25,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
+    "bb:register-webhook": "node scripts/bb-register-webhook.js",
     "db:studio": "prisma studio",
     "lint": "node --check apps/api/src/server.js && node --check apps/worker/src/index.js"
   },

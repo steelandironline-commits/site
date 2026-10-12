@@ -4,6 +4,8 @@ import { getConfig, getPrisma, disconnectPrisma, logger, startWorker } from '@au
 // Deploy as a separate Railway service with `npm run start:worker`.
 
 async function main() {
+  // Least privilege: the worker never receives webhooks, so it runs without webhook secrets.
+  process.env.PROCESS_ROLE ??= 'worker';
   const config = getConfig();
   if (config.embeddedWorker) {
     logger.warn('EMBEDDED_WORKER=true: the API already runs a worker; this process will also consume jobs (safe, jobs are claimed with SKIP LOCKED).');

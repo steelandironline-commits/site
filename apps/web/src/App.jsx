@@ -19,7 +19,9 @@ const Agents = lazy(() => import('./pages/app/Agents.jsx'));
 const Company = lazy(() => import('./pages/app/Company.jsx'));
 const Subscription = lazy(() => import('./pages/app/Subscription.jsx'));
 const Settings = lazy(() => import('./pages/app/Settings.jsx'));
-const Payments = lazy(() => import('./pages/app/Payments.jsx'));
+const Pay = lazy(() => import('./pages/app/Pay.jsx'));
+const TransactionDetail = lazy(() => import('./pages/app/TransactionDetail.jsx'));
+const Admin = lazy(() => import('./pages/app/Admin.jsx'));
 const PaymentDetail = lazy(() => import('./pages/app/PaymentDetail.jsx'));
 const Freight = lazy(() => import('./pages/app/Freight.jsx'));
 const FreightMatchDetail = lazy(() => import('./pages/app/Freight.jsx').then((m) => ({ default: m.FreightMatchDetail })));
@@ -59,7 +61,10 @@ export default function App() {
             <Route path="company" element={<Company />} />
             <Route path="subscription" element={<Subscription />} />
             <Route path="settings" element={<Settings />} />
-            <Route path="payments" element={<Payments />} />
+            <Route path="pay" element={<Pay />} />
+            <Route path="pay/transactions/:id" element={<TransactionDetail />} />
+            <Route path="payments" element={<Navigate to="/app/pay" replace />} />
+            <Route path="admin" element={<Admin />} />
             <Route path="payments/:id" element={<PaymentDetail />} />
             <Route path="freight" element={<Freight />} />
             <Route path="freight/matches/:id" element={<FreightMatchDetail />} />

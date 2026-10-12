@@ -13,6 +13,7 @@ import {
   AuthService,
   AgentOrchestrator,
   JobQueue,
+  CommissionService,
 } from '@autopix/core';
 import { PLAN } from '@autopix/shared';
 
@@ -24,6 +25,11 @@ async function main() {
 
   await ensureAgents(prisma);
   console.log('✓ agents ready');
+  // Commission rules are configuration (not money): 1.5% marketplace default.
+  await new CommissionService({ prisma }).ensureDefaults();
+  console.log('✓ commission rules ready');
+  // No payments, transactions or provider events are ever seeded: a seed must
+  // never produce something that looks like a real (or real-looking) payment.
 
   if (!config.demoMode || config.isProduction) {
     console.log('DEMO_MODE is off (or production): skipping demo data.');

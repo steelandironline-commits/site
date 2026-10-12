@@ -23,6 +23,8 @@ commercial approach to a realtime dashboard.
 - [Scripts](#scripts)
 - [Demo mode](#demo-mode)
 - [Payments (Pix)](#payments-pix)
+- [AutoPix Pay](#autopix-pay)
+- [Banco do Brasil Integration](#banco-do-brasil-integration)
 - [Agents & the autonomous engine](#agents--the-autonomous-engine)
 - [Realtime](#realtime)
 - [Deploy on Railway](#deploy-on-railway)
@@ -222,6 +224,7 @@ Adapters:
 | `MockPaymentProvider` | Dev/test only. Valid-format BR Code pointing to a non-existent key (cannot be paid). Confirmation only via an HMAC-signed webhook. Refused in production by config validation and `supportsSimulation=false`. |
 | `MercadoPagoPaymentProvider` | `/v1/payments` with `payment_method_id=pix` + `X-Idempotency-Key`. Webhook `x-signature` (HMAC-SHA256 over `id;request-id;ts`) is verified, then the status is **re-fetched from the API**. |
 | `AsaasPaymentProvider` | Customer + `/v3/payments` (`billingType=PIX`) + `/pixQrCode`. Webhook verified by `asaas-access-token`, status re-fetched. Subscription methods ready for Pix Automático. |
+| `BancoDoBrasilPaymentProvider` | BACEN Pix API (`/cob`, `/devolucao`, webhook). OAuth client_credentials with cached token. Webhook authenticated by a URL token and the charge is **re-fetched** from BB. See [Banco do Brasil Integration](#banco-do-brasil-integration). |
 
 Flow:
 
@@ -242,6 +245,7 @@ delayed. Webhook URL to configure at the provider:
 ```
 https://<your-domain>/api/webhooks/payment/mercadopago
 https://<your-domain>/api/webhooks/payment/asaas
+https://<your-domain>/api/webhooks/payment/banco-do-brasil?token=<BB_WEBHOOK_SECRET>   (npm run bb:register-webhook)
 ```
 
 Renewals: one-off Pix charges cover 30 days. From 5 days before the end, *Assinatura → Renovar
@@ -249,6 +253,54 @@ com Pix* creates a new charge that extends the period. Expired subscriptions bec
 (or `CANCELED` if cancellation was scheduled) and agents pause.
 
 ---
+
+## AutoPix Pay
+
+Marketplace payments on top of the same provider abstraction (details:
+[`docs/AUTOPIX_PAY.md`](docs/AUTOPIX_PAY.md)).
+
+- `/app/pay` — tabs Visão Geral, Cobranças, Pagamentos, A Receber, A Liberar,
+  Comissões, Histórico, Configurações; metrics RECEBIDO, A LIBERAR,
+  EM PROCESSAMENTO, COMISSÕES AUTOPIX; "Pagamentos processados por instituições
+  financeiras parceiras." and a `SANDBOX` badge outside production.
+- `/app/pay/transactions/:id` — values (gross, 1.5% commission, seller net),
+  Pix, timeline, freight trip panel, and only the actions the server allows
+  for your role and the current state.
+- `MarketplaceTransaction` with server-side amounts and a commission snapshot
+  (`CommissionRule`, default 1.5% → R$ 1.400 = R$ 21 + R$ 1.379).
+- Protected payment, split and payout appear **only** when the provider
+  reports the capability. Without them the seller payable is tracked as
+  `PENDING_PROVIDER_CAPABILITY` — AutoPix never acts as unofficial escrow.
+- Refunds complete only on provider confirmation; disputes are decided by a
+  platform admin (`User.isPlatformAdmin`), with AI limited to summarizing.
+- `PaymentReconciliationJob` in the worker; append-only `FinancialAuditLog`;
+  restricted `/app/admin` back office (read + audited annotations).
+
+## Banco do Brasil Integration
+
+`PAYMENT_PROVIDER=banco_do_brasil` (or `banco-do-brasil`).
+
+| Implemented (BACEN Pix standard) | Not implemented (contract-specific) |
+|---|---|
+| OAuth2 client_credentials, token cache/refresh | Split |
+| `PUT /cob/{txid}` (idempotent), `GET`, `PATCH` cancel | Payout / transfers |
+| Status normalization (ATIVA, CONCLUIDA, REMOVIDA_*, expiry by calendar, refunded) | BB Pay redirect |
+| Refunds `PUT/GET /pix/{e2eid}/devolucao/{id}` (full and partial) | Protected/escrow flows |
+| Webhook (`{pix:[…]}`) with token + re-fetch; `PUT /webhook/{chave}` | Pix Automático |
+| Optional mTLS, retries with backoff on idempotent calls | |
+
+Variables: `BB_ENVIRONMENT`, `BB_CLIENT_ID`, `BB_CLIENT_SECRET`,
+`BB_DEVELOPER_APPLICATION_KEY`, `BB_PIX_KEY`, `BB_WEBHOOK_SECRET`,
+`BB_API_BASE_URL`, `BB_OAUTH_URL`, `BB_PAY_ENABLED`, `BB_SPLIT_ENABLED`,
+`BB_PAYOUT_ENABLED`, `BB_PROTECTED_PAYMENT_ENABLED` (+ optional scopes, app-key
+parameter, mTLS, Pix expiration). See `.env.example` and the Railway table in
+`docs/AUTOPIX_PAY.md`. Production refuses sandbox configuration. The default
+URLs follow BB's public documentation — confirm them for your application.
+
+Setup: create the app in the BB developer portal → set the variables →
+deploy → `npm run bb:register-webhook` → pay a sandbox cob and watch
+`PAYMENT_RECEIVED` arrive. Contract tests (`packages/core/test/bb.provider.test.js`)
+run against an in-memory fake of the BB API — no live banking calls in tests.
 
 ## Agents & the autonomous engine
 
@@ -459,11 +511,12 @@ Full description: [`docs/PLATFORM.md`](docs/PLATFORM.md); endpoints:
   “procura carga de Santos para São Paulo amanhã”, “preciso de 3 soldadores
   segunda”, …) — always through the ActionEngine, with confirmation.
 - **Step-up authentication** — `RELEASE_PAYMENT`, `REFUND_PAYMENT`,
-  `CHANGE_BANK_DETAILS` require a `SensitiveActionChallenge` confirmed with the
+  `CHANGE_BANK_DETAILS`, `RESOLVE_DISPUTE`, `UPDATE_COMMISSION_RULE` require a `SensitiveActionChallenge` confirmed with the
   password in an authenticated web/PWA session. A WhatsApp number alone never
   authorizes them.
-- **Protected Pix charges** — created from web or WhatsApp; funds are held
-  until a step-up-confirmed release.
+- **AutoPix Pay charges** — created from web or WhatsApp (“gere um Pix de
+  1400” creates a SERVICE transaction); protection only when the provider
+  supports it.
 - **Freight & workforce** — routes/demands and matches with deep links
   (`/app/freight/matches/:id`, `/app/workforce/matches/:id`).
 - **PWA** — installable (`manifest.webmanifest`, standalone, `start_url=/app`),
@@ -508,8 +561,13 @@ and `mock` in development/test.
 - Freight and workforce have no real marketplace source yet: outside DEMO mode,
   requests and demands are stored and no matches are invented. Plug sources into
   `FreightService`/`WorkforceService` (`find(request)` contract).
-- Fund release is implemented for Asaas (`/transfers`) and the mock provider;
-  the Mercado Pago adapter reports it as unsupported.
+- Money movement after payment (split, payout, protected release) is not
+  implemented for any real provider yet: it requires the partner's contracted
+  product (e.g. a BB split/payout contract). Until then the seller payable is
+  flagged `PENDING_PROVIDER_CAPABILITY`. The former Asaas `/transfers` release
+  was removed because it would make an AutoPix account an unofficial escrow.
+- BB API/OAuth default URLs and scopes follow public documentation and must be
+  confirmed against the real BB application before go-live.
 - The LLM intent parser is a boundary (`LlmIntentParser({ generate })`) and is
   not wired to a model by default; the deterministic pt-BR parser is used.
 - WhatsApp notifications outside the 24-hour window require Meta-approved

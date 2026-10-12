@@ -21,8 +21,14 @@ Useful messages: `job started`, `job completed`, `job failed`, `scheduler tick`,
 | Webhook replay | Providers retry automatically; replays are idempotent. |
 | Stuck job | Jobs `RUNNING` for more than 15 min are re-queued by the scheduler. |
 | Scale workers | Add replicas of `autopix-worker`; jobs are claimed with `SKIP LOCKED`. |
+| Grant platform admin | `UPDATE "User" SET "isPlatformAdmin" = true WHERE email = '…'` from a Railway shell (no API for it, by design). |
+| Financial divergences | `/app/admin` → Reconciliação. Acknowledge/resolve with a note (audited). Money is never adjusted from the admin screens. |
+| Register BB webhook | `npm run bb:register-webhook` on the web service shell. |
+| Audit trail | `FinancialAuditLog` is append-only (trigger rejects UPDATE/DELETE). |
 
 ## Switching providers
+
+Banco do Brasil: see [`AUTOPIX_PAY.md`](AUTOPIX_PAY.md#railway-variables).
 
 Set `PAYMENT_PROVIDER` (`mercadopago` | `asaas`), `PAYMENT_ACCESS_TOKEN`,
 `PAYMENT_WEBHOOK_SECRET` and configure the webhook URL

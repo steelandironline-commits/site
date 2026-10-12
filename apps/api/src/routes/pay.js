@@ -28,7 +28,7 @@ export function payRoutes({ transactions, protectedPayments, commissions, trips,
   });
 
   r.get('/transactions/:id', async (req, res) => {
-    res.json(await transactions.get(req.params.id, { companyId: req.user.companyId, isPlatformAdmin: false }));
+    res.json(await transactions.get(req.params.id, { companyId: req.user.companyId, isPlatformAdmin: Boolean(req.user.isPlatformAdmin) }));
   });
 
   r.get('/commission/quote', async (req, res) => {

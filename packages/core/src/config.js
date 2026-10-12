@@ -59,6 +59,8 @@ const schema = z.object({
   BB_OAUTH_SCOPES: optional,
   BB_APP_KEY_PARAM: optional,
   BB_WEBHOOK_SECRET: optional,
+  // 'worker' processes never receive webhooks → webhook secrets are not required there.
+  PROCESS_ROLE: z.enum(['web', 'worker']).default('web'),
   BB_MTLS_CERT_BASE64: optional,
   BB_MTLS_KEY_BASE64: optional,
   BB_PAY_ENABLED: bool(false),
@@ -229,6 +231,7 @@ export function loadConfig(env = process.env) {
       ttlMs: 1000 * 60 * 60 * 24 * 7,
       onboardingTtlMs: 1000 * 60 * 60 * 24 * 14,
     },
+    processRole: e.PROCESS_ROLE,
     tokens: {
       activationTtlMs: 1000 * 60 * 60 * 48,
       passwordResetTtlMs: 1000 * 60 * 60,
@@ -242,7 +245,8 @@ export function loadConfig(env = process.env) {
     }
     if (cfg.payment.provider === 'banco_do_brasil') {
       const bb = cfg.bb;
-      for (const [k, v] of Object.entries({ BB_CLIENT_ID: bb.clientId, BB_CLIENT_SECRET: bb.clientSecret, BB_DEVELOPER_APPLICATION_KEY: bb.appKey, BB_PIX_KEY: bb.pixKey, BB_WEBHOOK_SECRET: bb.webhookSecret })) {
+      const isWorker = e.PROCESS_ROLE === 'worker';
+      for (const [k, v] of Object.entries({ BB_CLIENT_ID: bb.clientId, BB_CLIENT_SECRET: bb.clientSecret, BB_DEVELOPER_APPLICATION_KEY: bb.appKey, BB_PIX_KEY: bb.pixKey, ...(isWorker ? {} : { BB_WEBHOOK_SECRET: bb.webhookSecret }) })) {
         if (!v) errors.push(`${k} is required when PAYMENT_PROVIDER=banco_do_brasil`);
       }
       if (bb.webhookSecret && bb.webhookSecret.length < 32) errors.push('BB_WEBHOOK_SECRET must be at least 32 characters');
@@ -253,7 +257,7 @@ export function loadConfig(env = process.env) {
       if (!looksSandbox && bb.environment === 'production' && /sandbox|\.hm\./i.test(bb.apiBaseUrl)) errors.push('BB_API_BASE_URL points to a sandbox host');
     } else {
       if (!cfg.payment.accessToken) errors.push('PAYMENT_ACCESS_TOKEN is required in production');
-      if (!cfg.payment.webhookSecret) errors.push('PAYMENT_WEBHOOK_SECRET is required in production');
+      if (!cfg.payment.webhookSecret && e.PROCESS_ROLE !== 'worker') errors.push('PAYMENT_WEBHOOK_SECRET is required in production');
     }
     if (!e.APP_URL) errors.push('APP_URL is required in production');
   }

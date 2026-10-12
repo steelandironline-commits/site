@@ -1384,3 +1384,122 @@
   max-width: 34ch;
   color: var(--muted);
 }
+
+/* ---------------- AutoPix Pay ---------------- */
+.payNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+.payNote svg {
+  flex: none;
+  color: var(--primary);
+}
+
+.payNote > span:not([class]) {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.money {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.money div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-2);
+  font-size: var(--fs-13);
+}
+
+.money dt {
+  color: var(--text-2);
+}
+
+.money dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.capList {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capList li {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  font-size: var(--fs-13);
+}
+
+.capList strong {
+  display: block;
+  font-weight: 500;
+}
+
+.capList small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.txActions {
+  display: grid;
+  gap: 8px;
+}
+
+.tripSteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.tripSteps li {
+  padding: 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  font-size: var(--fs-11);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
+.tripSteps li[data-done='true'] {
+  border-color: var(--primary-line);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+@media (max-width: 480px) {
+  .tripSteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .capList li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}

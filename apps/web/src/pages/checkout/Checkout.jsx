@@ -8,7 +8,7 @@ import { useSession } from '../../lib/session.jsx';
 import { useVisibleInterval } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
-import { Button, ErrorState, Skeleton } from '../../components/ui/ui.jsx';
+import { Button, DemoBadge, ErrorState, Skeleton } from '../../components/ui/ui.jsx';
 import s from './checkout.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -247,6 +247,7 @@ export default function Checkout() {
                     <span className={s.statusDot} aria-hidden="true" />
                     {expired ? 'COBRANÇA EXPIRADA' : 'AGUARDANDO PAGAMENTO'}
                   </span>
+                  {payment?.isSandbox && <DemoBadge label="SANDBOX" />}
                 </div>
 
                 {error && !payment ? (

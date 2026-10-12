@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
   Radar,
   Settings,
+  ShieldAlert,
   Target,
   X,
 } from 'lucide-react';
@@ -35,7 +36,7 @@ const NAV = [
   { to: '/app/radar', label: 'Radar', icon: Radar },
   { to: '/app/opportunities', label: 'Oportunidades', icon: Target },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
-  { to: '/app/payments', label: 'Pagamentos', icon: Wallet },
+  { to: '/app/pay', label: 'AutoPix Pay', icon: Wallet },
   { to: '/app/freight', label: 'Cargas', icon: Truck },
   { to: '/app/workforce', label: 'Equipes', icon: HardHat },
   { to: '/app/agents', label: 'Agentes', icon: Cpu },
@@ -45,11 +46,13 @@ const NAV = [
 ];
 const MOBILE_TABS = [NAV[0], NAV[2], NAV[3], NAV[4]];
 const MORE = NAV.filter((n) => !MOBILE_TABS.includes(n));
+const ADMIN_NAV = { to: '/app/admin', label: 'Admin financeiro', icon: ShieldAlert };
 
 /** Deep pages get a native-style back header on mobile. */
 const BACK = [
   [/^\/app\/opportunities\/[^/]+$/, '/app/opportunities', 'Oportunidades'],
-  [/^\/app\/payments\/[^/]+$/, '/app/payments', 'Pagamentos'],
+  [/^\/app\/payments\/[^/]+$/, '/app/pay', 'AutoPix Pay'],
+  [/^\/app\/pay\/transactions\/[^/]+$/, '/app/pay', 'AutoPix Pay'],
   [/^\/app\/freight\/matches\/[^/]+$/, '/app/freight', 'Cargas'],
   [/^\/app\/workforce\/matches\/[^/]+$/, '/app/workforce', 'Equipes'],
   [/^\/app\/confirm\/[^/]+$/, '/app', 'Painel'],
@@ -171,7 +174,7 @@ export default function AppLayout() {
           <Logo />
         </Link>
         <nav className={s.sideNav}>
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {(me?.user?.isPlatformAdmin ? [...NAV, ADMIN_NAV] : NAV).map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => `${s.navItem} ${isActive ? s.navActive : ''}`}>
               {({ isActive }) => (
                 <>
@@ -269,7 +272,7 @@ export default function AppLayout() {
                   <X size={18} />
                 </button>
               </div>
-              {MORE.map(({ to, label, icon: Icon }) => (
+              {(me?.user?.isPlatformAdmin ? [...MORE, ADMIN_NAV] : MORE).map(({ to, label, icon: Icon }) => (
                 <NavLink key={to} to={to} className={({ isActive }) => `${s.sheetItem} ${isActive ? s.navActive : ''}`}>
                   <Icon size={18} aria-hidden="true" /> {label}
                 </NavLink>
