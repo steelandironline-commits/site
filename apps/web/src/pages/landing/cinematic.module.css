@@ -481,32 +481,39 @@
   box-shadow: var(--focus);
 }
 
-/* Round button with an arrow that bounces DOWN — "keep going down". */
-.ball {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
+/* Mouse-shaped pill; the dot rises from the bottom to the top. */
+.mouse {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 40px;
+  border: 2px solid rgba(236, 235, 230, 0.7);
+  border-radius: 14px;
+  transition: border-color 0.2s;
+}
+
+.scrollCue:hover .mouse {
+  border-color: var(--primary);
+}
+
+.wheel {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
   border-radius: 50%;
-  border: 1px solid var(--primary-line);
-  background: rgba(42, 209, 184, 0.12);
-  color: var(--primary);
-  box-shadow: 0 0 24px rgba(42, 209, 184, 0.25);
-  transition: background 0.2s;
+  background: var(--primary);
+  box-shadow: 0 0 10px rgba(42, 209, 184, 0.8);
+  animation: wheel 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
-.ball svg {
-  animation: down 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-}
-
-.scrollCue:hover .ball {
-  background: rgba(42, 209, 184, 0.22);
-}
-
-@keyframes down {
-  0%,
-  100% { transform: translateY(-3px); }
-  50% { transform: translateY(4px); }
+@keyframes wheel {
+  0% { opacity: 1; transform: translateY(0); }
+  65% { opacity: 1; transform: translateY(-16px); }
+  85% { opacity: 0; transform: translateY(-18px); }
+  100% { opacity: 0; transform: translateY(0); }
 }
 
 /* Reduced motion */
@@ -603,7 +610,7 @@
   .grain,
   .pinPulse,
   .personHalo,
-  .ball svg {
+  .wheel {
     animation: none;
   }
 }

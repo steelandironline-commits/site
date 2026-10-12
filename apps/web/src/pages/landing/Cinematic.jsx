@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion, useMotionValueEvent, useScroll, useSpring, useTransform } from 'framer-motion';
-import { ArrowRight, ChevronDown, HardHat, ShieldCheck, Truck, Wrench } from 'lucide-react';
+import { ArrowRight, HardHat, ShieldCheck, Truck, Wrench } from 'lucide-react';
 import { Button, DemoBadge } from '../../components/ui/ui.jsx';
 import { usePrefersReducedMotion } from '../../lib/hooks.js';
 import s from './cinematic.module.css';
@@ -363,8 +363,8 @@ export default function Cinematic() {
         <Finale progress={progress} />
 
         <motion.button type="button" className={s.scrollCue} style={{ opacity: cueOpacity, pointerEvents: cueEvents }} onClick={next} aria-label="Descer para a próxima cena">
-          <span className={s.ball} aria-hidden="true">
-            <ChevronDown size={22} strokeWidth={2.4} />
+          <span className={s.mouse} aria-hidden="true">
+            <i className={s.wheel} />
           </span>
         </motion.button>
       </div>
