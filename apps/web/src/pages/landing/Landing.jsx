@@ -25,6 +25,7 @@ import { PipelineFlow } from '../../components/activity/Flow.jsx';
 import { DEMO_RADAR_NODES, useDemoFeed } from '../../lib/demoFeed.js';
 import { useIsMobile } from '../../lib/hooks.js';
 import { useSession } from '../../lib/session.jsx';
+import Cinematic from './Cinematic.jsx';
 import s from './landing.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -132,16 +133,16 @@ function Nav() {
 function Hero() {
   const mobile = useIsMobile();
   return (
-    <section className={s.hero} aria-labelledby="hero-title">
+    <section id="hero" className={s.hero} aria-labelledby="hero-title">
       <div className={s.heroGrid} aria-hidden="true" />
       <div className={`container ${s.heroInner}`}>
         <motion.div className={s.heroCopy} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
           <p className={s.kicker}>
             <span className={s.kickerDot} aria-hidden="true" /> Sua empresa trabalha. O AutoPix procura oportunidades.
           </p>
-          <h1 id="hero-title" className={s.heroTitle}>
+          <h2 id="hero-title" className={s.heroTitle}>
             Procuramos vendas e serviços <span>pra você.</span>
-          </h1>
+          </h2>
           <p className={s.heroLead}>
             Enquanto você trabalha, o AutoPix procura empresas, sinais de demanda e oportunidades comerciais compatíveis com o seu negócio.
           </p>
@@ -502,6 +503,7 @@ export default function Landing() {
       </a>
       <Nav />
       <main id="main">
+        <Cinematic />
         <Hero />
         <Product />
         <HowItWorks />
