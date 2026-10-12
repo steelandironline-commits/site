@@ -21,7 +21,7 @@ export default function Settings() {
   const [revoking, setRevoking] = useState(false);
 
   useEffect(() => {
-    document.title = 'Configurações — AutoPix';
+    document.title = 'Configurações — TemPix';
   }, []);
 
   const changePassword = async (e) => {

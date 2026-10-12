@@ -33,7 +33,7 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     const start = await user.c.post('/api/whatsapp/connection', { phoneNumber: PHONE_INPUT });
     expect(start.status).toBe(201);
     expect(start.body.connection.status).toBe('PENDING');
-    const res = await inbound({ from: WA_FROM, text: `AUTOPIX ${start.body.verification.code}` });
+    const res = await inbound({ from: WA_FROM, text: `TEMPIX ${start.body.verification.code}` });
     expect(res.status).toBe(200);
     return start.body.verification.code;
   }
@@ -133,7 +133,7 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect(reply).toContain('R$ 1.400,00');
     expect(reply).toContain(payment.reference);
     expect(reply).toContain(payment.pixCopyPaste);
-    expect(payment.transactionId).toBeTruthy(); // WhatsApp CREATE_PIX → AutoPix Pay SERVICE transaction
+    expect(payment.transactionId).toBeTruthy(); // WhatsApp CREATE_PIX → TemPix Pay SERVICE transaction
     expect(reply).toContain(`/app/pay/transactions/${payment.transactionId}`);
     expect(reply).not.toMatch(/secret|token/i);
     expect(await ctx.prisma.actionLog.count({ where: { action: 'CREATE_PIX', channel: 'WHATSAPP', status: 'SUCCEEDED' } })).toBe(1);
@@ -145,7 +145,7 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect((await r.send(wh.rawBody)).status).toBe(200);
 
     const paid = await ctx.prisma.payment.findUnique({ where: { id: payment.id } });
-    // Mock default capabilities: no protectedFlow → nothing is "held" by AutoPix.
+    // Mock default capabilities: no protectedFlow → nothing is "held" by TemPix.
     expect(paid).toMatchObject({ status: 'CONFIRMED', protectionStatus: 'NONE' });
     expect(await ctx.prisma.domainEvent.count({ where: { type: 'PAYMENT_RECEIVED', aggregateId: payment.transactionId } })).toBe(1);
     const tx = await ctx.prisma.marketplaceTransaction.findUnique({ where: { id: payment.transactionId } });
@@ -173,7 +173,7 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect(await ctx.prisma.actionLog.count({ where: { channel: 'WHATSAPP' } })).toBe(0);
 
     // Wrong code is counted and rejected.
-    await inbound({ from: WA_FROM, text: 'AUTOPIX 000000' });
+    await inbound({ from: WA_FROM, text: 'TEMPIX 000000' });
     const conn = await ctx.prisma.whatsAppConnection.findFirst();
     expect(conn.status).toBe('PENDING');
     expect(conn.verificationAttempts).toBe(1);

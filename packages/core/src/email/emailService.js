@@ -46,15 +46,15 @@ export class EmailService {
   activationEmail({ to, name, link }) {
     return this.send({
       to,
-      subject: 'Seu AutoPix foi ativado — crie sua senha',
-      text: `Olá, ${name}.\n\nSeu pagamento foi confirmado e sua assinatura AutoPix está ativa.\nCrie sua senha de acesso (link válido por 48 horas, uso único):\n\n${link}\n\nSe você não reconhece esta compra, ignore este e-mail.`,
+      subject: 'Seu TemPix foi ativado — crie sua senha',
+      text: `Olá, ${name}.\n\nSeu pagamento foi confirmado e sua assinatura TemPix está ativa.\nCrie sua senha de acesso (link válido por 48 horas, uso único):\n\n${link}\n\nSe você não reconhece esta compra, ignore este e-mail.`,
     });
   }
 
   passwordResetEmail({ to, name, link }) {
     return this.send({
       to,
-      subject: 'Redefinição de senha — AutoPix',
+      subject: 'Redefinição de senha — TemPix',
       text: `Olá, ${name}.\n\nRecebemos um pedido para redefinir sua senha. O link abaixo é válido por 1 hora e pode ser usado uma única vez:\n\n${link}\n\nSe você não fez esse pedido, ignore este e-mail. Sua senha atual continua valendo.`,
     });
   }

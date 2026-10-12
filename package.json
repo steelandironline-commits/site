@@ -2,7 +2,7 @@
   "name": "autopix",
   "version": "1.0.0",
   "private": true,
-  "description": "AutoPix — Procuramos vendas e serviços pra você.",
+  "description": "TemPix — Tem emprego, tem rota, tem serviço.",
   "type": "module",
   "license": "UNLICENSED",
   "engines": {

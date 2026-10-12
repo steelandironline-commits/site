@@ -59,7 +59,7 @@ export default function Checkout() {
   const isRenewal = me?.scope === 'FULL';
 
   useEffect(() => {
-    document.title = 'Pagamento Pix — AutoPix';
+    document.title = 'Pagamento Pix — TemPix';
   }, []);
 
   const createCharge = useCallback(async () => {
@@ -192,7 +192,7 @@ export default function Checkout() {
         <section className={s.summary} aria-labelledby="summary-title">
           <p className="eyebrow">Assinatura</p>
           <h1 id="summary-title" className={s.planName}>
-            AUTOPIX
+            TEMPIX
           </h1>
           <p className={`${s.planPrice} num`}>
             {formatCents(PLAN.priceCents)}
@@ -208,7 +208,7 @@ export default function Checkout() {
           <dl className={s.lines}>
             <div>
               <dt>Plano</dt>
-              <dd>AutoPix · mensal</dd>
+              <dd>TemPix · mensal</dd>
             </div>
             <div>
               <dt>Período</dt>
@@ -339,7 +339,7 @@ export default function Checkout() {
                   {phase === 'activating' && (
                     <motion.div className={s.activating} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
                       <LogoMark size={22} animated />
-                      <span>Ativando seu AutoPix...</span>
+                      <span>Ativando seu TemPix...</span>
                     </motion.div>
                   )}
                 </AnimatePresence>

@@ -119,7 +119,7 @@ export default function Admin() {
   const list = useApi(me?.user?.isPlatformAdmin ? VIEWS[view].path : null);
 
   useEffect(() => {
-    document.title = 'Administração financeira — AutoPix';
+    document.title = 'Administração financeira — TemPix';
   }, []);
   if (me && !me.user?.isPlatformAdmin) return <Navigate to="/app" replace />;
 

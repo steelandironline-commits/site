@@ -193,7 +193,7 @@ describe('Banco do Brasil provider (contract, fake BB API)', () => {
     expect(again.providerEventId).toBe(ev.providerEventId);
   });
 
-  it('webhook ignores Pix entries without a txid (not an AutoPix charge)', async () => {
+  it('webhook ignores Pix entries without a txid (not an TemPix charge)', async () => {
     const events = await provider.handleWebhook({ query: { token: SECRET }, body: { pix: [{ endToEndId: 'E1', valor: '10.00' }] } });
     expect(events).toEqual([]);
   });

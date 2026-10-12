@@ -16,7 +16,7 @@ export default function Workforce() {
   const [form, setForm] = useState({ role: '', quantity: '1', startDate: '' });
 
   useEffect(() => {
-    document.title = 'Equipes — AutoPix';
+    document.title = 'Equipes — TemPix';
   }, []);
   useEffect(() => {
     if (stream.latest?.source === 'Workforce' || /Profissional/.test(stream.latest?.title || '')) reload();

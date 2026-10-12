@@ -14,7 +14,7 @@ async function main() {
   const app = createApp({ services, hub });
 
   const server = app.listen(config.port, () => {
-    logger.info('AutoPix API listening', {
+    logger.info('TemPix API listening', {
       port: config.port,
       env: config.env,
       demoMode: config.demoMode,

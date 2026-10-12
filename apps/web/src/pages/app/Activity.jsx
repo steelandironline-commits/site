@@ -27,7 +27,7 @@ export default function Activity() {
   const [state, setState] = useState({ items: [], hasMore: false, loading: true, error: null });
 
   useEffect(() => {
-    document.title = 'Atividade — AutoPix';
+    document.title = 'Atividade — TemPix';
   }, []);
 
   const load = useCallback(

@@ -1,4 +1,4 @@
-// AutoPix seed.
+// TemPix seed.
 //  - Always: ensures the five platform agents exist.
 //  - DEMO_MODE=true (non-production only): creates a fictional demo company
 //    with an active subscription, runs one demo search cycle and prints a

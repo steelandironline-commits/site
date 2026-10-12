@@ -1,6 +1,6 @@
 import { getConfig, getPrisma, disconnectPrisma, logger, startWorker } from '@autopix/core';
 
-// AutoPix background worker: scheduler + Postgres job queue consumer.
+// TemPix background worker: scheduler + Postgres job queue consumer.
 // Deploy as a separate Railway service with `npm run start:worker`.
 
 async function main() {

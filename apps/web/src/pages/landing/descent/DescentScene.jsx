@@ -96,7 +96,7 @@ function Rig({ progress, pointer, stageRef, onActive, mobile, reduced }) {
     if (s.vw !== size.width || s.vh !== size.height) {
       s.vw = size.width;
       s.vh = size.height;
-      const ox = mobile ? 0 : -0.15 * size.width;
+      const ox = mobile ? 0 : -0.175 * size.width;
       const oy = mobile ? 0.18 * size.height : -0.02 * size.height;
       camera.setViewOffset(size.width, size.height, ox, oy, size.width, size.height);
     }

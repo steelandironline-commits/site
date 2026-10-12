@@ -121,7 +121,7 @@ export class ActionEngine {
       // 4. Business rules (global)
       const company = await this.prisma.company.findUnique({ where: { id: user.companyId }, include: { subscription: true } });
       if (def.requiresActiveSubscription && company.subscription?.status !== 'ACTIVE') {
-        throw conflict('Sua assinatura AutoPix não está ativa.');
+        throw conflict('Sua assinatura TemPix não está ativa.');
       }
 
       // 5. Step-up authentication for sensitive actions
@@ -229,7 +229,7 @@ export class ActionEngine {
    * number is never enough.
    */
   async #consumeChallenge(def, user, challengeId, channel, actor) {
-    if (channel !== 'WEB' && channel !== 'API') throw forbidden('Confirme esta ação no app AutoPix.');
+    if (channel !== 'WEB' && channel !== 'API') throw forbidden('Confirme esta ação no app TemPix.');
     const consumed = await this.prisma.sensitiveActionChallenge.updateMany({
       where: {
         id: challengeId,

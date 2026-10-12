@@ -19,7 +19,7 @@ export default function Login() {
   const next = params.get('next')?.startsWith('/app') ? params.get('next') : '/app';
 
   useEffect(() => {
-    document.title = 'Entrar — AutoPix';
+    document.title = 'Entrar — TemPix';
   }, []);
   useEffect(() => {
     if (!sessionLoading && isAuthenticated) navigate(next, { replace: true });
@@ -44,11 +44,11 @@ export default function Login() {
 
   return (
     <AuthShell
-      title="Entrar no AutoPix"
+      title="Entrar no TemPix"
       subtitle="Acompanhe as oportunidades que seus agentes encontraram."
       footer={
         <>
-          Ainda não assina? <Link to="/onboarding">Ativar AutoPix</Link>
+          Ainda não tem conta? <Link to="/onboarding">Cadastre-se agora</Link>
         </>
       }
     >

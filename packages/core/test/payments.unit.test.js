@@ -12,7 +12,7 @@ const jsonResponse = (data, status = 200) => ({ ok: status < 400, status, json: 
 
 describe('BR Code', () => {
   it('produces a payload with a valid CRC16', () => {
-    const code = buildBrCode({ key: 'chave', amount: 597, merchantName: 'AutoPix', merchantCity: 'São Paulo', txid: 'abc123' });
+    const code = buildBrCode({ key: 'chave', amount: 597, merchantName: 'TemPix', merchantCity: 'São Paulo', txid: 'abc123' });
     expect(code.startsWith('000201')).toBe(true);
     expect(code).toContain('5406597.00');
     expect(crc16(code.slice(0, -4))).toBe(code.slice(-4));
@@ -46,7 +46,7 @@ describe('MercadoPagoPaymentProvider', () => {
     const r = await p.createPixCharge({
       paymentId: 'pay_1',
       amountCents: 59700,
-      description: 'AutoPix',
+      description: 'TemPix',
       payer: { name: 'Ana Souza', email: 'ana@empresa.example' },
       idempotencyKey: 'idem-1',
       expiresAt: new Date(Date.now() + 1800_000),

@@ -46,7 +46,7 @@ export async function api(path, { method = 'GET', body, signal, quiet401 = false
         Accept: 'application/json',
         'X-Requested-With': 'autopix',
         // Audit hint only (never used for authorization).
-        'X-AutoPix-Client': isStandalone() ? 'pwa' : 'web',
+        'X-TemPix-Client': isStandalone() ? 'pwa' : 'web',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,

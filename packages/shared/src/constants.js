@@ -2,7 +2,7 @@
 
 export const PLAN = Object.freeze({
   code: 'AUTOPIX',
-  name: 'AutoPix',
+  name: 'TemPix',
   priceCents: 59700,
   currency: 'BRL',
   intervalDays: 30,

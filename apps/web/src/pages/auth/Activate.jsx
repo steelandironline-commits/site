@@ -21,7 +21,7 @@ export default function Activate() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = 'Criar senha — AutoPix';
+    document.title = 'Criar senha — TemPix';
     get(`/api/auth/activate/${encodeURIComponent(token)}`)
       .then(setInfo)
       .catch((err) => setInvalid(err.message));

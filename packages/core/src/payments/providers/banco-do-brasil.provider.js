@@ -31,7 +31,7 @@ export function refundIdFor(idempotencyKey) {
  * BancoDoBrasilPaymentProvider — Pix through Banco do Brasil's Pix API
  * (BACEN standard: /cob, /pix/{e2eid}/devolucao, webhook {pix:[…]}).
  *
- * AutoPix controls the experience; Banco do Brasil controls the money.
+ * TemPix controls the experience; Banco do Brasil controls the money.
  * Capabilities beyond the BACEN Pix standard (split, payout, BB Pay
  * redirect, protected flows) depend on specific BB contracts. They are
  * reported as unavailable until such an integration exists — enabling the
@@ -179,7 +179,7 @@ export class BancoDoBrasilPaymentProvider extends PaymentProvider {
       ...(doc.length === 11 && payer.name ? { devedor: { cpf: doc, nome: String(payer.name).slice(0, 140) } } : {}),
       valor: { original: toValor(amountCents) },
       chave: this.bb.pixKey,
-      solicitacaoPagador: String(description || 'AutoPix').slice(0, 140),
+      solicitacaoPagador: String(description || 'TemPix').slice(0, 140),
     };
     let cob;
     try {
@@ -228,7 +228,7 @@ export class BancoDoBrasilPaymentProvider extends PaymentProvider {
     try {
       // PUT keyed by refund id → safe to retry.
       res = await this.#call('PUT', `/pix/${encodeURIComponent(charge.endToEndId)}/devolucao/${id}`, {
-        body: { valor: toValor(amountCents ?? charge.amountCents), natureza: 'ORIGINAL', descricao: 'Reembolso AutoPix' },
+        body: { valor: toValor(amountCents ?? charge.amountCents), natureza: 'ORIGINAL', descricao: 'Reembolso TemPix' },
       });
     } catch (err) {
       throw new FinancialError('REFUND_FAILED', { detail: err.detail || err.code, providerStatus: err.providerStatus });

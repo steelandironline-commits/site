@@ -23,7 +23,7 @@ export default function Overview() {
   const active = me.subscription?.status === 'ACTIVE';
 
   useEffect(() => {
-    document.title = 'Visão Geral — AutoPix';
+    document.title = 'Visão Geral — TemPix';
   }, []);
 
   // Refresh metrics when the agents create something.
@@ -62,7 +62,7 @@ export default function Overview() {
             {greeting()}, {firstName}.
           </h1>
           <p className={s.pageSub}>
-            {active ? 'Seu AutoPix está procurando oportunidades.' : 'Seus agentes estão pausados. Renove a assinatura para retomar.'}
+            {active ? 'Seu TemPix está procurando oportunidades.' : 'Seus agentes estão pausados. Renove a assinatura para retomar.'}
             {job && (
               <span className={s.muted}>
                 {' '}

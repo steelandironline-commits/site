@@ -21,7 +21,7 @@ export default function Subscription() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    document.title = 'Assinatura — AutoPix';
+    document.title = 'Assinatura — TemPix';
   }, []);
 
   const act = async (action, message) => {
@@ -59,7 +59,7 @@ export default function Subscription() {
           <section className={s.planCard} aria-labelledby="plan">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
               <h2 id="plan" className="mono" style={{ letterSpacing: '0.2em', fontSize: 16 }}>
-                AUTOPIX
+                TEMPIX
               </h2>
               {data && (
                 <Badge tone={TONE[data.status]} dot pulse={data.status === 'ACTIVE'}>
@@ -92,7 +92,7 @@ export default function Subscription() {
             {data?.cancelAtPeriodEnd && (
               <div className={s.notice} style={{ marginTop: 16 }}>
                 <AlertTriangle size={15} aria-hidden="true" />
-                <span>Cancelamento agendado. Seu AutoPix continua ativo até {fmtDate(data.currentPeriodEnd)}.</span>
+                <span>Cancelamento agendado. Seu TemPix continua ativo até {fmtDate(data.currentPeriodEnd)}.</span>
               </div>
             )}
             {data && ['PAST_DUE', 'CANCELED', 'EXPIRED'].includes(data.status) && (
@@ -167,7 +167,7 @@ export default function Subscription() {
           </>
         }
       >
-        Seu AutoPix continua ativo até {fmtDate(data?.currentPeriodEnd)}. Depois disso, os agentes são pausados e nenhuma nova cobrança é gerada.
+        Seu TemPix continua ativo até {fmtDate(data?.currentPeriodEnd)}. Depois disso, os agentes são pausados e nenhuma nova cobrança é gerada.
       </Dialog>
     </>
   );

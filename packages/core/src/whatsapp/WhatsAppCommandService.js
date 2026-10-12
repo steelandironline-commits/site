@@ -8,7 +8,7 @@ const PENDING_TTL_MS = 10 * 60 * 1000;
 const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit' }) : null);
 
 export const HELP_TEXT = [
-  'AutoPix no WhatsApp — exemplos:',
+  'TemPix no WhatsApp — exemplos:',
   '• quais oportunidades apareceram hoje?',
   '• quanto tenho em negócios abertos?',
   '• procura carga de Santos para São Paulo amanhã',
@@ -122,13 +122,13 @@ export class WhatsAppCommandService {
       if (out.status === 'CONFIRMATION_REQUIRED') {
         return this.messenger.reply(
           connection,
-          `🔒 Por segurança, confirme no app AutoPix:\n${this.messenger.provider.link(out.challenge.confirmPath)}`,
+          `🔒 Por segurança, confirme no app TemPix:\n${this.messenger.provider.link(out.challenge.confirmPath)}`,
         );
       }
       if (pending.intent === 'CREATE_PIX') {
         const payment = out.result.payment;
         return this.messenger.send(connection, 'sendPaymentNotification', [
-          { payment, title: '💳 Cobrança AutoPix criada', link: out.result.transaction ? deepLinks.transaction(out.result.transaction.id) : deepLinks.payment(payment.id), includePixCode: true },
+          { payment, title: '💳 Cobrança TemPix criada', link: out.result.transaction ? deepLinks.transaction(out.result.transaction.id) : deepLinks.payment(payment.id), includePixCode: true },
         ]);
       }
       return this.messenger.reply(connection, describeResult(pending.intent, out.result));

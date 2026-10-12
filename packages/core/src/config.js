@@ -195,7 +195,7 @@ export function loadConfig(env = process.env) {
     email: {
       provider: e.EMAIL_PROVIDER,
       apiKey: e.EMAIL_API_KEY,
-      from: e.EMAIL_FROM || 'AutoPix <nao-responda@autopix.com.br>',
+      from: e.EMAIL_FROM || 'TemPix <nao-responda@tempix.com.br>',
     },
     whatsapp: (() => {
       const cloudReady = Boolean(e.WHATSAPP_ACCESS_TOKEN && e.WHATSAPP_PHONE_NUMBER_ID && e.WHATSAPP_APP_SECRET);
@@ -223,7 +223,7 @@ export function loadConfig(env = process.env) {
     push: {
       publicKey: e.WEB_PUSH_PUBLIC_KEY,
       privateKey: e.WEB_PUSH_PRIVATE_KEY,
-      subject: e.WEB_PUSH_SUBJECT || 'mailto:suporte@autopix.com.br',
+      subject: e.WEB_PUSH_SUBJECT || 'mailto:suporte@tempix.com.br',
       enabled: Boolean(e.WEB_PUSH_PUBLIC_KEY && e.WEB_PUSH_PRIVATE_KEY),
     },
     intentParser: e.INTENT_PARSER,

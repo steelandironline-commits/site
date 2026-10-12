@@ -1385,7 +1385,7 @@
   color: var(--muted);
 }
 
-/* ---------------- AutoPix Pay ---------------- */
+/* ---------------- TemPix Pay ---------------- */
 .payNote {
   display: flex;
   flex-wrap: wrap;

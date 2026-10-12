@@ -68,7 +68,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
     push: push ?? new PushService({ prisma, config }),
   };
 
-  // AutoPix Pay — provider-independent financial layer.
+  // TemPix Pay — provider-independent financial layer.
   s.transactions = new MarketplaceTransactionService({ prisma, config, events, commissions: s.commissions, audit, payments: s.payments });
   s.refunds = new RefundService({ prisma, config, events, audit, transactions: s.transactions });
   s.payments.transactions = s.transactions;

@@ -19,7 +19,7 @@ export class OnboardingService {
   async start({ name, email, companyName }, meta = {}) {
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing && existing.status !== 'PENDING_PAYMENT') {
-      throw conflict('Este e-mail já possui uma conta AutoPix. Entre ou recupere sua senha.');
+      throw conflict('Este e-mail já possui uma conta TemPix. Entre ou recupere sua senha.');
     }
 
     return this.prisma.$transaction(async (tx) => {

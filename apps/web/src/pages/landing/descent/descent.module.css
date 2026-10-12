@@ -60,6 +60,7 @@
 
 .canvas canvas {
   touch-action: pan-y;
+  cursor: pointer;
 }
 
 .vignette {
@@ -150,6 +151,10 @@
 .word {
   display: inline-block;
   transform-origin: 0 100%;
+}
+
+.brand {
+  color: #5ff0d8;
 }
 
 .body {
@@ -283,17 +288,29 @@
   z-index: 3;
   left: 50%;
   bottom: 22px;
-  display: grid;
-  place-items: center;
-  width: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 56px;
   height: 56px;
-  margin-left: -28px;
-  padding: 0;
+  padding: 0 10px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 999px;
   background: transparent;
+  transform: translateX(-50%);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.cueText {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.86);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
 }
 
 .cue:focus-visible {

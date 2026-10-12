@@ -12,7 +12,7 @@ import s from './app.module.css';
 export const STATUS_TONE = { CONFIRMED: 'revenue', PENDING: 'amber', FAILED: 'danger', EXPIRED: 'neutral', REFUNDED: 'info', CANCELED: 'neutral' };
 
 /**
- * Single payment (subscription or legacy link). AutoPix Pay charges live on
+ * Single payment (subscription or legacy link). TemPix Pay charges live on
  * their transaction page, where every money action is available.
  */
 export default function PaymentDetail() {
@@ -23,7 +23,7 @@ export default function PaymentDetail() {
   const p = data?.payment;
 
   useEffect(() => {
-    if (p) document.title = `${p.reference || 'Pagamento'} — AutoPix`;
+    if (p) document.title = `${p.reference || 'Pagamento'} — TemPix`;
   }, [p]);
   useEffect(() => {
     if (stream.latest?.type === 'PAYMENT') reload();

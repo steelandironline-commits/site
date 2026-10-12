@@ -1,4 +1,4 @@
-// AutoPix — database schema
+// TemPix — database schema
 // PostgreSQL + Prisma. Money for subscriptions/payments is stored in cents;
 // business estimates (ticket, opportunity value) are stored in whole reais.
 
@@ -961,7 +961,7 @@ model WorkforceMatch {
 }
 
 // ===================================================================
-// AutoPix Pay — marketplace financial layer (provider-independent)
+// TemPix Pay — marketplace financial layer (provider-independent)
 // ===================================================================
 
 model MarketplaceTransaction {

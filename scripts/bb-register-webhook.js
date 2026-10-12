@@ -1,4 +1,4 @@
-// Register the AutoPix Pix webhook for the configured BB Pix key (run once per environment).
+// Register the TemPix Pix webhook for the configured BB Pix key (run once per environment).
 //
 //   PAYMENT_PROVIDER=banco_do_brasil BB_*=… node scripts/bb-register-webhook.js
 //

@@ -35,7 +35,7 @@ const TABS = [
 
 const parseMoney = (v) => Math.round(Number(String(v).replace(/\./g, '').replace(',', '.')) * 100) || 0;
 
-/** Partner/sandbox strip shown on every AutoPix Pay screen. */
+/** Partner/sandbox strip shown on every TemPix Pay screen. */
 export function PartnerNote({ caps, sandbox }) {
   const disabled = caps?.provider === 'none';
   return (
@@ -91,7 +91,7 @@ function NewCharge({ onCreated, reference, caps }) {
     );
     const t = created?.result?.transaction;
     if (!t) return;
-    await run('CREATE_TRANSACTION_PIX', { id: t.id }, { success: 'Cobrança AutoPix criada.', key: 'create' });
+    await run('CREATE_TRANSACTION_PIX', { id: t.id }, { success: 'Cobrança TemPix criada.', key: 'create' });
     onCreated(t);
   };
 
@@ -122,7 +122,7 @@ function NewCharge({ onCreated, reference, caps }) {
         <Field label="Descrição" optional>
           {(a) => <Input {...a} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={140} />}
         </Field>
-        <Field label="E-mail do cliente" optional hint={caps?.protectedPayment?.enabled ? 'Cliente cadastrado no AutoPix habilita o pagamento protegido.' : 'O cliente acompanha a cobrança se tiver conta no AutoPix.'}>
+        <Field label="E-mail do cliente" optional hint={caps?.protectedPayment?.enabled ? 'Cliente cadastrado no TemPix habilita o pagamento protegido.' : 'O cliente acompanha a cobrança se tiver conta no TemPix.'}>
           {(a) => <Input {...a} type="email" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} maxLength={254} />}
         </Field>
         <Field label="Nome do cliente" optional>
@@ -136,7 +136,7 @@ function NewCharge({ onCreated, reference, caps }) {
             <dd className="num">{formatCents(quote.grossCents)}</dd>
           </div>
           <div>
-            <dt>Comissão AutoPix ({(quote.rateBps / 100).toLocaleString('pt-BR')}%)</dt>
+            <dt>Comissão TemPix ({(quote.rateBps / 100).toLocaleString('pt-BR')}%)</dt>
             <dd className="num">− {formatCents(quote.commissionCents)}</dd>
           </div>
           <div>
@@ -248,7 +248,7 @@ export default function Pay() {
   const list = useApi(tab === 'settings' ? null : `/api/pay/transactions?view=${tab}`);
 
   useEffect(() => {
-    document.title = 'AutoPix Pay — AutoPix';
+    document.title = 'TemPix Pay — TemPix';
   }, []);
   useEffect(() => {
     if (stream.latest?.type === 'PAYMENT') {
@@ -275,7 +275,7 @@ export default function Pay() {
     <>
       <header className={s.pageHead}>
         <div>
-          <h1 className={s.pageTitle}>AutoPix Pay</h1>
+          <h1 className={s.pageTitle}>TemPix Pay</h1>
           <p className={s.pageSub}>Cobranças, recebimentos e pagamentos dos seus negócios.</p>
         </div>
         <Button icon={Plus} onClick={() => setShowNew((v) => !v)} aria-expanded={showNew}>
@@ -287,7 +287,7 @@ export default function Pay() {
         <MetricCard index={0} label="Recebido" value={m?.receivedCents ?? 0} format={formatCents} loading={!m} icon={Wallet} tone="revenue" />
         <MetricCard index={1} label="A liberar" value={m?.toReleaseCents ?? 0} format={formatCents} loading={!m} icon={Hourglass} tone="primary" />
         <MetricCard index={2} label="Em processamento" value={m?.processingCents ?? 0} format={formatCents} loading={!m} icon={Clock} />
-        <MetricCard index={3} label="Comissões AutoPix" value={m?.commissionsCents ?? 0} format={formatCents} loading={!m} icon={Percent} />
+        <MetricCard index={3} label="Comissões TemPix" value={m?.commissionsCents ?? 0} format={formatCents} loading={!m} icon={Percent} />
       </div>
       <PartnerNote caps={caps.data} sandbox={summary.data?.sandbox} />
 
@@ -297,7 +297,7 @@ export default function Pay() {
         </div>
       )}
 
-      <nav className={`${s.filters} ${s.section}`} aria-label="Seções do AutoPix Pay">
+      <nav className={`${s.filters} ${s.section}`} aria-label="Seções do TemPix Pay">
         {TABS.map(([k, label]) => (
           <button key={k} type="button" className={`${s.chip} ${tab === k ? s.chipActive : ''}`} aria-pressed={tab === k} onClick={() => setParams(k === 'all' ? {} : { tab: k })}>
             {label}

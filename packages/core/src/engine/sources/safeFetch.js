@@ -45,7 +45,7 @@ export async function safeFetchText(url, { timeoutMs = 8000, maxBytes = 600_000,
 
   const res = await fetchImpl(parsed.toString(), {
     redirect: 'follow',
-    headers: { 'User-Agent': 'AutoPixBot/1.0 (+https://autopix.com.br/bot)', Accept: accept },
+    headers: { 'User-Agent': 'TemPixBot/1.0 (+https://tempix.com.br/bot)', Accept: accept },
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`status ${res.status}`);

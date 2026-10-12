@@ -29,7 +29,7 @@ export default function Agents() {
   const active = me.subscription?.status === 'ACTIVE';
 
   useEffect(() => {
-    document.title = 'Agentes — AutoPix';
+    document.title = 'Agentes — TemPix';
   }, []);
 
   useEffect(() => {

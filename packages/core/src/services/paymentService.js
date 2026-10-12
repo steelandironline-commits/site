@@ -73,7 +73,7 @@ function newReference() {
 }
 
 /**
- * PaymentService — Pix charges (subscription and AutoPix Pay charges) and
+ * PaymentService — Pix charges (subscription and TemPix Pay charges) and
  * idempotent provider-event processing. Money movement after payment
  * (release, refund, split, payout) lives in the finance services and always
  * goes through the provider's authorized flows.
@@ -174,7 +174,7 @@ export class PaymentService {
         companyId: company.id,
         provider: provider.name,
         amountCents: subscription.priceCents,
-        description: 'Assinatura AutoPix — 30 dias',
+        description: 'Assinatura TemPix — 30 dias',
         isSandbox: Boolean(provider.isSandbox),
         idempotencyKey: generateToken(18),
         createdByUserId: user.id,
@@ -202,7 +202,7 @@ export class PaymentService {
   // ------------------------------------------------------------ charges
 
   /**
-   * Create a Pix charge. For AutoPix Pay the amount ALWAYS comes from the
+   * Create a Pix charge. For TemPix Pay the amount ALWAYS comes from the
    * MarketplaceTransaction (server-side), never from the client.
    */
   async createCharge({ user, company, amountCents, description, payer = {}, transactionId = null, relatedType = null, relatedId = null }) {
@@ -246,9 +246,9 @@ export class PaymentService {
       payload: { amountCents, reference: payment.reference, kind: 'CHARGE', paymentId: payment.id, link: transactionId ? deepLinks.transaction(transactionId) : deepLinks.payment(payment.id) },
       activity: {
         type: 'PAYMENT',
-        title: `Cobrança AutoPix criada · ${formatCents(amountCents)}`,
+        title: `Cobrança TemPix criada · ${formatCents(amountCents)}`,
         description: `${payment.reference} · ${payment.description}`,
-        source: 'AutoPix Pay',
+        source: 'TemPix Pay',
         metadata: { paymentId: payment.id },
       },
     };
@@ -360,7 +360,7 @@ export class PaymentService {
   /**
    * Idempotent, transactional state transition:
    * dedupe (provider, providerEventId) → lock payment → validate amount →
-   * apply → hand off to subscription / AutoPix Pay transaction → domain
+   * apply → hand off to subscription / TemPix Pay transaction → domain
    * events → mark event processed. Ambiguities are FLAGGED, never guessed.
    */
   async applyEvent({ provider, providerEventId, providerPaymentId, type, status, paidAt, amountCents = null, kind = 'payment', refundProviderId, payload, payloadHash }) {
@@ -438,7 +438,7 @@ export class PaymentService {
               type: 'PAYMENT',
               title: `Pix recebido · ${formatCents(payment.amountCents)}`,
               description: `${payment.reference} · ${payment.description || ''}`.trim(),
-              source: 'AutoPix Pay',
+              source: 'TemPix Pay',
               severity: 'SUCCESS',
               metadata: { paymentId: payment.id },
             },
@@ -492,7 +492,7 @@ export class PaymentService {
             {
               companyId: payment.companyId,
               type: 'SYSTEM',
-              title: 'AutoPix ativado',
+              title: 'TemPix ativado',
               description: `Assinatura ativa até ${periodEnd.toLocaleDateString('pt-BR')}. Agentes iniciando.`,
               source: 'subscription',
               severity: 'SUCCESS',
@@ -511,7 +511,7 @@ export class PaymentService {
           const event = {
             type: status === 'EXPIRED' ? 'PAYMENT_EXPIRED' : 'PAYMENT_CANCELLED',
             payload: { amountCents: payment.amountCents, reference: payment.reference, link: payment.transactionId ? deepLinks.transaction(payment.transactionId) : null },
-            activity: { type: 'PAYMENT', title: status === 'EXPIRED' ? 'Pix expirado' : 'Cobrança cancelada', description: `${payment.reference} · ${formatCents(payment.amountCents)}`, source: 'AutoPix Pay' },
+            activity: { type: 'PAYMENT', title: status === 'EXPIRED' ? 'Pix expirado' : 'Cobrança cancelada', description: `${payment.reference} · ${formatCents(payment.amountCents)}`, source: 'TemPix Pay' },
           };
           if (payment.transaction && this.transactions) {
             await this.transactions.publishBoth(payment.transaction, event, tx, { buyerActivity: null });
@@ -525,7 +525,7 @@ export class PaymentService {
         if (inflight.length && this.refunds) {
           for (const r of inflight) await this.refunds.complete(r.id, { source: 'SYSTEM' }, tx);
         } else {
-          await this.#flag(tx, payment, 'EXTERNAL_REFUND', { note: 'Provedor informou estorno não solicitado pelo AutoPix.' }, status);
+          await this.#flag(tx, payment, 'EXTERNAL_REFUND', { note: 'Provedor informou estorno não solicitado pelo TemPix.' }, status);
           await finish('FLAGGED', { paymentId: payment.id, error: 'external_refund' });
           return { flagged: 'external_refund', paymentId: payment.id };
         }

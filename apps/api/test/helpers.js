@@ -39,7 +39,7 @@ export async function setupApp(overrides = {}) {
 }
 
 const TABLES = [
-  // AutoPix Pay (FinancialAuditLog blocks UPDATE/DELETE, not TRUNCATE — test-only reset)
+  // TemPix Pay (FinancialAuditLog blocks UPDATE/DELETE, not TRUNCATE — test-only reset)
   'FinancialAuditLog',
   'ReconciliationIssue',
   'TripEvent',

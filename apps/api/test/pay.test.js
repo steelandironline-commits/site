@@ -37,7 +37,7 @@ function kit(ctx) {
   };
   const linkWhatsApp = async (user) => {
     const start = await user.c.post('/api/whatsapp/connection', { phoneNumber: '(11) 97777-6666' });
-    await inbound({ from: WA_FROM, text: `AUTOPIX ${start.body.verification.code}` });
+    await inbound({ from: WA_FROM, text: `TEMPIX ${start.body.verification.code}` });
   };
   const newTransaction = async (seller, input) => {
     const res = await act(seller, 'CREATE_TRANSACTION', input);
@@ -57,7 +57,7 @@ function kit(ctx) {
 }
 
 // =====================================================================
-describe.skipIf(!hasDb)('AutoPix Pay — standard Pix (no protected capability)', () => {
+describe.skipIf(!hasDb)('TemPix Pay — standard Pix (no protected capability)', () => {
   let ctx;
   let k;
   beforeAll(async () => {
@@ -95,7 +95,7 @@ describe.skipIf(!hasDb)('AutoPix Pay — standard Pix (no protected capability)'
     expect(paid).toMatchObject({ status: 'PAID', settlementStatus: 'PENDING_PROVIDER_CAPABILITY' });
     expect((await ctx.prisma.payment.findUnique({ where: { id: payment.id } })).status).toBe('CONFIRMED');
 
-    // Dashboard (both parties) and AutoPix Pay metrics.
+    // Dashboard (both parties) and TemPix Pay metrics.
     for (const u of [seller, buyer]) {
       const feed = await u.c.get('/api/activity?type=PAYMENT');
       expect(feed.body.items.some((e) => e.title === 'Pix recebido · R$ 1.400,00')).toBe(true);
@@ -107,7 +107,7 @@ describe.skipIf(!hasDb)('AutoPix Pay — standard Pix (no protected capability)'
     // WhatsApp: text + deep link, never a money button.
     await ctx.services.events.dispatchPending({ limit: 100 });
     const texts = ctx.services.whatsappProvider.sent.map((m) => m.text?.body || m.interactive?.body?.text || '').join('\n---\n');
-    expect(texts).toContain('💳 Cobrança AutoPix criada');
+    expect(texts).toContain('💳 Cobrança TemPix criada');
     expect(texts).toContain('✅ Pix recebido');
     expect(texts).toContain(`/app/pay/transactions/${t.id}`);
     expect(texts).toContain('[SANDBOX]');
@@ -224,7 +224,7 @@ describe.skipIf(!hasDb)('AutoPix Pay — standard Pix (no protected capability)'
 });
 
 // =====================================================================
-describe.skipIf(!hasDb)('AutoPix Pay — protected payment (provider with protectedFlow + payout)', () => {
+describe.skipIf(!hasDb)('TemPix Pay — protected payment (provider with protectedFlow + payout)', () => {
   let ctx;
   let k;
   beforeAll(async () => {
@@ -370,7 +370,7 @@ describe.skipIf(!hasDb)('AutoPix Pay — protected payment (provider with protec
 });
 
 // =====================================================================
-describe.skipIf(!hasDb)('AutoPix Pay — Banco do Brasil provider boundary', () => {
+describe.skipIf(!hasDb)('TemPix Pay — Banco do Brasil provider boundary', () => {
   let ctx;
   beforeAll(async () => {
     ctx = await setupApp({
@@ -415,7 +415,7 @@ describe.skipIf(!hasDb)('AutoPix Pay — Banco do Brasil provider boundary', () 
 });
 
 // =====================================================================
-describe.skipIf(!hasDb)('AutoPix Pay — gateway disabled (PAYMENT_PROVIDER=none)', () => {
+describe.skipIf(!hasDb)('TemPix Pay — gateway disabled (PAYMENT_PROVIDER=none)', () => {
   let ctx;
   beforeAll(async () => {
     ctx = await setupApp({ PAYMENT_PROVIDER: 'none' });
@@ -435,7 +435,7 @@ describe.skipIf(!hasDb)('AutoPix Pay — gateway disabled (PAYMENT_PROVIDER=none
     expect(pix.status).toBe(503);
     expect(pix.body.error.message).toBe(PAYMENTS_UNAVAILABLE_MESSAGE);
     expect(await ctx.prisma.payment.count()).toBe(0);
-    expect((await c.get('/api/pay/capabilities')).status).toBe(401); // onboarding session has no AutoPix Pay access
+    expect((await c.get('/api/pay/capabilities')).status).toBe(401); // onboarding session has no TemPix Pay access
     const config = await request(ctx.app).get('/api/config');
     expect(config.body.paymentProvider).toBe('none');
     expect(config.body.simulationAvailable).toBe(false);

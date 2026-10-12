@@ -48,7 +48,7 @@ export { WhatsAppCommandService, HELP_TEXT } from './whatsapp/WhatsAppCommandSer
 export { WhatsAppInboundService } from './whatsapp/WhatsAppInboundService.js';
 export { RuleBasedIntentParser, LlmIntentParser, intentSchema, parseAmountCents, parseDate } from './whatsapp/IntentParser.js';
 
-// AutoPix Pay (financial layer)
+// TemPix Pay (financial layer)
 export { FinancialAuditService, auditSourceFor } from './finance/FinancialAuditService.js';
 export { CommissionService, DEFAULT_COMMISSION_RULES } from './finance/CommissionService.js';
 export { MarketplaceTransactionService, TX_TITLES } from './finance/MarketplaceTransactionService.js';

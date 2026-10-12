@@ -1,9 +1,9 @@
-# AutoPix Pay — financial layer & Banco do Brasil
+# TemPix Pay — financial layer & Banco do Brasil
 
-> AutoPix controls the experience. The financial partner (Banco do Brasil)
+> TemPix controls the experience. The financial partner (Banco do Brasil)
 > controls the money.
 
-AutoPix never holds customer money in an ordinary company account, never
+TemPix never holds customer money in an ordinary company account, never
 fakes split, payout, protected payment or provider confirmations, and never
 lets a browser, a WhatsApp button, a GPS event or an LLM move money.
 
@@ -54,7 +54,7 @@ CREATE_TRANSACTION (amount from reference or seller's deal value; commission sna
 → PaymentEvent (unique provider+eventId, payloadHash, processingStatus)
 → Payment CONFIRMED → MarketplaceTransaction PAID
 → settlementStatus = PENDING_PROVIDER_CAPABILITY (no split/payout at BB yet:
-  the seller payable is flagged, never paid from an AutoPix balance)
+  the seller payable is flagged, never paid from an TemPix balance)
 → PAYMENT_RECEIVED (dashboard, SSE, WhatsApp "✅ Pix recebido", push)
 ```
 
@@ -107,7 +107,7 @@ seller refunds frozen) → `RESPOND_DISPUTE` → admin `summary` (deterministic,
 | Amount differs | `AMOUNT_MISMATCH` issue `OPEN`, no state change |
 | CONFIRMED locally, provider disagrees | `STATUS_DIVERGENCE` `OPEN`, no state change |
 | Confirmation after local expiry/cancel | `LATE_PAYMENT` `OPEN` |
-| Refund not requested by AutoPix | `EXTERNAL_REFUND` `OPEN` |
+| Refund not requested by TemPix | `EXTERNAL_REFUND` `OPEN` |
 | Refund in flight | provider status → complete/fail |
 | Payout failed | `PAYOUT_FAILED` `OPEN` (never auto re-sent) |
 

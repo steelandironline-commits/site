@@ -40,7 +40,7 @@ export class AsaasPaymentProvider extends PaymentProvider {
   async #request(path, { method = 'GET', body } = {}) {
     const res = await this.fetch(`${this.apiUrl}${path}`, {
       method,
-      headers: { access_token: this.accessToken, 'Content-Type': 'application/json', 'User-Agent': 'AutoPix' },
+      headers: { access_token: this.accessToken, 'Content-Type': 'application/json', 'User-Agent': 'TemPix' },
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(15000),
     });
@@ -122,7 +122,7 @@ export class AsaasPaymentProvider extends PaymentProvider {
   getCapabilities() {
     return {
       capabilities: { ...NO_CAPABILITIES, pix: true, pixWebhook: true, paymentStatus: true, refund: true, partialRefund: true },
-      // Transfers from the AutoPix balance would be an unofficial escrow — not used.
+      // Transfers from the TemPix balance would be an unofficial escrow — not used.
       reasons: { split: 'Split Asaas não integrado', payout: 'Repasse a partir do saldo da plataforma não é permitido', protectedFlow: 'Não habilitado' },
     };
   }
@@ -130,7 +130,7 @@ export class AsaasPaymentProvider extends PaymentProvider {
   async refundPayment(providerPaymentId, { amountCents, reason } = {}) {
     const data = await this.#request(`/payments/${encodeURIComponent(providerPaymentId)}/refund`, {
       method: 'POST',
-      body: { ...(amountCents ? { value: Number((amountCents / 100).toFixed(2)) } : {}), description: reason || 'Reembolso AutoPix' },
+      body: { ...(amountCents ? { value: Number((amountCents / 100).toFixed(2)) } : {}), description: reason || 'Reembolso TemPix' },
     });
     return { providerRefundId: String(data.id || providerPaymentId), status: 'PROCESSING' };
   }

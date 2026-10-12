@@ -20,7 +20,7 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = 'Nova senha — AutoPix';
+    document.title = 'Nova senha — TemPix';
     get(`/api/auth/reset-password/${encodeURIComponent(token)}`)
       .then(setInfo)
       .catch((err) => setInvalid(err.message));

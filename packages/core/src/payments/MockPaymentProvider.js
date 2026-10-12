@@ -66,7 +66,7 @@ export class MockPaymentProvider extends PaymentProvider {
     const copyPaste = buildBrCode({
       key: 'autopix-mock-nao-pagavel',
       amount: amountCents / 100,
-      merchantName: 'AUTOPIX DEMO',
+      merchantName: 'TEMPIX DEMO',
       merchantCity: 'SAO PAULO',
       txid: paymentId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 25),
       description,

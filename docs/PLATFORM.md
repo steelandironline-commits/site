@@ -1,4 +1,4 @@
-# AutoPix — One platform, multiple clients
+# TemPix — One platform, multiple clients
 
 ```
              ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  ┌─────────────┐
@@ -110,8 +110,8 @@ Event types: `OPPORTUNITY_CREATED`, `OPPORTUNITY_HIGH_PRIORITY`,
 
 Two kinds share one `PaymentProvider` abstraction:
 
-- `SUBSCRIPTION` — the AutoPix plan (activates the account).
-- `CHARGE` — AutoPix Pay charges, always linked to a `MarketplaceTransaction`
+- `SUBSCRIPTION` — the TemPix plan (activates the account).
+- `CHARGE` — TemPix Pay charges, always linked to a `MarketplaceTransaction`
   (server-side amount). Everything after payment — protection, release,
   refunds, disputes, trips, reconciliation — is described in
   [`AUTOPIX_PAY.md`](AUTOPIX_PAY.md). Release and refunds are sensitive actions

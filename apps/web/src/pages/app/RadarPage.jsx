@@ -14,7 +14,7 @@ export default function RadarPage() {
   const { data, error, reload } = useApi('/api/opportunities?sort=score&pageSize=12');
 
   useEffect(() => {
-    document.title = 'Radar — AutoPix';
+    document.title = 'Radar — TemPix';
   }, []);
 
   const nodes = useMemo(

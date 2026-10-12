@@ -22,7 +22,7 @@ const STEPS = [
   { key: 'sells', title: 'O que sua empresa vende?', subtitle: 'Produtos e uma breve descrição do negócio.', fields: ['products', 'description'] },
   { key: 'services', title: 'Quais serviços presta?', subtitle: 'Usamos isso para encontrar demandas compatíveis.', fields: ['services'] },
   { key: 'customer', title: 'Quem é seu cliente ideal?', subtitle: 'E quais setores você prefere atender.', fields: ['idealCustomer', 'preferredIndustries'] },
-  { key: 'rejected', title: 'Quais setores você não atende?', subtitle: 'O AutoPix descarta automaticamente esses mercados.', fields: ['excludedIndustries'] },
+  { key: 'rejected', title: 'Quais setores você não atende?', subtitle: 'O TemPix descarta automaticamente esses mercados.', fields: ['excludedIndustries'] },
   { key: 'where', title: 'Onde você atende?', subtitle: 'Cidade-base, regiões e raio de atendimento.', fields: ['city', 'state', 'serviceLocations', 'serviceRadiusKm'] },
   { key: 'ticket', title: 'Qual o ticket médio?', subtitle: 'E qual o menor negócio que vale a sua atenção.', fields: ['averageTicket', 'minimumDeal'] },
   { key: 'keywords', title: 'Palavras-chave', subtitle: 'Termos que indicam demanda pelo que você faz.', fields: ['keywords'] },
@@ -142,7 +142,7 @@ function Ready({ companyName }) {
       <span className={s.readyIcon}>
         <Check size={26} />
       </span>
-      <h1 className={s.readyTitle}>Seu AutoPix está pronto para ser ativado.</h1>
+      <h1 className={s.readyTitle}>Seu TemPix está pronto para ser ativado.</h1>
       <p className={s.readyText}>
         Os agentes de {companyName || 'sua empresa'} começam a procurar oportunidades assim que o Pix for confirmado.
       </p>
@@ -175,7 +175,7 @@ export default function Onboarding() {
 
   // Resume: server state first, local draft as a convenience.
   useEffect(() => {
-    document.title = 'Ativar AutoPix — Cadastro';
+    document.title = 'Cadastre-se no TemPix';
     if (sessionLoading) return;
     (async () => {
       let draft = null;
@@ -279,7 +279,7 @@ export default function Onboarding() {
   return (
     <div className={s.page}>
       <header className={s.top}>
-        <Link to="/" aria-label="AutoPix — início">
+        <Link to="/" aria-label="TemPix — início">
           <Logo />
         </Link>
         <span className={s.counter}>

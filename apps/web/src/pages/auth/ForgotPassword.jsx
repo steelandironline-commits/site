@@ -14,7 +14,7 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = 'Recuperar senha — AutoPix';
+    document.title = 'Recuperar senha — TemPix';
   }, []);
 
   const submit = async (e) => {

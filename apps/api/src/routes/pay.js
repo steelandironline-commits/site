@@ -5,7 +5,7 @@ import { requireAuth } from '../middleware/session.js';
 import { parse } from '../middleware/validate.js';
 
 /**
- * AutoPix Pay read API. Every mutation goes through POST /api/actions/:name
+ * TemPix Pay read API. Every mutation goes through POST /api/actions/:name
  * (ActionEngine); these routes only read, always scoped to the session's company.
  */
 export function payRoutes({ transactions, protectedPayments, commissions, trips, limiters }) {

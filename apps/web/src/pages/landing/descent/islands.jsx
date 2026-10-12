@@ -117,6 +117,29 @@ function Lamp({ p }) {
   );
 }
 
+/** The TemPix mark as a floating 2.5D tile: navy base, teal top, dark check. */
+function BrandTile(props) {
+  const ch = useChapter();
+  const ref = useRef();
+  useFrame((state) => {
+    const c = ch.current;
+    if (!c.visible || !ref.current) return;
+    const T = c.reduced ? 0 : state.clock.elapsedTime;
+    ref.current.rotation.y = Math.PI / 4 + Math.sin(T * 0.8) * 0.35;
+    ref.current.position.y = props.position[1] + Math.sin(T * 1.6) * 0.08;
+    const k = c.reduced ? 1 : back(seg(c.since, 0.6, 1.3));
+    ref.current.scale.setScalar(Math.max(k, 0.0001));
+  });
+  return (
+    <group ref={ref} {...props}>
+      <B p={[0, -0.12, -0.1]} s={[1.05, 1.05, 0.22]} r={[0, 0, Math.PI / 4]} c="#1c2a45" center />
+      <B s={[1.05, 1.05, 0.24]} r={[0, 0, Math.PI / 4]} c="#2ad1b8" e="#2ad1b8" ei={0.35} center />
+      <B p={[-0.17, -0.07, 0.13]} s={[0.36, 0.13, 0.04]} r={[0, 0, -Math.PI / 4]} c="#04201b" center />
+      <B p={[0.12, 0.01, 0.13]} s={[0.62, 0.13, 0.04]} r={[0, 0, Math.PI / 4 + 0.05]} c="#04201b" center />
+    </group>
+  );
+}
+
 /* =================================================================== 0 · cidade */
 const CITY_TRUCKS = [
   { o: 0, cab: '#f4f1ea', cargo: '#24365e' },
@@ -171,19 +194,19 @@ export function CityIsland() {
     <Island w={15} d={15} top="#e8e6e1" lip="#cfd3dc" strata={['#b9c3d8', '#8592b2', '#56618a']} seed={11}>
       <Road curve={loop} width={1.3} />
       <B p={[0, 0, 0]} s={[6.4, 0.04, 6.4]} c="#dcdfe6" shadow={false} />
-      {/* AutoPix tower */}
+      {/* TemPix tower */}
       <Rise delay={0.05} dur={0.9}>
         <B s={[2.3, 0.18, 2.3]} c="#c5ccd9" />
         <Building p={[0, 0.18, 0]} w={1.5} d={1.5} h={4.5} c="#2c4170" roof="#1c2a45" lit={1} glow="#8ff0de" top={false} />
         <Cy p={[0, 4.74, 0]} s={[1.2, 0.2, 1.2]} c="#2ad1b8" e="#2ad1b8" ei={0.9} />
-        <Cy p={[0, 4.94, 0]} s={[0.07, 1.0, 0.07]} c="#dfe6f2" g={GEO.cyl8} />
-        <Ball p={[0, 6.0, 0]} s={0.18} c="#ffffff" e="#9ff5e6" ei={2} />
+        <Cy p={[0, 4.94, 0]} s={[0.07, 0.6, 0.07]} c="#dfe6f2" g={GEO.cyl8} />
       </Rise>
+      <BrandTile position={[0, 6.35, 0]} />
       <group position={[0, 4.9, 0]}>
         <Pulse color="#9ff5e6" radius={3.6} period={2.6} />
         <Pulse color="#9ff5e6" radius={3.6} period={2.6} delay={1.3} />
       </group>
-      <Glow color="#2ad1b8" size={2.4} position={[0, 6.0, 0]} pulse={0.15} />
+      <Glow color="#2ad1b8" size={3.2} position={[0, 6.35, -0.3]} pulse={0.15} />
       {/* plaza */}
       <Rise delay={0.3}>
         <Building p={[-2.2, 0, -2.2]} w={1.3} d={1.3} h={2.4} c="#eef1f6" lit={0.5} />
@@ -1177,10 +1200,19 @@ function dashboardTexture() {
     g.fillRect(0, 0, w, h);
     g.fillStyle = '#121418';
     g.fillRect(0, 0, 200, h);
-    drawPixDiamond(g, 40, 44, 12, '#2ad1b8');
+    drawPixDiamond(g, 40, 44, 13, '#2ad1b8');
+    g.strokeStyle = '#04201b';
+    g.lineWidth = 4;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(33, 44);
+    g.lineTo(38.5, 49.5);
+    g.lineTo(47.5, 39);
+    g.stroke();
     g.fillStyle = '#ecebe6';
     g.font = '600 26px "IBM Plex Sans", system-ui, sans-serif';
-    g.fillText('AutoPix', 64, 54);
+    g.fillText('TemPix', 64, 54);
     const nav = ['Painel', 'Oportunidades', 'Cargas', 'Equipes', 'Pix'];
     nav.forEach((n, i) => {
       if (i === 0) {

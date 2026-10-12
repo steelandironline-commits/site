@@ -1,9 +1,9 @@
-# AutoPix
+# TemPix
 
-**Procuramos vendas e serviços pra você.**
-*Sua empresa trabalha. O AutoPix procura oportunidades.*
+**Tem emprego, tem rota, tem serviço. TemPix.**
+*Clientes, cargas, profissionais e Pix numa tela só.*
 
-AutoPix is a Brazilian autonomous commercial-opportunity discovery platform. A business
+TemPix is a Brazilian autonomous commercial-opportunity discovery platform. A business
 subscribes (R$597/mês via Pix), describes what it sells, who it wants to reach and where it
 operates, and a pipeline of agents continuously searches the market, researches companies,
 detects commercial signals (expansions, construction, purchases, hiring, new projects,
@@ -23,7 +23,7 @@ commercial approach to a realtime dashboard.
 - [Scripts](#scripts)
 - [Demo mode](#demo-mode)
 - [Payments (Pix)](#payments-pix)
-- [AutoPix Pay](#autopix-pay)
+- [TemPix Pay](#autopix-pay)
 - [Banco do Brasil Integration](#banco-do-brasil-integration)
 - [Agents & the autonomous engine](#agents--the-autonomous-engine)
 - [Realtime](#realtime)
@@ -42,7 +42,7 @@ commercial approach to a realtime dashboard.
 |------|------------|
 | Landing (`/`) | Full-viewport hero, Three.js **Opportunity Radar** (lazy, DPR-capped, pauses off-screen, reduced-motion aware), live **ATIVIDADE** stream + SOURCE→RESEARCH→SIGNAL→SCORE→OPPORTUNITY pulse flow (both labelled **DEMO**), interactive “Como funciona”, embedded opportunity preview, single-plan pricing. |
 | Onboarding (`/onboarding`) | 10 progressive steps, persisted server-side after every step (resumable after reload), “Entendendo seu mercado…” analysis sequence, “PAGAR COM PIX”. |
-| Checkout (`/checkout`) | Mobile-first Pix page: QR code, *copia e cola* with COPIAR PIX, expiry countdown, status polling (pauses in background tabs) + provider reconciliation, PAGAMENTO CONFIRMADO → “Ativando seu AutoPix…” → `/activate/:token`. |
+| Checkout (`/checkout`) | Mobile-first Pix page: QR code, *copia e cola* with COPIAR PIX, expiry countdown, status polling (pauses in background tabs) + provider reconciliation, PAGAMENTO CONFIRMADO → “Ativando seu TemPix…” → `/activate/:token`. |
 | Auth | `/login`, `/activate/:token`, `/forgot-password`, `/reset-password/:token`; HTTP-only cookie sessions, Argon2id, one-time expiring tokens. |
 | Dashboard (`/app`) | Visão Geral (DB-backed metrics, 2.5D business-flow visualization pulsing on real events, top opportunities, live activity), Radar (Three.js with real opportunities), Oportunidades (filters, search, sort, cards/list, actions), detail page (score breakdown, reasons, sources, public contacts, approach, timeline, notes, status), Atividade (SSE feed, filters, history paging), Agentes, Empresa, Assinatura, Configurações. |
 | Backend | Express 5 REST API, Prisma/PostgreSQL, Zod validation, Postgres-backed job queue, separate worker, SSE over `LISTEN/NOTIFY`, vendor-independent payment layer. |
@@ -254,7 +254,7 @@ com Pix* creates a new charge that extends the period. Expired subscriptions bec
 
 ---
 
-## AutoPix Pay
+## TemPix Pay
 
 Marketplace payments on top of the same provider abstraction (details:
 [`docs/AUTOPIX_PAY.md`](docs/AUTOPIX_PAY.md)).
@@ -270,7 +270,7 @@ Marketplace payments on top of the same provider abstraction (details:
   (`CommissionRule`, default 1.5% → R$ 1.400 = R$ 21 + R$ 1.379).
 - Protected payment, split and payout appear **only** when the provider
   reports the capability. Without them the seller payable is tracked as
-  `PENDING_PROVIDER_CAPABILITY` — AutoPix never acts as unofficial escrow.
+  `PENDING_PROVIDER_CAPABILITY` — TemPix never acts as unofficial escrow.
 - Refunds complete only on provider confirmation; disputes are decided by a
   platform admin (`User.isPlatformAdmin`), with AI limited to summarizing.
 - `PaymentReconciliationJob` in the worker; append-only `FinancialAuditLog`;
@@ -390,7 +390,7 @@ Then set the `preserve()` variables in the dashboard (they are never stored in g
    DEMO_MODE=false
    EMAIL_PROVIDER=resend
    EMAIL_API_KEY=<resend key>
-   EMAIL_FROM=AutoPix <nao-responda@seu-dominio.com.br>
+   EMAIL_FROM=TemPix <nao-responda@seu-dominio.com.br>
    ```
 
    Worker extras (optional real sources): `SEARCH_PROVIDER=brave`, `SEARCH_API_KEY=…`,
@@ -494,7 +494,7 @@ database the DB suites are skipped with a warning.
 
 ## Platform layer: ActionEngine, events, WhatsApp, PWA
 
-AutoPix is **one platform with multiple clients** — web/PWA, WhatsApp and
+TemPix is **one platform with multiple clients** — web/PWA, WhatsApp and
 (future) native apps all use the same business layer in `packages/core`.
 Full description: [`docs/PLATFORM.md`](docs/PLATFORM.md); endpoints:
 [`docs/API.md`](docs/API.md).
@@ -514,7 +514,7 @@ Full description: [`docs/PLATFORM.md`](docs/PLATFORM.md); endpoints:
   `CHANGE_BANK_DETAILS`, `RESOLVE_DISPUTE`, `UPDATE_COMMISSION_RULE` require a `SensitiveActionChallenge` confirmed with the
   password in an authenticated web/PWA session. A WhatsApp number alone never
   authorizes them.
-- **AutoPix Pay charges** — created from web or WhatsApp (“gere um Pix de
+- **TemPix Pay charges** — created from web or WhatsApp (“gere um Pix de
   1400” creates a SERVICE transaction); protection only when the provider
   supports it.
 - **Freight & workforce** — routes/demands and matches with deep links
@@ -565,7 +565,7 @@ and `mock` in development/test.
   implemented for any real provider yet: it requires the partner's contracted
   product (e.g. a BB split/payout contract). Until then the seller payable is
   flagged `PENDING_PROVIDER_CAPABILITY`. The former Asaas `/transfers` release
-  was removed because it would make an AutoPix account an unofficial escrow.
+  was removed because it would make an TemPix account an unofficial escrow.
 - BB API/OAuth default URLs and scopes follow public documentation and must be
   confirmed against the real BB application before go-live.
 - The LLM intent parser is a boundary (`LlmIntentParser({ generate })`) and is

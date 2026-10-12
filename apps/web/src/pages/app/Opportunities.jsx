@@ -62,7 +62,7 @@ export default function Opportunities() {
   );
 
   useEffect(() => {
-    document.title = 'Oportunidades — AutoPix';
+    document.title = 'Oportunidades — TemPix';
   }, []);
   useEffect(() => {
     load(1);

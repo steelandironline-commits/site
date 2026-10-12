@@ -10,7 +10,7 @@ export function paymentRoutes({ payments, actions, limiters }) {
 
   /**
    * Create (or reuse) a Pix charge. The amount is ALWAYS computed on the
-   * server: the plan price for the subscription, or the AutoPix Pay
+   * server: the plan price for the subscription, or the TemPix Pay
    * transaction amount when `transactionId` is given. Client amounts are ignored.
    */
   r.post('/pix', requireOnboardingSession, async (req, res) => {

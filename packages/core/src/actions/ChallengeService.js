@@ -29,7 +29,7 @@ export class ChallengeService {
   }
 
   async confirm(id, { user, session, password, ip }) {
-    if (!session || session.scope !== 'FULL') throw forbidden('Entre no AutoPix para confirmar.');
+    if (!session || session.scope !== 'FULL') throw forbidden('Entre no TemPix para confirmar.');
     const c = await this.prisma.sensitiveActionChallenge.findFirst({ where: { id, userId: user.id } });
     if (!c) throw notFound('Confirmação não encontrada.');
     if (c.status !== 'PENDING') throw conflict('Esta confirmação já foi utilizada.');

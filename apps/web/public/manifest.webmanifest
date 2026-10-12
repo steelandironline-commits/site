@@ -1,8 +1,8 @@
 {
   "id": "/app",
-  "name": "AutoPix",
-  "short_name": "AutoPix",
-  "description": "Procuramos vendas e serviços pra você.",
+  "name": "TemPix",
+  "short_name": "TemPix",
+  "description": "Tem emprego, tem rota, tem serviço. TemPix.",
   "lang": "pt-BR",
   "dir": "ltr",
   "start_url": "/app?source=pwa",

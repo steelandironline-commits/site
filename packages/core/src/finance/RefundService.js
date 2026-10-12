@@ -75,7 +75,7 @@ export class RefundService {
           aggregateType: 'payment',
           aggregateId: payment.id,
           payload: { amountCents: amount, refundId: r.id, link: t ? `/app/pay/transactions/${t.id}` : null },
-          activity: { type: 'PAYMENT', title: `Reembolso solicitado · ${formatCents(amount)}`, description: 'Aguardando confirmação do parceiro financeiro.', source: 'AutoPix Pay', severity: 'WARNING' },
+          activity: { type: 'PAYMENT', title: `Reembolso solicitado · ${formatCents(amount)}`, description: 'Aguardando confirmação do parceiro financeiro.', source: 'TemPix Pay', severity: 'WARNING' },
         },
         tx,
       );
@@ -133,7 +133,7 @@ export class RefundService {
       const event = {
         type: 'PAYMENT_REFUNDED',
         payload: { amountCents: r.amountCents, full, refundId: r.id, kind: p.kind, link: t ? `/app/pay/transactions/${t.id}` : null },
-        activity: { type: 'PAYMENT', title: `Reembolso concluído · ${formatCents(r.amountCents)}`, description: 'Confirmado pelo parceiro financeiro.', source: 'AutoPix Pay', severity: 'WARNING' },
+        activity: { type: 'PAYMENT', title: `Reembolso concluído · ${formatCents(r.amountCents)}`, description: 'Confirmado pelo parceiro financeiro.', source: 'TemPix Pay', severity: 'WARNING' },
       };
       if (t) await this.transactions.publishBoth(t, event, tx);
       else await this.events.publish({ ...event, companyId: p.companyId, aggregateType: 'payment', aggregateId: p.id }, tx);

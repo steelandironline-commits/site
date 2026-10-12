@@ -1,4 +1,4 @@
-# AutoPix — Operations
+# TemPix — Operations
 
 ## Health
 

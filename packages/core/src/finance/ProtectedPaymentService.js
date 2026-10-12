@@ -11,7 +11,7 @@ const OPEN_DISPUTE = { in: ['OPEN', 'UNDER_REVIEW', 'BUYER_RESPONSE', 'SELLER_RE
  * ProtectedPaymentService — "Pagamento protegido".
  *
  * Active ONLY when the configured provider reports `protectedFlow` plus a
- * real money-movement capability (`payout` or `split`). AutoPix never holds
+ * real money-movement capability (`payout` or `split`). TemPix never holds
  * funds in an ordinary bank account as unofficial escrow: the money stays
  * with the financial partner and moves only through its authorized flow.
  *
@@ -66,13 +66,13 @@ export class ProtectedPaymentService {
           { type: 'PROTECTED_PAYMENT_RELEASE_REQUESTED', userId: user.id, payload: { amountCents: t.sellerNetAmount, link: `/app/pay/transactions/${t.id}`, stage: 'READY_TO_RELEASE' } },
           tx,
           {
-            sellerActivity: { type: 'PAYMENT', title: 'Cliente confirmou a conclusão', description: `${t.description} · aguardando liberação`, source: 'AutoPix Pay', severity: 'SUCCESS' },
-            buyerActivity: { type: 'PAYMENT', title: 'Pagamento pronto para liberação. Confirme no AutoPix.', description: t.description, source: 'AutoPix Pay', severity: 'WARNING' },
+            sellerActivity: { type: 'PAYMENT', title: 'Cliente confirmou a conclusão', description: `${t.description} · aguardando liberação`, source: 'TemPix Pay', severity: 'SUCCESS' },
+            buyerActivity: { type: 'PAYMENT', title: 'Pagamento pronto para liberação. Confirme no TemPix.', description: t.description, source: 'TemPix Pay', severity: 'WARNING' },
           },
         );
       } else {
         await this.transactions.publishBoth(u, { type: 'SERVICE_CONFIRMED', userId: user.id, payload: { link: `/app/pay/transactions/${t.id}` } }, tx, {
-          sellerActivity: { type: 'PAYMENT', title: 'Cliente confirmou a conclusão', description: t.description, source: 'AutoPix Pay', severity: 'SUCCESS' },
+          sellerActivity: { type: 'PAYMENT', title: 'Cliente confirmou a conclusão', description: t.description, source: 'TemPix Pay', severity: 'SUCCESS' },
           buyerActivity: null,
         });
       }
@@ -131,7 +131,7 @@ export class ProtectedPaymentService {
             amountCents: t.sellerNetAmount,
             beneficiary: { pixKey: seller.payoutPixKey, pixKeyType: seller.payoutPixKeyType, name: seller.name, document: seller.cnpj },
             idempotencyKey,
-            description: `AutoPix Pay ${t.id.slice(-8)}`,
+            description: `TemPix Pay ${t.id.slice(-8)}`,
           }),
         };
       }
@@ -172,8 +172,8 @@ export class ProtectedPaymentService {
       await this.transactions.timeline(t.id, { type: 'RELEASED', actorUserId: user.id, metadata: { mechanism: st.mechanism } }, tx);
       const link = `/app/pay/transactions/${t.id}`;
       await this.transactions.publishBoth(u, { type: 'PROTECTED_PAYMENT_RELEASED', userId: user.id, payload: { amountCents: t.sellerNetAmount, link } }, tx, {
-        sellerActivity: { type: 'PAYMENT', title: `Pagamento liberado · ${formatCents(t.sellerNetAmount)}`, description: `${t.description} · processado pelo parceiro financeiro`, source: 'AutoPix Pay', severity: 'SUCCESS' },
-        buyerActivity: { type: 'PAYMENT', title: 'Pagamento liberado ao prestador', description: t.description, source: 'AutoPix Pay' },
+        sellerActivity: { type: 'PAYMENT', title: `Pagamento liberado · ${formatCents(t.sellerNetAmount)}`, description: `${t.description} · processado pelo parceiro financeiro`, source: 'TemPix Pay', severity: 'SUCCESS' },
+        buyerActivity: { type: 'PAYMENT', title: 'Pagamento liberado ao prestador', description: t.description, source: 'TemPix Pay' },
       });
       if (result.split) {
         await this.events.publish({ type: 'SPLIT_PROCESSED', companyId: t.sellerCompanyId, aggregateType: 'transaction', aggregateId: t.id, payload: { commissionCents: t.commissionAmount, netCents: t.sellerNetAmount, link } }, tx);

@@ -1,10 +1,10 @@
 import { getPrisma } from '../db.js';
 import { badRequest } from '../errors.js';
 
-/** Default rules: 1.5% on marketplace types; subscriptions are 100% AutoPix revenue. */
+/** Default rules: 1.5% on marketplace types; subscriptions are 100% TemPix revenue. */
 export const DEFAULT_COMMISSION_RULES = [
   { name: 'Padrão marketplace 1,5%', transactionType: null, rateBps: 150, priority: 0 },
-  { name: 'Assinatura AutoPix', transactionType: 'SUBSCRIPTION', rateBps: 10000, priority: 10 },
+  { name: 'Assinatura TemPix', transactionType: 'SUBSCRIPTION', rateBps: 10000, priority: 10 },
 ];
 
 /**

@@ -1,4 +1,4 @@
-# AutoPix — Architecture
+# TemPix — Architecture
 
 ## Processes
 

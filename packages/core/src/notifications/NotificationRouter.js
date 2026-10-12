@@ -4,22 +4,22 @@ import { getConfig } from '../config.js';
 import { logger } from '../logger.js';
 import { PreferenceService } from './PreferenceService.js';
 
-/** AutoPix Pay copy (section 17). Deep links only — never an action button for money. */
+/** TemPix Pay copy (section 17). Deep links only — never an action button for money. */
 const PAY_COPY = {
-  PAYMENT_CREATED: (p) => ({ title: '💳 Cobrança AutoPix criada', body: p.amountCents ? formatCents(p.amountCents) : '', cta: 'ABRIR COBRANÇA' }),
+  PAYMENT_CREATED: (p) => ({ title: '💳 Cobrança TemPix criada', body: p.amountCents ? formatCents(p.amountCents) : '', cta: 'ABRIR COBRANÇA' }),
   PAYMENT_RECEIVED: (p) => ({ title: '✅ Pix recebido', body: p.amountCents ? formatCents(p.amountCents) : '' }),
-  PAYMENT_EXPIRED: () => ({ title: '⌛ Pix expirado', body: 'Gere uma nova cobrança no AutoPix.' }),
+  PAYMENT_EXPIRED: () => ({ title: '⌛ Pix expirado', body: 'Gere uma nova cobrança no TemPix.' }),
   PAYMENT_CANCELLED: () => ({ title: 'Cobrança cancelada', body: '' }),
   PROTECTED_PAYMENT_CREATED: () => ({ title: '🛡️ Pagamento recebido e aguardando conclusão.', body: 'Pagamento protegido · processado pelo parceiro financeiro.' }),
-  SERVICE_COMPLETED: (p) => (p.audience === 'BUYER' ? { title: 'O prestador informou a conclusão.', body: 'Confirme no AutoPix.' } : { title: 'Conclusão informada', body: '' }),
+  SERVICE_COMPLETED: (p) => (p.audience === 'BUYER' ? { title: 'O prestador informou a conclusão.', body: 'Confirme no TemPix.' } : { title: 'Conclusão informada', body: '' }),
   PROTECTED_PAYMENT_RELEASE_REQUESTED: (p) =>
-    p.audience === 'BUYER' ? { title: 'Pagamento pronto para liberação. Confirme no AutoPix.', body: '' } : { title: 'Liberação aguardando o cliente', body: '' },
+    p.audience === 'BUYER' ? { title: 'Pagamento pronto para liberação. Confirme no TemPix.', body: '' } : { title: 'Liberação aguardando o cliente', body: '' },
   PROTECTED_PAYMENT_RELEASED: (p) => ({ title: '✅ Pagamento liberado', body: p.amountCents ? `${formatCents(p.amountCents)} · processado pelo parceiro financeiro` : '' }),
   PAYMENT_REFUNDED: (p) => ({ title: '↩️ Reembolso concluído', body: p.amountCents ? formatCents(p.amountCents) : '' }),
   PAYOUT_CONFIRMED: (p) => ({ title: '✅ Repasse confirmado', body: p.amountCents ? formatCents(p.amountCents) : '' }),
   DISPUTE_OPENED: () => ({ title: '⚠️ Disputa aberta', body: 'A liberação está congelada até a análise.' }),
-  DISPUTE_RESOLVED: () => ({ title: 'Disputa resolvida', body: 'Veja a decisão no AutoPix.' }),
-  DRIVER_ARRIVED_DESTINATION: () => ({ title: '🚛 O transporte chegou ao destino.', body: 'Confira a carga e confirme a entrega no AutoPix.' }),
+  DISPUTE_RESOLVED: () => ({ title: 'Disputa resolvida', body: 'Veja a decisão no TemPix.' }),
+  DRIVER_ARRIVED_DESTINATION: () => ({ title: '🚛 O transporte chegou ao destino.', body: 'Confira a carga e confirme a entrega no TemPix.' }),
   NEAR_DESTINATION: () => ({ title: '🚚 Transporte próximo ao destino', body: '' }),
   DRIVER_ARRIVED_PICKUP: () => ({ title: '📍 Motorista chegou à coleta', body: '' }),
   CARGO_LOADED: () => ({ title: '📦 Carga carregada', body: '' }),
@@ -33,7 +33,7 @@ export function composeNotification(event, entity) {
   if (PAY_COPY[event.type] && (event.aggregateType === 'transaction' || p.link)) {
     const c = PAY_COPY[event.type](p);
     const sandbox = entity?.isSandbox ? ' [SANDBOX]' : '';
-    return { title: `${c.title}${sandbox}`, body: c.body, url: p.link || '/app/pay', cta: c.cta || 'ABRIR NO AUTOPIX' };
+    return { title: `${c.title}${sandbox}`, body: c.body, url: p.link || '/app/pay', cta: c.cta || 'ABRIR NO TEMPIX' };
   }
   switch (event.type) {
     case 'OPPORTUNITY_CREATED':
@@ -151,7 +151,7 @@ export class NotificationRouter {
     if (!this.email || this.config.email.provider !== 'resend') return 'SKIPPED';
     const ok = await this.email.send({
       to: user.email,
-      subject: `AutoPix — ${message.title}`,
+      subject: `TemPix — ${message.title}`,
       text: `${message.title}\n${message.body}\n\n${this.config.appUrl}${message.url}`,
     });
     return ok ? 'SENT' : 'FAILED';

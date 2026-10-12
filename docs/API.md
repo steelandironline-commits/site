@@ -1,4 +1,4 @@
-# AutoPix — HTTP API
+# TemPix — HTTP API
 
 Base: `/api`. JSON. Errors: `{ "error": { "code", "message", "fields?" } }` (messages in pt-BR, no stack traces).
 

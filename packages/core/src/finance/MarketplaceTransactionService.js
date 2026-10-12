@@ -51,7 +51,7 @@ const LIST_SELECT = {
 };
 
 /**
- * MarketplaceTransactionService — AutoPix Pay's provider-independent core.
+ * MarketplaceTransactionService — TemPix Pay's provider-independent core.
  * Amounts are always computed server-side (reference price or the seller's
  * agreed deal value), never taken from a client at payment time.
  */
@@ -175,14 +175,14 @@ export class MarketplaceTransactionService {
       await this.timeline(t.id, { type: 'CREATED', actorUserId: user.id, metadata: { gross: t.grossAmount } }, tx);
       await this.timeline(
         t.id,
-        { type: 'COMMISSION', title: `Comissão AutoPix: ${formatCents(t.commissionAmount)} (${(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)`, metadata: { ruleId: quote.ruleId } },
+        { type: 'COMMISSION', title: `Comissão TemPix: ${formatCents(t.commissionAmount)} (${(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)`, metadata: { ruleId: quote.ruleId } },
         tx,
       );
       await this.publishBoth(t, {
         type: 'TRANSACTION_CREATED',
         userId: user.id,
         payload: { gross: t.grossAmount, commission: t.commissionAmount, net: t.sellerNetAmount, link: `/app/pay/transactions/${t.id}` },
-        activity: { type: 'PAYMENT', title: `Negócio criado · ${formatCents(t.grossAmount)}`, description: `${t.description} · comissão ${formatCents(t.commissionAmount)}`, source: 'AutoPix Pay' },
+        activity: { type: 'PAYMENT', title: `Negócio criado · ${formatCents(t.grossAmount)}`, description: `${t.description} · comissão ${formatCents(t.commissionAmount)}`, source: 'TemPix Pay' },
       }, tx);
       await this.audit.log({ action: 'TRANSACTION_CREATED', source: 'SYSTEM', userId: user.id, companyId: company.id, transactionId: t.id, metadata: { gross: t.grossAmount, commission: t.commissionAmount, rateBps: t.commissionRateBps, protectedFlow } }, tx);
       return t;
@@ -228,7 +228,7 @@ export class MarketplaceTransactionService {
     return this.prisma.$transaction(async (tx) => {
       const u = await tx.marketplaceTransaction.update({ where: { id: t.id }, data: { serviceStartedAt: new Date() } });
       await this.timeline(t.id, { type: 'SERVICE_STARTED', actorUserId: user.id }, tx);
-      await this.publishBoth(u, { type: 'SERVICE_STARTED', userId: user.id, activity: { type: 'PAYMENT', title: 'Serviço iniciado', description: t.description, source: 'AutoPix Pay' } }, tx);
+      await this.publishBoth(u, { type: 'SERVICE_STARTED', userId: user.id, activity: { type: 'PAYMENT', title: 'Serviço iniciado', description: t.description, source: 'TemPix Pay' } }, tx);
       return u;
     });
   }
@@ -247,8 +247,8 @@ export class MarketplaceTransactionService {
         { type: 'SERVICE_COMPLETED', userId: user.id, payload: { link: `/app/pay/transactions/${t.id}` } },
         tx,
         {
-          sellerActivity: { type: 'PAYMENT', title: 'Conclusão informada', description: t.description, source: 'AutoPix Pay' },
-          buyerActivity: { type: 'PAYMENT', title: 'Prestador informou conclusão — confirme no AutoPix', description: t.description, source: 'AutoPix Pay', severity: 'WARNING' },
+          sellerActivity: { type: 'PAYMENT', title: 'Conclusão informada', description: t.description, source: 'TemPix Pay' },
+          buyerActivity: { type: 'PAYMENT', title: 'Prestador informou conclusão — confirme no TemPix', description: t.description, source: 'TemPix Pay', severity: 'WARNING' },
         },
       );
       return u;
@@ -263,8 +263,8 @@ export class MarketplaceTransactionService {
     await this.prisma.$transaction(async (tx) => {
       await this.timeline(t.id, { type: 'RELEASE_REQUESTED', actorUserId: user.id }, tx);
       await this.publishBoth(t, { type: 'PROTECTED_PAYMENT_RELEASE_REQUESTED', userId: user.id, payload: { link: `/app/pay/transactions/${t.id}` } }, tx, {
-        sellerActivity: { type: 'PAYMENT', title: 'Liberação solicitada ao cliente', description: t.description, source: 'AutoPix Pay' },
-        buyerActivity: { type: 'PAYMENT', title: 'Pagamento pronto para liberação — confirme no AutoPix', description: t.description, source: 'AutoPix Pay', severity: 'WARNING' },
+        sellerActivity: { type: 'PAYMENT', title: 'Liberação solicitada ao cliente', description: t.description, source: 'TemPix Pay' },
+        buyerActivity: { type: 'PAYMENT', title: 'Pagamento pronto para liberação — confirme no TemPix', description: t.description, source: 'TemPix Pay', severity: 'WARNING' },
       });
     });
     return this.load(id, company.id);
@@ -285,7 +285,7 @@ export class MarketplaceTransactionService {
       if (t.payment?.status === 'PENDING') await tx.payment.update({ where: { id: t.payment.id }, data: { status: 'CANCELED' } });
       const u = await tx.marketplaceTransaction.update({ where: { id: t.id }, data: { status: 'CANCELLED', cancelledAt: new Date() } });
       await this.timeline(t.id, { type: 'CANCELLED', actorUserId: user.id }, tx);
-      await this.publishBoth(u, { type: 'PAYMENT_CANCELLED', userId: user.id, activity: { type: 'PAYMENT', title: 'Negócio cancelado', description: t.description, source: 'AutoPix Pay' } }, tx);
+      await this.publishBoth(u, { type: 'PAYMENT_CANCELLED', userId: user.id, activity: { type: 'PAYMENT', title: 'Negócio cancelado', description: t.description, source: 'TemPix Pay' } }, tx);
       await this.audit.log({ action: 'TRANSACTION_CANCELLED', userId: user.id, companyId: company.id, transactionId: t.id, paymentId: t.payment?.id }, tx);
       return u;
     });
@@ -305,8 +305,8 @@ export class MarketplaceTransactionService {
     if (t.protectedFlow) {
       await this.timeline(t.id, { type: 'PROTECTED' }, tx);
       await this.publishBoth(u, { type: 'PROTECTED_PAYMENT_CREATED', payload: { amountCents: t.grossAmount, link: `/app/pay/transactions/${t.id}` } }, tx, {
-        sellerActivity: { type: 'PAYMENT', title: 'Pagamento protegido · aguardando conclusão', description: t.description, source: 'AutoPix Pay', severity: 'SUCCESS' },
-        buyerActivity: { type: 'PAYMENT', title: 'Pagamento recebido e aguardando conclusão', description: t.description, source: 'AutoPix Pay' },
+        sellerActivity: { type: 'PAYMENT', title: 'Pagamento protegido · aguardando conclusão', description: t.description, source: 'TemPix Pay', severity: 'SUCCESS' },
+        buyerActivity: { type: 'PAYMENT', title: 'Pagamento recebido e aguardando conclusão', description: t.description, source: 'TemPix Pay' },
       });
     } else if (settlementStatus === 'PENDING_PROVIDER_CAPABILITY') {
       await this.timeline(t.id, { type: 'SETTLEMENT_PENDING' }, tx);
@@ -421,7 +421,7 @@ export class MarketplaceTransactionService {
     return items.map((t) => ({ ...t, role: this.roleOf(t, companyId) }));
   }
 
-  /** AutoPix Pay header metrics — all from the database. */
+  /** TemPix Pay header metrics — all from the database. */
   async summary(companyId) {
     const sum = async (where, field) => (await this.prisma.marketplaceTransaction.aggregate({ where, _sum: { [field]: true } }))._sum[field] ?? 0;
     const seller = { sellerCompanyId: companyId };

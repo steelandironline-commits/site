@@ -27,7 +27,7 @@ export default function ConfirmChallenge() {
   const c = data?.challenge;
 
   useEffect(() => {
-    document.title = 'Confirmar ação — AutoPix';
+    document.title = 'Confirmar ação — TemPix';
   }, []);
 
   const confirm = async (e) => {

@@ -58,10 +58,10 @@ export class WhatsAppInboundService {
       switch (v.outcome) {
         case 'VERIFIED':
           connection = v.connection;
-          await this.messenger.reply(connection, '✅ WhatsApp vinculado ao AutoPix. Envie “ajuda” para ver o que posso fazer.');
+          await this.messenger.reply(connection, '✅ WhatsApp vinculado ao TemPix. Envie “ajuda” para ver o que posso fazer.');
           return { verified: true, connectionId: connection.id };
         case 'WRONG_CODE':
-          await reply('Código incorreto. Confira o código exibido no app AutoPix.');
+          await reply('Código incorreto. Confira o código exibido no app TemPix.');
           return { verified: false, reason: 'wrong_code' };
         case 'EXPIRED':
           await reply('Este código expirou. Gere um novo em Configurações → WhatsApp.');
@@ -70,10 +70,10 @@ export class WhatsAppInboundService {
           await reply('Muitas tentativas. Gere um novo código no app.');
           return { verified: false, reason: 'locked' };
         case 'NO_CODE':
-          await reply('Para vincular, envie a mensagem com o código exibido no app (ex.: AUTOPIX 123456).');
+          await reply('Para vincular, envie a mensagem com o código exibido no app (ex.: TEMPIX 123456).');
           return { verified: false, reason: 'no_code' };
         default:
-          await reply('Este número não está vinculado ao AutoPix. Vincule em Configurações → WhatsApp no app.');
+          await reply('Este número não está vinculado ao TemPix. Vincule em Configurações → WhatsApp no app.');
           return { verified: false, reason: 'unknown_number' };
       }
     }
@@ -107,8 +107,8 @@ export class WhatsAppInboundService {
     const action = WHATSAPP_DECISIONS[d.decision]?.[d.kind];
     const link = this.provider.link((LINK_FOR[d.kind] || (() => '/app'))(d.id));
     if (!action) {
-      // VER ROTA / ABRIR AUTOPIX: navigation only, no state change.
-      await this.messenger.reply(connection, `Abra no AutoPix: ${link}`);
+      // VER ROTA / ABRIR TEMPIX: navigation only, no state change.
+      await this.messenger.reply(connection, `Abra no TemPix: ${link}`);
       return { handled: 'link' };
     }
     const out = await this.engine.execute({
@@ -118,7 +118,7 @@ export class WhatsAppInboundService {
       actor: { userId: connection.userId, whatsappConnectionId: connection.id },
     });
     if (out.status === 'CONFIRMATION_REQUIRED') {
-      await this.messenger.reply(connection, `🔒 Confirme no app AutoPix: ${this.provider.link(out.challenge.confirmPath)}`);
+      await this.messenger.reply(connection, `🔒 Confirme no app TemPix: ${this.provider.link(out.challenge.confirmPath)}`);
       return { handled: 'challenge', action };
     }
     await this.messenger.reply(connection, `${describeResult(action, out.result)}\n${link}`);

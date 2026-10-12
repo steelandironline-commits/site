@@ -65,7 +65,7 @@ export class WhatsAppConnectionService {
     };
     const conn = await this.prisma.whatsAppConnection.upsert({ where: { userId: user.id }, update: data, create: { userId: user.id, ...data } });
     const business = this.config.whatsapp.businessNumber;
-    const text = `AUTOPIX ${code}`;
+    const text = `TEMPIX ${code}`;
     return {
       connection: this.view(conn),
       // Shown only to the authenticated user; worthless without the phone.

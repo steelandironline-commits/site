@@ -148,7 +148,7 @@ export class LlmIntentParser {
 
   prompt(text) {
     return [
-      'Você classifica mensagens de WhatsApp de empresas brasileiras para o AutoPix.',
+      'Você classifica mensagens de WhatsApp de empresas brasileiras para o TemPix.',
       `Responda APENAS um JSON com {"intent": one of ${JSON.stringify(INTENTS)}, "params": {...}, "confidence": 0..1}.`,
       'params possíveis: amountCents (inteiro, centavos), description, origin, destination, date (ISO 8601), role, quantity.',
       'Nunca invente valores ausentes. Mensagem:',

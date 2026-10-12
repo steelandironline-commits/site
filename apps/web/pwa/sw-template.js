@@ -1,4 +1,4 @@
-/* AutoPix service worker — generated at build time (see vite.config.js). */
+/* TemPix service worker — generated at build time (see vite.config.js). */
 /* eslint-disable no-restricted-globals */
 const VERSION = '__BUILD_ID__';
 const SHELL_CACHE = `autopix-shell-${VERSION}`;
@@ -104,10 +104,10 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: 'AutoPix', body: event.data?.text() };
+    data = { title: 'TemPix', body: event.data?.text() };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || 'AutoPix', {
+    self.registration.showNotification(data.title || 'TemPix', {
       body: data.body || '',
       icon: '/icons/icon-192.png',
       badge: '/icons/maskable-192.png',

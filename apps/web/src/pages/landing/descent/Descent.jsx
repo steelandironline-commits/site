@@ -1,11 +1,11 @@
 /* Immersive opening: scrolling dives the camera through one island per chapter. */
 import { Component, Fragment, Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
-import { ArrowDown, ArrowRight, Building2, Container, Landmark, LayoutDashboard, Radar, Route, UserCheck } from 'lucide-react';
+import { ArrowRight, Building2, Container, Landmark, LayoutDashboard, Radar, Route, UserCheck } from 'lucide-react';
 import { Button } from '../../../components/ui/ui.jsx';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../../lib/hooks.js';
 import { useSession } from '../../../lib/session.jsx';
-import { CHAPTERS, N, progressForChapter } from './chapters.js';
+import { CHAPTERS, N, levelFromProgress, progressForChapter } from './chapters.js';
 import s from './descent.module.css';
 
 const DescentScene = lazy(() => import('./DescentScene.jsx'));
@@ -51,7 +51,7 @@ function useFontsReady() {
   return ready;
 }
 
-function Copy({ index, onJump, reduced }) {
+function Copy({ index, reduced }) {
   const c = CHAPTERS[index];
   const { isAuthenticated } = useSession();
   const words = c.title.split(' ');
@@ -66,7 +66,6 @@ function Copy({ index, onJump, reduced }) {
     show: { opacity: 1, y: 0, transition: { duration: 0.7, ease } },
     exit: { opacity: 0, y: reduced ? 0 : -8, transition: { duration: 0.25 } },
   };
-  const login = isAuthenticated ? { to: '/app', label: 'ABRIR PAINEL' } : { to: '/login', label: 'FAZER LOGIN' };
   return (
     <motion.div
       className={s.copy}
@@ -83,7 +82,7 @@ function Copy({ index, onJump, reduced }) {
         {words.map((w, i) => (
           <Fragment key={`${w}${i}`}>
             <span className={s.mask}>
-              <motion.span className={s.word} variants={word}>
+              <motion.span className={w.startsWith('TemPix') ? `${s.word} ${s.brand}` : s.word} variants={word}>
                 {w}
               </motion.span>
             </span>
@@ -94,24 +93,22 @@ function Copy({ index, onJump, reduced }) {
       <motion.p className={s.body} variants={fade}>
         {c.body}
       </motion.p>
-      {index === 0 && (
+      {(index === 0 || index === N - 1) && (
         <motion.div className={s.ctas} variants={fade}>
-          <Button to={login.to} size="lg" iconRight={ArrowRight}>
-            {login.label}
-          </Button>
-          <Button size="lg" variant="outline" iconRight={ArrowDown} onClick={() => onJump(1)}>
-            CONTINUAR ROLANDO
-          </Button>
-        </motion.div>
-      )}
-      {index === N - 1 && (
-        <motion.div className={s.ctas} variants={fade}>
-          <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
-            ATIVAR POR R$597/MÊS
-          </Button>
-          <Button to={login.to} size="lg" variant="outline">
-            {login.label}
-          </Button>
+          {isAuthenticated ? (
+            <Button to="/app" size="lg" iconRight={ArrowRight}>
+              ABRIR PAINEL
+            </Button>
+          ) : (
+            <>
+              <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
+                CADASTRE-SE AGORA
+              </Button>
+              <Button to="/login" size="lg" variant="outline">
+                FAZER LOGIN
+              </Button>
+            </>
+          )}
         </motion.div>
       )}
     </motion.div>
@@ -189,6 +186,60 @@ export default function Descent() {
     window.scrollTo({ top: top + total * progressForChapter(k), behavior: reduced ? 'auto' : 'smooth' });
   }, [reduced]);
 
+  // Click / tap anywhere on the scene, swipe sideways or use ← → to change part.
+  const pending = useRef({ k: 0, at: 0 });
+  const touch = useRef(null);
+  const step = useCallback(
+    (dir) => {
+      const now = performance.now();
+      const from = now - pending.current.at < 1100 ? pending.current.k : Math.round(levelFromProgress(progress.current).level);
+      const k = from + dir;
+      if (k < 0) return;
+      if (k > N - 1) {
+        document.getElementById('produto')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+        return;
+      }
+      pending.current = { k, at: now };
+      jump(k);
+    },
+    [jump, reduced],
+  );
+  const onStageClick = (e) => {
+    if (e.target.closest('a, button, input, select, textarea, [role="button"]')) return;
+    if (touch.current?.swiped && performance.now() - touch.current.at < 500) return;
+    if (window.getSelection?.().toString()) return;
+    step(1);
+  };
+  const onTouchStart = (e) => {
+    const t = e.touches[0];
+    touch.current = { x: t.clientX, y: t.clientY, at: performance.now(), swiped: false };
+  };
+  const onTouchEnd = (e) => {
+    const start = touch.current;
+    const t = e.changedTouches[0];
+    if (!start || !t) return;
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      start.swiped = true;
+      start.at = performance.now();
+      step(dx < 0 ? 1 : -1);
+    }
+  };
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      const r = section.current?.getBoundingClientRect();
+      if (!r || r.top > 1 || r.bottom < window.innerHeight - 1) return;
+      e.preventDefault();
+      step(e.key === 'ArrowRight' ? 1 : -1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [step]);
+
   const onActive = useCallback((i) => setActive(i), []);
   const onReady = useCallback(() => setCanvasOn(true), []);
   const Art = ART[active];
@@ -196,7 +247,7 @@ export default function Descent() {
   return (
     <section ref={section} className={s.descent} style={{ '--n': N }} aria-labelledby="descent-title" data-immersive>
       <span id="como-funciona" className={s.anchor} style={{ '--at': progressForChapter(1) }} aria-hidden="true" />
-      <div ref={stage} className={s.stage}>
+      <div ref={stage} className={s.stage} onClick={onStageClick} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className={s.sky} aria-hidden="true" />
         <div className={s.horizon} aria-hidden="true" />
         {webgl && fontsReady ? (
@@ -222,15 +273,16 @@ export default function Descent() {
         <span className={s.badge}>CENA ILUSTRATIVA</span>
         <div ref={copyBox} className={s.copyBox}>
           <AnimatePresence initial>
-            <Copy key={active} index={active} onJump={jump} reduced={reduced} />
+            <Copy key={active} index={active} reduced={reduced} />
           </AnimatePresence>
         </div>
         <Rail active={active} onJump={jump} />
         {active < N - 1 && (
-          <button type="button" className={s.cue} onClick={() => jump(active + 1)} aria-label="Descer para a próxima parte">
+          <button type="button" className={s.cue} onClick={() => step(1)} aria-label="Continuar rolando para a próxima parte">
             <span className={s.mouse}>
               <span className={s.wheel} />
             </span>
+            {active === 0 && <span className={s.cueText}>Continuar rolando</span>}
           </button>
         )}
       </div>

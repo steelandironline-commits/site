@@ -66,7 +66,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
     cors({
       origin: (origin, cb) => cb(null, !origin || origin === new URL(config.appUrl).origin),
       credentials: true,
-      allowedHeaders: ['Content-Type', 'X-Requested-With', 'Last-Event-ID', 'Authorization', 'X-AutoPix-Client'],
+      allowedHeaders: ['Content-Type', 'X-Requested-With', 'Last-Event-ID', 'Authorization', 'X-TemPix-Client'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     }),
   );

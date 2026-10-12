@@ -41,7 +41,7 @@ export default function Freight() {
   const [form, setForm] = useState({ origin: '', destination: '', date: '' });
 
   useEffect(() => {
-    document.title = 'Cargas — AutoPix';
+    document.title = 'Cargas — TemPix';
   }, []);
   useEffect(() => {
     if (stream.latest?.source === 'Freight' || /Carga/.test(stream.latest?.title || '')) reload();

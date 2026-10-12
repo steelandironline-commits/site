@@ -60,7 +60,7 @@ function Nav() {
   return (
     <header className={`${s.nav} ${scrolled ? (immersive ? s.navGlass : s.navScrolled) : ''}`}>
       <div className={`container ${s.navInner}`}>
-        <Link to="/" aria-label="AutoPix — início">
+        <Link to="/" aria-label="TemPix — início">
           <Logo />
         </Link>
         <nav className={s.navLinks} aria-label="Principal">
@@ -75,7 +75,7 @@ function Nav() {
             {isAuthenticated ? 'Painel' : 'Entrar'}
           </Link>
           <Button to="/onboarding" size="sm" className={s.navCta}>
-            Ativar AutoPix
+            Cadastre-se
           </Button>
           <button type="button" className={s.menuBtn} onClick={() => setOpen(true)} aria-label="Abrir menu" aria-expanded={open}>
             <Menu size={20} />
@@ -118,7 +118,7 @@ function Nav() {
               </Link>
             </nav>
             <Button to="/onboarding" size="lg" block>
-              ATIVAR AUTOPIX
+              CADASTRE-SE AGORA
             </Button>
           </motion.div>
         )}
@@ -140,7 +140,7 @@ function Product() {
       <div className="container">
         <motion.header className={s.sectionHead} {...reveal}>
           <p className="eyebrow">Produto</p>
-          <h2 id="produto-title">O AutoPix está trabalhando para sua empresa.</h2>
+          <h2 id="produto-title">O TemPix está trabalhando para sua empresa.</h2>
           <p>Cada busca, cada site analisado e cada sinal aparece no seu painel no momento em que acontece.</p>
         </motion.header>
 
@@ -188,7 +188,7 @@ function LiveDemo() {
             <span />
             <span />
             <span />
-            <p className="mono">autopix / app / oportunidades</p>
+            <p className="mono">tempix / app / oportunidades</p>
             <DemoBadge />
           </div>
           <div className={s.previewBody}>
@@ -244,7 +244,7 @@ function LiveDemo() {
                 >
                   <div className={s.previewDetailInner}>
                     <div>
-                      <p className="eyebrow">Por que o AutoPix selecionou</p>
+                      <p className="eyebrow">Por que o TemPix selecionou</p>
                       <ul>
                         <li>Setor preferencial: Indústria</li>
                         <li>Demanda compatível com usinagem e caldeiraria</li>
@@ -311,9 +311,9 @@ function FinalCta() {
     <section className={s.final}>
       <div className="container">
         <motion.div className={s.finalInner} {...reveal}>
-          <h2>Sua empresa trabalha. O AutoPix procura oportunidades.</h2>
+          <h2>Tem emprego, tem rota, tem serviço. <span>TemPix.</span></h2>
           <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
-            ATIVAR AUTOPIX
+            CADASTRE-SE AGORA
           </Button>
         </motion.div>
       </div>
@@ -326,7 +326,7 @@ function Footer() {
     <footer className={s.footer}>
       <div className={`container ${s.footerInner}`}>
         <Logo />
-        <p>© {new Date().getFullYear()} AutoPix. Procuramos vendas e serviços pra você.</p>
+        <p>© {new Date().getFullYear()} TemPix. Tem emprego, tem rota, tem serviço.</p>
         <nav aria-label="Rodapé">
           <Link to="/login">Entrar</Link>
           <a href="#preco">Preço</a>
@@ -334,7 +334,7 @@ function Footer() {
         </nav>
       </div>
       <p className={`container ${s.footerNote}`}>
-        O AutoPix utiliza apenas informações públicas de empresas. Nunca consultamos bases vazadas nem coletamos dados pessoais privados.
+        O TemPix utiliza apenas informações públicas de empresas. Nunca consultamos bases vazadas nem coletamos dados pessoais privados.
       </p>
     </footer>
   );
@@ -342,7 +342,7 @@ function Footer() {
 
 export default function Landing() {
   useEffect(() => {
-    document.title = 'AutoPix — Procuramos vendas e serviços pra você';
+    document.title = 'TemPix — Tem emprego, tem rota, tem serviço';
   }, []);
   return (
     <>

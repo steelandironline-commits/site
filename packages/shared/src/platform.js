@@ -16,7 +16,7 @@ export const DOMAIN_EVENTS = {
   SERVICE_COMPLETED: { category: 'PAYMENTS', title: 'Prestador informou conclusão' },
   SERVICE_CONFIRMED: { category: 'PAYMENTS', title: 'Cliente confirmou a conclusão' },
   TRANSACTION_CREATED: { category: 'PAYMENTS', title: 'Negócio criado', silent: true },
-  PAYMENT_CREATED: { category: 'PAYMENTS', title: 'Cobrança AutoPix criada' },
+  PAYMENT_CREATED: { category: 'PAYMENTS', title: 'Cobrança TemPix criada' },
   PAYMENT_RECEIVED: { category: 'PAYMENTS', title: 'Pix recebido' },
   PAYMENT_EXPIRED: { category: 'PAYMENTS', title: 'Pix expirado' },
   PAYMENT_CANCELLED: { category: 'PAYMENTS', title: 'Cobrança cancelada' },
@@ -78,6 +78,8 @@ export const WHATSAPP_DECISIONS = {
   'VER ROTA': { freight: null },
   CONVIDAR: { workforce: 'INVITE_PROFESSIONAL' },
   RECUSAR: { freight: 'REJECT_FREIGHT_MATCH', workforce: 'REJECT_PROFESSIONAL' },
+  'ABRIR TEMPIX': {},
+  // Buttons sent before the rename to TemPix still carry the old label.
   'ABRIR AUTOPIX': {},
 };
 
@@ -100,7 +102,7 @@ export const PROTECTION_STATUS_LABELS = {
   REFUNDED: 'Estornado',
 };
 
-/** AutoPix Pay transaction statuses (pt-BR). */
+/** TemPix Pay transaction statuses (pt-BR). */
 export const TRANSACTION_STATUS_LABELS = {
   DRAFT: 'Rascunho',
   AWAITING_PAYMENT: 'Aguardando pagamento',

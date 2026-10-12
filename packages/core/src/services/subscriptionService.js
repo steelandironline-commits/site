@@ -37,7 +37,7 @@ export class SubscriptionService {
       userId,
       type: 'SYSTEM',
       title: 'Cancelamento agendado',
-      description: `Seu AutoPix continua ativo até ${sub.currentPeriodEnd?.toLocaleDateString('pt-BR') ?? 'o fim do período'}.`,
+      description: `Seu TemPix continua ativo até ${sub.currentPeriodEnd?.toLocaleDateString('pt-BR') ?? 'o fim do período'}.`,
       source: 'subscription',
       severity: 'WARNING',
     });

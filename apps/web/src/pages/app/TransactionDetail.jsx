@@ -181,7 +181,7 @@ export default function TransactionDetail() {
   const t = data?.transaction;
 
   useEffect(() => {
-    if (t) document.title = `${t.description} — AutoPix Pay`;
+    if (t) document.title = `${t.description} — TemPix Pay`;
   }, [t]);
   useEffect(() => {
     if (['PAYMENT', 'SYSTEM'].includes(stream.latest?.type)) reload();
@@ -202,7 +202,7 @@ export default function TransactionDetail() {
   return (
     <>
       <Link to="/app/pay" className={s.backLink}>
-        <ArrowLeft size={14} /> AutoPix Pay
+        <ArrowLeft size={14} /> TemPix Pay
       </Link>
       <header className={s.pageHead}>
         <div>
@@ -236,7 +236,7 @@ export default function TransactionDetail() {
               {data.role !== 'BUYER' && (
                 <>
                   <div>
-                    <dt>Comissão AutoPix ({(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)</dt>
+                    <dt>Comissão TemPix ({(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)</dt>
                     <dd>− {formatCents(t.commissionAmount)}</dd>
                   </div>
                   <div>
@@ -293,7 +293,7 @@ export default function TransactionDetail() {
                 Disputa em andamento
               </h2>
               <p className={s.notice}>
-                <AlertTriangle size={15} aria-hidden="true" /> {openDispute.reason} — a liberação está congelada até a decisão da equipe AutoPix.
+                <AlertTriangle size={15} aria-hidden="true" /> {openDispute.reason} — a liberação está congelada até a decisão da equipe TemPix.
               </p>
               <ul className={s.timeline} style={{ marginTop: 12 }}>
                 {(openDispute.metadata?.messages || []).map((m) => (
@@ -375,7 +375,7 @@ export default function TransactionDetail() {
         }
       >
         <p className={s.muted} style={{ fontSize: 13, marginBottom: 12 }}>
-          A liberação fica congelada. As duas partes podem se manifestar e a decisão é sempre de uma pessoa da equipe AutoPix.
+          A liberação fica congelada. As duas partes podem se manifestar e a decisão é sempre de uma pessoa da equipe TemPix.
         </p>
         <Field label="Motivo">{(a) => <Textarea {...a} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} />}</Field>
       </Dialog>

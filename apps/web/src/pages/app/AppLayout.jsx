@@ -36,7 +36,7 @@ const NAV = [
   { to: '/app/radar', label: 'Radar', icon: Radar },
   { to: '/app/opportunities', label: 'Oportunidades', icon: Target },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
-  { to: '/app/pay', label: 'AutoPix Pay', icon: Wallet },
+  { to: '/app/pay', label: 'TemPix Pay', icon: Wallet },
   { to: '/app/freight', label: 'Cargas', icon: Truck },
   { to: '/app/workforce', label: 'Equipes', icon: HardHat },
   { to: '/app/agents', label: 'Agentes', icon: Cpu },
@@ -51,8 +51,8 @@ const ADMIN_NAV = { to: '/app/admin', label: 'Admin financeiro', icon: ShieldAle
 /** Deep pages get a native-style back header on mobile. */
 const BACK = [
   [/^\/app\/opportunities\/[^/]+$/, '/app/opportunities', 'Oportunidades'],
-  [/^\/app\/payments\/[^/]+$/, '/app/pay', 'AutoPix Pay'],
-  [/^\/app\/pay\/transactions\/[^/]+$/, '/app/pay', 'AutoPix Pay'],
+  [/^\/app\/payments\/[^/]+$/, '/app/pay', 'TemPix Pay'],
+  [/^\/app\/pay\/transactions\/[^/]+$/, '/app/pay', 'TemPix Pay'],
   [/^\/app\/freight\/matches\/[^/]+$/, '/app/freight', 'Cargas'],
   [/^\/app\/workforce\/matches\/[^/]+$/, '/app/workforce', 'Equipes'],
   [/^\/app\/confirm\/[^/]+$/, '/app', 'Painel'],
@@ -74,7 +74,7 @@ function InstallBanner() {
   return (
     <div className={s.banner} role="region" aria-label="Instalar aplicativo">
       <Download size={16} aria-hidden="true" />
-      <p>{install.canPrompt ? 'Instale o AutoPix para usar em tela cheia.' : 'No Safari: Compartilhar → Adicionar à Tela de Início.'}</p>
+      <p>{install.canPrompt ? 'Instale o TemPix para usar em tela cheia.' : 'No Safari: Compartilhar → Adicionar à Tela de Início.'}</p>
       {install.canPrompt && (
         <Button size="sm" onClick={() => install.prompt().then(close)}>
           Instalar
@@ -93,7 +93,7 @@ function UpdatePrompt() {
   return (
     <div className={s.banner} role="status">
       <RefreshCw size={16} aria-hidden="true" />
-      <p>Nova versão do AutoPix disponível.</p>
+      <p>Nova versão do TemPix disponível.</p>
       <Button size="sm" onClick={update.apply}>
         Atualizar
       </Button>
@@ -106,7 +106,7 @@ function GlobalState({ subscription }) {
   return (
     <span className={`${s.globalState} ${active ? s.globalActive : s.globalPaused}`} role="status">
       <span className={s.globalDot} aria-hidden="true" />
-      {active ? 'AUTOPIX ATIVO' : `AUTOPIX PAUSADO · ${SUBSCRIPTION_STATUS_LABELS[subscription?.status] || 'sem assinatura'}`}
+      {active ? 'TEMPIX ATIVO' : `TEMPIX PAUSADO · ${SUBSCRIPTION_STATUS_LABELS[subscription?.status] || 'sem assinatura'}`}
     </span>
   );
 }
@@ -170,7 +170,7 @@ export default function AppLayout() {
         Pular para o conteúdo
       </a>
       <aside className={s.sidebar} aria-label="Navegação do painel">
-        <Link to="/app" className={s.sideLogo} aria-label="AutoPix — visão geral">
+        <Link to="/app" className={s.sideLogo} aria-label="TemPix — visão geral">
           <Logo />
         </Link>
         <nav className={s.sideNav}>
@@ -205,7 +205,7 @@ export default function AppLayout() {
                 <ArrowLeft size={18} /> <span>{back[2]}</span>
               </Link>
             ) : (
-              <Link to="/app" className={s.topLogo} aria-label="AutoPix">
+              <Link to="/app" className={s.topLogo} aria-label="TemPix">
                 <Logo compact />
               </Link>
             );

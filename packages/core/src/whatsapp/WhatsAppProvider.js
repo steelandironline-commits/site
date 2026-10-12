@@ -98,7 +98,7 @@ export class WhatsAppProvider {
     if (template) {
       return this.sendTemplate(to, { name: template, bodyParams: params, quickReplies: buttons.map((b) => b.id) });
     }
-    return this.sendInteractiveMessage(to, { header, body, buttons, footer: 'AutoPix' });
+    return this.sendInteractiveMessage(to, { header, body, buttons, footer: 'TemPix' });
   }
 
   async sendOpportunityNotification(to, { opportunity: o, link }) {
@@ -140,7 +140,7 @@ export class WhatsAppProvider {
       buttons: [
         { id: decisionPayload('CONVIDAR', 'w', m.id), title: 'CONVIDAR' },
         { id: decisionPayload('RECUSAR', 'w', m.id), title: 'RECUSAR' },
-        { id: decisionPayload('ABRIR AUTOPIX', 'w', m.id), title: 'ABRIR AUTOPIX' },
+        { id: decisionPayload('ABRIR TEMPIX', 'w', m.id), title: 'ABRIR TEMPIX' },
       ],
     });
   }

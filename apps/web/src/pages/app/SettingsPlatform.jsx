@@ -88,7 +88,7 @@ export function WhatsAppCard() {
           {verification && (
             <div className={s.verifyBox} role="status">
               <p>
-                Envie esta mensagem <strong>a partir do número informado</strong> para o WhatsApp do AutoPix
+                Envie esta mensagem <strong>a partir do número informado</strong> para o WhatsApp do TemPix
                 {verification.businessNumber ? ` (+${verification.businessNumber})` : ''}:
               </p>
               <p className={`${s.verifyCode} mono`}>{verification.message}</p>
@@ -211,7 +211,7 @@ export function InstallCard() {
           <Smartphone size={15} style={{ verticalAlign: -2 }} aria-hidden="true" /> App instalado
         </h2>
         <p className={s.muted} style={{ fontSize: 13, marginTop: 6 }}>
-          Você está usando o AutoPix como aplicativo.
+          Você está usando o TemPix como aplicativo.
         </p>
       </section>
     );
@@ -229,10 +229,10 @@ export function InstallCard() {
           icon={Download}
           onClick={async () => {
             const outcome = await install.prompt();
-            if (outcome === 'accepted') toast.success('AutoPix instalado.');
+            if (outcome === 'accepted') toast.success('TemPix instalado.');
           }}
         >
-          Instalar AutoPix
+          Instalar TemPix
         </Button>
       ) : install.iosInstructions ? (
         <p style={{ fontSize: 13 }}>

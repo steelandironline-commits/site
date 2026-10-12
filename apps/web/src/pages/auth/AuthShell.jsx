@@ -13,12 +13,12 @@ export function AuthShell({ title, subtitle, children, footer }) {
         </Link>
         <div className={s.asideCenter}>
           <MiniRadar size={220} />
-          <p className={s.asideQuote}>Sua empresa trabalha. O AutoPix procura oportunidades.</p>
+          <p className={s.asideQuote}>Tem emprego, tem rota, tem serviço. TemPix.</p>
         </div>
-        <p className={s.asideFoot}>Procuramos vendas e serviços pra você.</p>
+        <p className={s.asideFoot}>Clientes, cargas, profissionais e Pix numa tela só.</p>
       </aside>
       <main className={s.main}>
-        <Link to="/" className={s.mobileLogo} aria-label="AutoPix — início">
+        <Link to="/" className={s.mobileLogo} aria-label="TemPix — início">
           <Logo />
         </Link>
         <motion.div className={s.panel} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>

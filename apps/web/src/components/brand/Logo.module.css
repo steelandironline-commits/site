@@ -1,54 +1,64 @@
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
 }
 
 .word {
   display: inline-flex;
-  font-family: var(--font-mono);
-  font-size: 0.95rem;
-  letter-spacing: 0.16em;
+  font-family: var(--font-sans);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
   line-height: 1;
 }
 
-.auto {
-  color: var(--text-2);
-  font-weight: 400;
+.tem {
+  color: var(--text);
 }
 
 .pix {
   color: var(--primary);
-  font-weight: 600;
-  margin-left: 1px;
+  font-weight: 700;
 }
 
 .mark {
   flex: none;
+  overflow: visible;
 }
 
-.animated .sweep {
-  transform-origin: 16px 16px;
-  animation: sweep 3.6s linear infinite;
+.animated .tile {
+  animation: lift 2.4s var(--ease) infinite;
 }
 
-.animated .pulse {
-  stroke-dasharray: 34;
-  animation: pulse 2.4s var(--ease) infinite;
+.animated .check {
+  stroke-dasharray: 18;
+  animation: tick 2.4s var(--ease) infinite;
 }
 
-@keyframes sweep {
-  to {
-    transform: rotate(360deg);
+@keyframes lift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  45% {
+    translate: 0 -1px;
   }
 }
 
-@keyframes pulse {
+@keyframes tick {
   0% {
-    stroke-dashoffset: 34;
+    stroke-dashoffset: 18;
   }
-  55%,
+  50%,
   100% {
     stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated .tile,
+  .animated .check {
+    animation: none;
   }
 }

@@ -31,7 +31,7 @@ export default function OpportunityDetail() {
 
   useEffect(() => {
     if (o) {
-      document.title = `${o.targetCompanyName} — AutoPix`;
+      document.title = `${o.targetCompanyName} — TemPix`;
       setNotes(o.notes || '');
     }
   }, [o?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -163,7 +163,7 @@ export default function OpportunityDetail() {
 
           <section className={`${s.panel} ${s.panelPad}`} aria-labelledby="why">
             <h2 id="why" className="eyebrow" style={{ marginBottom: 12 }}>
-              Por que o AutoPix selecionou
+              Por que o TemPix selecionou
             </h2>
             <ul className={s.reasons}>
               {o.reasons.map((r) => (

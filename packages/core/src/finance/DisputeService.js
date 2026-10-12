@@ -45,7 +45,7 @@ export class DisputeService {
   async open({ user, company, id, reason, description, source = 'WEB', ip }) {
     const t = await this.transactions.load(id, company.id);
     const role = this.transactions.roleOf(t, company.id);
-    if (!t.buyerCompanyId) throw conflict('Disputas exigem cliente cadastrado no AutoPix.');
+    if (!t.buyerCompanyId) throw conflict('Disputas exigem cliente cadastrado no TemPix.');
     if (!DISPUTABLE.includes(t.status)) throw conflict('Esta transação não pode ser disputada agora.');
     return this.prisma.$transaction(async (tx) => {
       // Freeze: atomic move to DISPUTED, remembering where we came from.
@@ -56,8 +56,8 @@ export class DisputeService {
       });
       await this.transactions.timeline(t.id, { type: 'DISPUTED', actorUserId: user.id, metadata: { disputeId: d.id } }, tx);
       await this.transactions.publishBoth({ ...t, status: 'DISPUTED' }, { type: 'DISPUTE_OPENED', userId: user.id, payload: { disputeId: d.id, link: `/app/pay/transactions/${t.id}` } }, tx, {
-        sellerActivity: { type: 'PAYMENT', title: 'Disputa aberta — liberação congelada', description: `${t.description}: ${reason}`, source: 'AutoPix Pay', severity: 'WARNING' },
-        buyerActivity: { type: 'PAYMENT', title: 'Disputa aberta — liberação congelada', description: `${t.description}: ${reason}`, source: 'AutoPix Pay', severity: 'WARNING' },
+        sellerActivity: { type: 'PAYMENT', title: 'Disputa aberta — liberação congelada', description: `${t.description}: ${reason}`, source: 'TemPix Pay', severity: 'WARNING' },
+        buyerActivity: { type: 'PAYMENT', title: 'Disputa aberta — liberação congelada', description: `${t.description}: ${reason}`, source: 'TemPix Pay', severity: 'WARNING' },
       });
       await this.audit.log({ action: 'DISPUTE_OPENED', source, userId: user.id, companyId: company.id, transactionId: t.id, paymentId: t.payment?.id, ip, metadata: { disputeId: d.id, previousStatus: t.status } }, tx);
       return d;
@@ -139,8 +139,8 @@ export class DisputeService {
       });
       await this.transactions.timeline(t.id, { type: 'DISPUTE_RESOLVED', title: { BUYER: 'Disputa resolvida a favor do cliente', SELLER: 'Disputa resolvida a favor do prestador', CANCEL: 'Disputa encerrada' }[outcome], actorUserId: admin.id }, tx);
       await this.transactions.publishBoth({ ...t, status: restore }, { type: 'DISPUTE_RESOLVED', userId: admin.id, payload: { disputeId: d.id, outcome, link: `/app/pay/transactions/${t.id}` } }, tx, {
-        sellerActivity: { type: 'PAYMENT', title: 'Disputa resolvida', description: t.description, source: 'AutoPix Pay' },
-        buyerActivity: { type: 'PAYMENT', title: 'Disputa resolvida', description: t.description, source: 'AutoPix Pay' },
+        sellerActivity: { type: 'PAYMENT', title: 'Disputa resolvida', description: t.description, source: 'TemPix Pay' },
+        buyerActivity: { type: 'PAYMENT', title: 'Disputa resolvida', description: t.description, source: 'TemPix Pay' },
       });
       await this.audit.log({ action: 'DISPUTE_RESOLVED', source: 'ADMIN', userId: admin.id, companyId: t.sellerCompanyId, transactionId: t.id, paymentId: t.payment?.id, ip, metadata: { disputeId: d.id, outcome, previousStatus: previous } }, tx);
     });

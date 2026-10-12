@@ -177,21 +177,21 @@ export function registerCoreActions(engine) {
   // ------------------------------------------------------------- payments
   engine.register({
     name: 'CREATE_SUBSCRIPTION_PIX',
-    description: 'Gera (ou reutiliza) o Pix da assinatura AutoPix.',
+    description: 'Gera (ou reutiliza) o Pix da assinatura TemPix.',
     schema: z.object({}).passthrough(),
     channels: ['WEB', 'API'],
     allowOnboarding: true,
     handler: async (ctx) => ({ payment: await s().payments.createPixCharge({ user: ctx.user, company: ctx.company }) }),
   });
 
-  // ------------------------------------------------------- AutoPix Pay
+  // ------------------------------------------------------- TemPix Pay
   const src = (ctx) => auditSourceFor(ctx.channel, ctx.actor);
   const txRef = z.object({ id });
   const txResult = async (ctx, txId) => (await s().transactions.get(txId, { companyId: ctx.company.id, isPlatformAdmin: ctx.user.isPlatformAdmin })).transaction;
 
   engine.register({
     name: 'CREATE_TRANSACTION',
-    description: 'Cria um negócio no AutoPix Pay (valor calculado no servidor, comissão aplicada).',
+    description: 'Cria um negócio no TemPix Pay (valor calculado no servidor, comissão aplicada).',
     schema: z.object({
       type: z.enum(['SALES', 'FREIGHT', 'WORKFORCE', 'SERVICE']).optional(),
       referenceType: z.enum(['opportunity', 'freightMatch', 'workforceMatch']).optional().nullable(),
@@ -216,7 +216,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CREATE_PIX',
-    description: 'Cria uma cobrança AutoPix Pay (serviço) e gera o Pix.',
+    description: 'Cria uma cobrança TemPix Pay (serviço) e gera o Pix.',
     schema: z.object({
       amountCents: money,
       description: z.string().trim().max(140).optional().nullable(),
@@ -415,7 +415,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'GET_TRANSACTION',
-    description: 'Detalhe de uma transação AutoPix Pay.',
+    description: 'Detalhe de uma transação TemPix Pay.',
     kind: 'query',
     schema: txRef,
     handler: async (ctx, { id: txId }) => ({ transaction: await txResult(ctx, txId) }),
@@ -554,9 +554,9 @@ export function describeResult(action, result) {
     case 'START_SERVICE':
       return '🛠 Início do serviço registrado.';
     case 'REPORT_COMPLETION':
-      return '✅ Conclusão informada. O cliente confirma no app AutoPix.';
+      return '✅ Conclusão informada. O cliente confirma no app TemPix.';
     case 'REQUEST_RELEASE':
-      return '📨 Pedido de liberação enviado ao cliente. A liberação é confirmada no app AutoPix.';
+      return '📨 Pedido de liberação enviado ao cliente. A liberação é confirmada no app TemPix.';
     case 'START_TRIP':
       return '🚚 Viagem registrada: a caminho da coleta.';
     case 'MARK_CARGO_LOADED':

@@ -43,7 +43,7 @@ export default function Company() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    document.title = 'Empresa — AutoPix';
+    document.title = 'Empresa — TemPix';
   }, []);
   useEffect(() => {
     if (data?.company) setForm(toForm(data.company));
