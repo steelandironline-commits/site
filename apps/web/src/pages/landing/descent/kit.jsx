@@ -718,11 +718,11 @@ function labelTexture({ text, sub, accent, check, light }) {
 }
 
 /** Floating UI chip, constant size on screen, pops with an overshoot. Anchored by its pointer tip. */
-export function Label({ text, sub, accent = '#2ad1b8', check, light, vis, ...props }) {
+export function Label({ text, sub, accent = '#2ad1b8', check, light, vis, keepSub = false, ...props }) {
   const world = useWorld();
   const ch = useChapter();
   const ref = useRef();
-  const compact = world.current.compact;
+  const compact = world.current.compact && !keepSub;
   const { tex, aspect, css } = useMemo(
     () => labelTexture({ text, sub: compact ? undefined : sub, accent, check, light }),
     [text, sub, accent, check, light, compact],

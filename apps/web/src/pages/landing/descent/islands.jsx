@@ -141,6 +141,33 @@ function BrandTile(props) {
 }
 
 /* =================================================================== 0 · cidade */
+/** Pop-outs over the city: payments landing and companies hiring, one after another. */
+const CITY_POPS = [
+  { text: 'Pix recebido R$ 1.250,00', sub: 'Serviço de eletricista', accent: '#4fe0c9', check: true, at: [-2.2, 1.4, 2.2] },
+  { text: 'Empresa contratando', sub: 'Pedreiro', accent: '#ffb35c', at: [-0.9, 4.55, -6.45] },
+  { text: 'Pix recebido R$ 4.800,00', sub: 'Rota concluída', accent: '#4fe0c9', check: true, truck: 0 },
+  { text: 'Empresa contratando', sub: 'Soldador', accent: '#ffb35c', at: [6.45, 1.75, 0.4] },
+  { text: 'Pix depositado R$ 9.800,00', sub: 'Contrato Construções', accent: '#4fe0c9', check: true, at: [0, 7.05, 0] },
+  { text: 'Empresa contratando', sub: 'Eletricista', accent: '#ffb35c', at: [-6.45, 4.95, -1.0] },
+];
+const POP_STEP = 2.6;
+const POP_SHOW = 4.2;
+const POP_PERIOD = POP_STEP * CITY_POPS.length;
+
+function popVis(ch, i) {
+  const c = ch.current;
+  if (c.reduced) return i === 0 || i === 1 ? 1 : 0;
+  const tau = (((c.t - 0.8 - i * POP_STEP) % POP_PERIOD) + POP_PERIOD) % POP_PERIOD;
+  return c.t < 0.8 + i * POP_STEP ? 0 : bump(tau, 0, 0.35, POP_SHOW - 0.4, POP_SHOW);
+}
+
+function CityPop({ pop, index }) {
+  const ch = useChapter();
+  return (
+    <Label text={pop.text} sub={pop.sub} accent={pop.accent} check={pop.check} keepSub position={pop.at || [0, 1.3, 0]} vis={() => popVis(ch, index)} />
+  );
+}
+
 const CITY_TRUCKS = [
   { o: 0, cab: '#f4f1ea', cargo: '#24365e' },
   { o: 0.34, cab: '#ffffff', cargo: '#2ad1b8' },
@@ -202,6 +229,16 @@ export function CityIsland() {
         <Cy p={[0, 4.94, 0]} s={[0.07, 0.6, 0.07]} c="#dfe6f2" g={GEO.cyl8} />
       </Rise>
       <BrandTile position={[0, 6.35, 0]} />
+      {CITY_POPS.map((pop, k) =>
+        pop.at ? (
+          <group key={k}>
+            <CityPop pop={pop} index={k} />
+            <group position={[pop.at[0], 0, pop.at[2]]}>
+              <Pulse color={pop.accent} radius={1.8} period={POP_PERIOD} delay={0.8 + k * POP_STEP} y={k === 4 ? 4.9 : 0.04} />
+            </group>
+          </group>
+        ) : null,
+      )}
       <group position={[0, 4.9, 0]}>
         <Pulse color="#9ff5e6" radius={3.6} period={2.6} />
         <Pulse color="#9ff5e6" radius={3.6} period={2.6} delay={1.3} />
@@ -267,7 +304,10 @@ export function CityIsland() {
       ))}
       <Rise delay={0.9} all>
         {CITY_TRUCKS.map((t, i) => (
-          <Truck key={i} ref={(el) => (trucks.current[i] = el)} cab={t.cab} cargo={t.cargo} kind={t.kind || 'box'} scale={0.8} />
+          <Truck key={i} ref={(el) => (trucks.current[i] = el)} cab={t.cab} cargo={t.cargo} kind={t.kind || 'box'} scale={0.8}>
+            {/* undo the truck's 0.8 scale so this pop-out matches the others */}
+            <group scale={1.25}>{CITY_POPS.map((pop, k) => (pop.truck === i ? <CityPop key={k} pop={pop} index={k} /> : null))}</group>
+          </Truck>
         ))}
         {CITY_CARS.map((t, i) => (
           <Car key={i} ref={(el) => (cars.current[i] = el)} c={t.c} scale={0.85} />

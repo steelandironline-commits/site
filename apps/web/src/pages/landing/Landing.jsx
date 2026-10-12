@@ -22,7 +22,6 @@ import { useDemoFeed } from '../../lib/demoFeed.js';
 import { useSession } from '../../lib/session.jsx';
 import { isIos, useInstallPrompt } from '../../lib/pwa.js';
 import Descent from './descent/Descent.jsx';
-import PixPopout from './PixPopout.jsx';
 import s from './landing.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -123,7 +122,6 @@ function Nav() {
         <Link to="/" aria-label="TemPix — início">
           <Logo />
         </Link>
-        <PixPopout active={immersive && !open} />
         <nav className={s.navLinks} aria-label="Principal">
           {links.map(([href, label]) => (
             <a key={href} href={href}>
