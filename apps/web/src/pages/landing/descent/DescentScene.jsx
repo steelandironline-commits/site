@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CHAPTERS, HOLD, N, SPACING, levelFromProgress } from './chapters.js';
 import { ChapterCtx, WorldCtx, clamp01, damp, glowTex, lerp, rng } from './kit.jsx';
 import { CityIsland, DemandIsland, HiringIsland, PanelIsland, PixIsland, RouteIsland, TerminalIsland } from './islands.jsx';
-import { descentCameraDistance, descentViewOffset } from './framing.js';
+import { descentFrame } from './framing.js';
 
 const AZ0 = Math.PI / 4;
 const AZ_STEP = 0.32;
@@ -36,12 +36,12 @@ function orbitOffset(p) {
   return 0.06 - 0.12 * ee;
 }
 
-function Rig({ progress, pointer, stageRef, onActive, mobile, reduced }) {
+function Rig({ progress, pointer, stageRef, layout, onActive, mobile, reduced }) {
   const { camera, size, scene } = useThree();
   const world = useContext(WorldCtx);
   const hemi = useRef();
   const sun = useRef();
-  const st = useRef({ p: progress.current, px: 0, py: 0, active: -1, vw: 0, vh: 0, css: '' });
+  const st = useRef({ p: progress.current, px: 0, py: 0, active: -1, vw: 0, vh: 0, lv: -1, base: 0, css: '' });
   const pal = useMemo(
     () =>
       CHAPTERS.map(({ palette: c }) => ({
@@ -78,7 +78,17 @@ function Rig({ progress, pointer, stageRef, onActive, mobile, reduced }) {
 
     const tanH = Math.tan((camera.fov * Math.PI) / 360);
     const dive = Math.sin(Math.PI * (level - Math.floor(level)));
-    const D = descentCameraDistance({ width: size.width, height: size.height, fov: camera.fov, mobile, dive });
+    // Reframe when the canvas or the caption changes, so the island never sits under the text.
+    const lv = layout?.current?.v ?? 0;
+    if (s.vw !== size.width || s.vh !== size.height || s.lv !== lv) {
+      s.vw = size.width;
+      s.vh = size.height;
+      s.lv = lv;
+      const frame = descentFrame({ width: size.width, height: size.height, fov: camera.fov, mobile, copy: layout?.current });
+      s.base = frame.distance;
+      camera.setViewOffset(size.width, size.height, frame.offset.x, frame.offset.y, size.width, size.height);
+    }
+    const D = s.base * (1 + 0.32 * dive);
     const az = AZ0 + level * AZ_STEP + orbitOffset(s.p) + s.px * 0.12;
     const el = ELEV + dive * 0.18 - s.py * 0.06;
     camera.position.set(
@@ -89,12 +99,6 @@ function Rig({ progress, pointer, stageRef, onActive, mobile, reduced }) {
     camera.lookAt(target);
     camera.near = Math.max(D * 0.35, 1);
     camera.far = D + 160;
-    if (s.vw !== size.width || s.vh !== size.height) {
-      s.vw = size.width;
-      s.vh = size.height;
-      const offset = descentViewOffset({ width: size.width, height: size.height, mobile });
-      camera.setViewOffset(size.width, size.height, offset.x, offset.y, size.width, size.height);
-    }
     camera.updateProjectionMatrix();
     w.ppu = size.height / (2 * D * tanH);
 
@@ -257,7 +261,7 @@ function Atmosphere() {
   );
 }
 
-export default function DescentScene({ progress, pointer, stageRef, onActive, onReady, mobile, reduced, running }) {
+export default function DescentScene({ progress, pointer, stageRef, layout, onActive, onReady, mobile, reduced, running }) {
   const world = useRef({ level: 0, ppu: 30, labelScale: 1, compact: mobile, reduced });
   world.current.reduced = reduced;
   world.current.compact = mobile;
@@ -277,7 +281,7 @@ export default function DescentScene({ progress, pointer, stageRef, onActive, on
     >
       <WorldCtx.Provider value={world}>
         <fog attach="fog" args={['#0e1830', 40, 120]} />
-        <Rig progress={progress} pointer={pointer} stageRef={stageRef} onActive={onActive} mobile={mobile} reduced={reduced} />
+        <Rig progress={progress} pointer={pointer} stageRef={stageRef} layout={layout} onActive={onActive} mobile={mobile} reduced={reduced} />
         <Atmosphere />
         {ISLANDS.map((Island, i) => (
           <Chapter key={CHAPTERS[i].id} index={i}>

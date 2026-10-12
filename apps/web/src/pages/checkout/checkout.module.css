@@ -119,6 +119,12 @@
   gap: 6px;
 }
 
+@media (max-width: 559px) {
+  .features {
+    grid-template-columns: 1fr;
+  }
+}
+
 .features svg {
   color: var(--primary);
   flex: none;
@@ -404,4 +410,43 @@
   margin-top: 12px;
   font-size: var(--fs-14);
   color: var(--text-2);
+}
+
+/* Company signup: premium gold frame, same treatment as the pricing card. */
+.summary.summaryGold {
+  padding: 24px;
+  border: 2px solid transparent;
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(232, 199, 102, 0.1), transparent 70%) padding-box,
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(120deg, #8a6418, #f3d77a 22%, #c9952c 40%, #fff1b8 50%, #c9952c 60%, #f3d77a 78%, #8a6418) border-box;
+  background-size: 100% 100%, 100% 100%, 300% 300%;
+  box-shadow: 0 24px 60px -24px rgba(232, 199, 102, 0.4);
+  animation: goldShine 6s linear infinite;
+}
+
+.summaryGold :global(.eyebrow) {
+  color: #e8c766;
+}
+
+@keyframes goldShine {
+  0% {
+    background-position: 0 0, 0 0, 0% 50%;
+  }
+  100% {
+    background-position: 0 0, 0 0, 300% 50%;
+  }
+}
+
+@media (min-width: 900px) {
+  .summary.summaryGold {
+    padding: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summary.summaryGold {
+    animation: none;
+  }
 }

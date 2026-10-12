@@ -176,7 +176,9 @@ export default function Subscription() {
 
 /** TemPix has no subscription: signup is free and the fee is a share of each contract. */
 function CommissionPlan() {
+  const { me } = useSession();
   const fee = PRICING.commissionLabel;
+  const company = me?.company?.accountType !== 'PERSON';
   return (
     <>
       <header className={s.pageHead}>
@@ -186,7 +188,7 @@ function CommissionPlan() {
         </div>
       </header>
       <div className={s.subGrid}>
-        <section className={s.planCard} aria-labelledby="plan">
+        <section className={`${s.planCard} ${company ? s.planGold : ''}`} aria-labelledby="plan">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <h2 id="plan" className="mono" style={{ letterSpacing: '0.2em', fontSize: 16 }}>
               TEMPIX
@@ -204,7 +206,7 @@ function CommissionPlan() {
             têm mensalidade.
           </p>
           <ul className={s.reasons} style={{ marginTop: 18 }}>
-            {PRICING.features.map((f) => (
+            {(company ? PRICING.company : PRICING.person).map((f) => (
               <li key={f}>
                 <Check size={14} aria-hidden="true" /> {f}
               </li>

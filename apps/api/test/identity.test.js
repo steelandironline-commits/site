@@ -34,6 +34,7 @@ describe.skipIf(!hasDb)('login by CPF / CNPJ and collaborators', () => {
     const cnpj = testCnpj();
     const { c, start } = await signUp({ accountType: 'COMPANY', document: formatCnpj(cnpj) });
     expect(start.body.company.cnpj).toBe(cnpj);
+    expect((await c.get('/api/me')).body.company.accountType).toBe('COMPANY');
     expect((await login(ctx.app, formatCnpj(cnpj))).status).toBe(200);
     expect((await login(ctx.app, cnpj)).status).toBe(200);
     // PROFILE carries another CNPJ: ignored during signup, refused afterwards.
@@ -66,7 +67,9 @@ describe.skipIf(!hasDb)('login by CPF / CNPJ and collaborators', () => {
 
   it('pessoa física logs in with CPF; invalid documents are refused', async () => {
     const cpf = testCpf();
-    await signUp({ accountType: 'PERSON', document: formatCpf(cpf) });
+    const { c } = await signUp({ accountType: 'PERSON', document: formatCpf(cpf) });
+    // The app picks the person or company view from the session.
+    expect((await c.get('/api/me')).body.company.accountType).toBe('PERSON');
     expect((await login(ctx.app, formatCpf(cpf))).status).toBe(200);
     expect((await login(ctx.app, cpf, 'senha-errada-123')).status).toBe(401);
     const bad = await client(ctx.app).post('/api/onboarding/start', { accountType: 'PERSON', name: 'Zé', email: 'ze@ex.example', document: '123.456.789-00' });

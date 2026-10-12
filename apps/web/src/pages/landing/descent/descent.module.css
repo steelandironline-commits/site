@@ -443,6 +443,30 @@
   }
 }
 
+/* Tall wide screens (a phone in "desktop site" mode, portrait monitors):
+   caption sits at the bottom like on phones and the island is framed above it. */
+@media (min-width: 768px) and (max-aspect-ratio: 4/5) {
+  .copyBox {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: auto;
+    padding: 200px max(var(--gutter), 40px) 72px;
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--d-bottom) 92%, transparent) 26%, var(--d-bottom) 48%);
+    align-items: end;
+  }
+
+  .copy {
+    max-width: 640px;
+  }
+
+  .cue {
+    bottom: calc(var(--copy-h, 420px) - 150px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wheel {
     animation: none;

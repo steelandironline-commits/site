@@ -169,12 +169,31 @@ export default function Descent() {
     return () => window.removeEventListener('pointermove', onMove);
   }, []);
 
-  // Keep the scroll cue just above the caption on phones.
+  // Keep the scroll cue just above the caption on phones, and tell the scene
+  // where the caption sits so the island is framed beside it, never under it.
+  const layout = useRef({ v: 0, right: 0, center: 0, height: 0 });
   useLayoutEffect(() => {
     const el = copyBox.current;
     if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(() => stage.current?.style.setProperty('--copy-h', `${Math.round(el.getBoundingClientRect().height)}px`));
+    let tallest = 0;
+    let vw = window.innerWidth;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const st = stage.current?.getBoundingClientRect();
+      stage.current?.style.setProperty('--copy-h', `${Math.round(r.height)}px`);
+      if (!st) return;
+      if (window.innerWidth !== vw) {
+        vw = window.innerWidth;
+        tallest = 0;
+      }
+      tallest = Math.max(tallest, r.height);
+      const next = { right: Math.round(r.right - st.left), center: Math.round(r.top + r.height / 2 - st.top), height: Math.round(tallest) };
+      const cur = layout.current;
+      if (next.right !== cur.right || next.center !== cur.center || next.height !== cur.height) layout.current = { ...next, v: cur.v + 1 };
+    };
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
+    if (stage.current) ro.observe(stage.current);
     return () => ro.disconnect();
   }, []);
 
@@ -258,6 +277,7 @@ export default function Descent() {
                   progress={progress}
                   pointer={pointer}
                   stageRef={stage}
+                  layout={layout}
                   onActive={onActive}
                   onReady={onReady}
                   mobile={mobile}

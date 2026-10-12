@@ -26,16 +26,6 @@ export const PRICING = Object.freeze({
     'Rotas, entregas e contratações no painel',
     'Alertas no WhatsApp e painel no celular',
   ],
-  features: [
-    'Cadastro gratuito, sem mensalidade',
-    'Clientes, cargas e vagas para a sua empresa',
-    'Pagamento assegurado até a conclusão',
-    'Cobrança e recebimento por Pix',
-    'Rotas e entregas registradas no painel',
-    'Contratação de profissionais',
-    'Alertas no WhatsApp',
-    'Painel no computador e no celular',
-  ],
 });
 
 /** Plan code stored on the account-access record in the commission model. */

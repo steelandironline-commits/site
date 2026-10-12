@@ -105,6 +105,8 @@ export default function Checkout() {
         setError(err);
         return;
       }
+      // No payment provider configured: say so instead of failing a charge.
+      if (config?.paymentProvider === 'none') return;
       createCharge();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -177,6 +179,7 @@ export default function Checkout() {
   // Commission model: a one-time company signup fee instead of a monthly plan.
   const oneTime = config?.billing?.model !== 'subscription';
   const priceCents = oneTime ? (config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents) : PLAN.priceCents;
+  const unavailable = !payment && (config?.paymentProvider === 'none' || Boolean(error));
 
   return (
     <div className={s.page}>
@@ -192,7 +195,7 @@ export default function Checkout() {
 
       <main className={s.grid}>
         {/* Summary (left on desktop, below on mobile) */}
-        <section className={s.summary} aria-labelledby="summary-title">
+        <section className={`${s.summary} ${oneTime ? s.summaryGold : ''}`} aria-labelledby="summary-title">
           <p className="eyebrow">{oneTime ? 'Taxa de cadastro · empresa' : 'Assinatura'}</p>
           <h1 id="summary-title" className={s.planName}>
             TEMPIX
@@ -246,14 +249,19 @@ export default function Checkout() {
                   <h2 id="pix-title" className={s.pixTitle}>
                     <QrCode size={18} aria-hidden="true" /> Pague com Pix
                   </h2>
-                  <span className={`${s.status} ${expired ? s.statusExpired : ''}`}>
+                  <span className={`${s.status} ${expired || unavailable ? s.statusExpired : ''}`}>
                     <span className={s.statusDot} aria-hidden="true" />
-                    {expired ? 'COBRANÇA EXPIRADA' : 'AGUARDANDO PAGAMENTO'}
+                    {expired ? 'COBRANÇA EXPIRADA' : unavailable ? 'PIX INDISPONÍVEL' : 'AGUARDANDO PAGAMENTO'}
                   </span>
                   {payment?.isSandbox && <DemoBadge label="SANDBOX" />}
                 </div>
 
-                {error && !payment ? (
+                {config?.paymentProvider === 'none' && !payment ? (
+                  <ErrorState
+                    title="Pix em liberação"
+                    message="Estamos concluindo a conexão com a instituição de pagamento. Seu cadastro ficou salvo: volte a esta página para pagar assim que o Pix for liberado. Nenhuma cobrança foi gerada."
+                  />
+                ) : error && !payment ? (
                   <ErrorState title="Não foi possível gerar o Pix" message={error.message} onRetry={createCharge} />
                 ) : (
                   <>
