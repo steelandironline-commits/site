@@ -160,6 +160,8 @@ function City() {
 export default function ProductScene({ latest, mobile, reduced, running }) {
   const world = useRef({ level: 0, ppu: 30, labelScale: mobile ? 0.8 : 0.92, compact: mobile, reduced });
   world.current.reduced = reduced;
+  world.current.compact = mobile;
+  world.current.labelScale = mobile ? 0.8 : 0.92;
   const pointer = useRef({ x: 0, y: 0 });
   const [pops, setPops] = useState([]);
   const turn = useRef(0);

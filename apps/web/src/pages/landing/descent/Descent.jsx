@@ -271,7 +271,7 @@ export default function Descent() {
         {!webgl && <FallbackArt Art={Art} />}
         <div className={s.vignette} aria-hidden="true" />
         <div ref={copyBox} className={s.copyBox}>
-          <AnimatePresence initial>
+          <AnimatePresence initial mode="wait">
             <Copy key={active} index={active} reduced={reduced} />
           </AnimatePresence>
         </div>

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Building2, Check, Lock, UserRound } from 'lucide-react';
-import { BR_STATES, INDUSTRY_SUGGESTIONS, PRICING, formatCents, formatCnpj, formatCpf, isValidCnpj, isValidCpf, onlyDigits } from '@autopix/shared';
+import { ArrowLeft, ArrowRight, Check, Lock } from 'lucide-react';
+import { BR_STATES, INDUSTRY_SUGGESTIONS, PRICING, formatCents, formatCnpj, isValidCnpj, isValidCpf, onlyDigits } from '@autopix/shared';
 import { api, post, put } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { safeStorage } from '../../lib/hooks.js';
 import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
 import { Button, Field, Input, Select, TagInput, Textarea } from '../../components/ui/ui.jsx';
+import { AccountStartFields } from './AccountStartFields.jsx';
 import s from './onboarding.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -397,89 +398,7 @@ export default function Onboarding() {
 
               <div className={s.fields}>
                 {current.key === 'start' && (
-                  <>
-                    <div className={s.typeChoice} role="radiogroup" aria-label="Tipo de cadastro">
-                      {[
-                        { type: 'PERSON', Icon: UserRound, title: 'Cadastro Pessoa Física', note: 'Login pelo CPF · grátis' },
-                        { type: 'COMPANY', Icon: Building2, title: 'Cadastro Empresas', note: `CNPJ ou MEI · taxa única de ${feeLabel}` },
-                      ].map(({ type, Icon, title, note }) => (
-                        <button
-                          key={type}
-                          type="button"
-                          role="radio"
-                          aria-checked={account.accountType === type}
-                          className={account.accountType === type ? s.typeOn : undefined}
-                          disabled={hasSession}
-                          onClick={() => setAccount({ ...account, accountType: type, document: account.accountType === type ? account.document : '' })}
-                        >
-                          <Icon size={20} aria-hidden="true" />
-                          <strong>{title}</strong>
-                          <span>{note}</span>
-                        </button>
-                      ))}
-                    </div>
-                    {errors.accountType && (
-                      <p className={s.formError} role="alert">
-                        {errors.accountType}
-                      </p>
-                    )}
-                    <Field label="Seu nome" error={errors.name}>
-                      {(a) => (
-                        <Input {...a} autoComplete="name" value={account.name} disabled={hasSession} onChange={(e) => setAccount({ ...account, name: e.target.value })} />
-                      )}
-                    </Field>
-                    {account.accountType && (
-                      <Field
-                        label={account.accountType === 'COMPANY' ? 'CNPJ (empresa ou MEI)' : 'CPF'}
-                        hint={
-                          account.accountType === 'COMPANY'
-                            ? 'Será o login da empresa: um login por CNPJ. Colaboradores entram com o próprio CPF.'
-                            : 'Será o seu login.'
-                        }
-                        error={errors.document}
-                      >
-                        {(a) => (
-                          <Input
-                            {...a}
-                            inputMode="numeric"
-                            autoComplete="off"
-                            placeholder={account.accountType === 'COMPANY' ? '00.000.000/0000-00' : '000.000.000-00'}
-                            value={account.document}
-                            disabled={hasSession}
-                            onChange={(e) =>
-                              setAccount({ ...account, document: account.accountType === 'COMPANY' ? formatCnpj(e.target.value) : formatCpf(e.target.value) })
-                            }
-                          />
-                        )}
-                      </Field>
-                    )}
-                    {account.accountType === 'COMPANY' && (
-                      <Field label="Nome da empresa" error={errors.companyName}>
-                        {(a) => (
-                          <Input
-                            {...a}
-                            autoComplete="organization"
-                            value={account.companyName}
-                            disabled={hasSession}
-                            onChange={(e) => setAccount({ ...account, companyName: e.target.value })}
-                          />
-                        )}
-                    <Field label="E-mail" hint="Para ativar a conta e recuperar a senha." error={errors.email}>
-                      {(a) => (
-                        <Input
-                          {...a}
-                          type="email"
-                          inputMode="email"
-                          autoComplete="email"
-                          value={account.email}
-                          disabled={hasSession}
-                          onChange={(e) => setAccount({ ...account, email: e.target.value })}
-                        />
-                      )}
-                    </Field>
-                      </Field>
-                    )}
-                  </>
+                  <AccountStartFields account={account} setAccount={setAccount} errors={errors} hasSession={hasSession} feeLabel={feeLabel} />
                 )}
 
                 {current.key === 'work' && (

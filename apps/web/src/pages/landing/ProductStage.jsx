@@ -3,6 +3,7 @@
 import { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { PipelineFlow } from '../../components/activity/Flow.jsx';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../lib/hooks.js';
+import { DESKTOP_SCENE_SCALE } from './descent/framing.js';
 import s from './landing.module.css';
 
 const ProductScene = lazy(() => import('./descent/ProductScene.jsx'));
@@ -23,6 +24,9 @@ class Boundary extends Component {
   static getDerivedStateFromError() {
     return { failed: true };
   }
+  componentDidCatch() {
+    this.props.onFail?.();
+  }
   render() {
     return this.state.failed ? this.props.fallback : this.props.children;
   }
@@ -38,9 +42,9 @@ export default function ProductStage({ latest }) {
   const step = latest ? (STEP_OF[latest.type] ?? 0) : -1;
   const flat = <PipelineFlow latest={latest} className={s.flowPipeline} />;
   return (
-    <div ref={ref} className={s.productStage}>
+    <div ref={ref} className={s.productStage} style={{ '--desktop-scene-scale': webgl ? DESKTOP_SCENE_SCALE : 1 }}>
       {webgl ? (
-        <Boundary fallback={flat}>
+        <Boundary fallback={flat} onFail={() => setWebgl(false)}>
           <Suspense fallback={null}>
             <ProductScene latest={latest} mobile={mobile} reduced={reduced} running={inView} />
           </Suspense>

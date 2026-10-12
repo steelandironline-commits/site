@@ -160,7 +160,7 @@
 
 @media (min-width: 960px) {
   .productGrid {
-    grid-template-columns: 1.1fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
   }
 }
@@ -187,7 +187,11 @@
 
 @media (min-width: 960px) {
   .productStage {
-    height: 400px;
+    height: calc(400px * var(--desktop-scene-scale, 1.6));
+  }
+
+  .values {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

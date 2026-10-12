@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { CHAPTERS, HOLD, N, SPACING, levelFromProgress } from './chapters.js';
 import { ChapterCtx, WorldCtx, clamp01, damp, glowTex, lerp, rng } from './kit.jsx';
 import { CityIsland, DemandIsland, HiringIsland, PanelIsland, PixIsland, RouteIsland, TerminalIsland } from './islands.jsx';
+import { descentCameraDistance, descentViewOffset } from './framing.js';
 
 const AZ0 = Math.PI / 4;
 const AZ_STEP = 0.32;
@@ -18,7 +19,6 @@ const OFFSETS = [
   [2, -3],
   [0, 0],
 ];
-const FRAME = { w: 22, h: 14.5 };
 const FREEZE = [6, 13, 7.6, 8.4, 4.9, 6.6, 2];
 const ISLANDS = [CityIsland, DemandIsland, TerminalIsland, RouteIsland, HiringIsland, PixIsland, PanelIsland];
 
@@ -77,12 +77,8 @@ function Rig({ progress, pointer, stageRef, onActive, mobile, reduced }) {
     const target = tmp.target.set(lerp(a[0], b[0], f), lerp(a[1], b[1], f) + 1.2, lerp(a[2], b[2], f));
 
     const tanH = Math.tan((camera.fov * Math.PI) / 360);
-    const aspect = size.width / size.height;
-    const fw = mobile ? FRAME.w / 0.98 : FRAME.w / 0.55;
-    const fh = mobile ? FRAME.h / 0.44 : FRAME.h / 0.8;
     const dive = Math.sin(Math.PI * (level - Math.floor(level)));
-    let D = Math.max(fh / (2 * tanH), fw / (2 * tanH * aspect));
-    D *= 1 + 0.32 * dive;
+    const D = descentCameraDistance({ width: size.width, height: size.height, fov: camera.fov, mobile, dive });
     const az = AZ0 + level * AZ_STEP + orbitOffset(s.p) + s.px * 0.12;
     const el = ELEV + dive * 0.18 - s.py * 0.06;
     camera.position.set(
@@ -96,9 +92,8 @@ function Rig({ progress, pointer, stageRef, onActive, mobile, reduced }) {
     if (s.vw !== size.width || s.vh !== size.height) {
       s.vw = size.width;
       s.vh = size.height;
-      const ox = mobile ? 0 : -0.175 * size.width;
-      const oy = mobile ? 0.18 * size.height : -0.02 * size.height;
-      camera.setViewOffset(size.width, size.height, ox, oy, size.width, size.height);
+      const offset = descentViewOffset({ width: size.width, height: size.height, mobile });
+      camera.setViewOffset(size.width, size.height, offset.x, offset.y, size.width, size.height);
     }
     camera.updateProjectionMatrix();
     w.ppu = size.height / (2 * D * tanH);

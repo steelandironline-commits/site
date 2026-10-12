@@ -21,7 +21,7 @@
     "build": "prisma generate && npm run build -w @autopix/web",
     "start": "node apps/api/src/server.js",
     "start:worker": "node apps/worker/src/index.js",
-    "test": "npm test -w @autopix/shared -w @autopix/core -w @autopix/api --if-present",
+    "test": "npm test -w @autopix/shared -w @autopix/core -w @autopix/api -w @autopix/web --if-present",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
