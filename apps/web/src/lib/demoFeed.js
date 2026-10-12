@@ -1,5 +1,5 @@
-// Landing-page showcase feed. Runs ONLY in the browser on the marketing page,
-// is never persisted and is always rendered with a visible DEMO label.
+// Landing-page showcase feed (product preview). Runs ONLY in the browser on the
+// marketing page and is never persisted or mixed with account data.
 import { useEffect, useRef, useState } from 'react';
 
 const SCRIPT = [
@@ -7,14 +7,19 @@ const SCRIPT = [
   { type: 'RESEARCH', title: 'Site encontrado', description: 'Indústria Porto Atlântico', source: 'Agente de Pesquisa' },
   { type: 'RESEARCH', title: 'Perfil comercial identificado', description: 'Metalurgia · Joinville/SC', source: 'Agente de Pesquisa' },
   { type: 'SEARCH', title: 'Nova fonte analisada', description: 'Diário regional de negócios', source: 'Agente Radar' },
+  { type: 'PAYMENT', kind: 'contract', title: 'Contrato fechado', description: 'Construções · R$ 9.800,00', source: 'TemPix Pay', severity: 'SUCCESS' },
   { type: 'SIGNAL', title: 'Possível demanda detectada', description: 'Cotação aberta para manutenção industrial', source: 'Agente de Sinais', severity: 'SUCCESS' },
+  { type: 'SYSTEM', kind: 'route', title: 'Rota concluída', description: 'Santos → Campinas · 212 km', source: 'Cargas', severity: 'SUCCESS' },
   { type: 'SIGNAL', title: 'Expansão operacional identificada', description: 'Nova unidade fabril anunciada', source: 'Agente de Sinais', severity: 'SUCCESS' },
   { type: 'AGENT', title: 'Compatibilidade calculada: 91%', source: 'Agente de Pontuação' },
   { type: 'OPPORTUNITY', title: 'Oportunidade criada', description: 'Negócio estimado: R$ 18.000', source: 'Inteligência Comercial', severity: 'SUCCESS' },
+  { type: 'SYSTEM', kind: 'service', title: 'Serviço concluído', description: 'Eletricista · Joinville/SC', source: 'Equipes', severity: 'SUCCESS' },
   { type: 'OPPORTUNITY', title: 'Cliente classificado como alta prioridade', source: 'Agente de Pontuação', severity: 'SUCCESS' },
   { type: 'RESEARCH', title: 'Contato comercial público identificado', description: 'comercial@ · site oficial', source: 'Agente de Pesquisa' },
   { type: 'OPPORTUNITY', title: 'Abordagem comercial sugerida', source: 'Inteligência Comercial' },
+  { type: 'SYSTEM', kind: 'works', title: 'Obra entregue', description: 'Reforma de galpão · etapa final confirmada', source: 'Obras', severity: 'SUCCESS' },
   { type: 'SEARCH', title: 'Analisando 17 empresas', source: 'Agente Radar' },
+  { type: 'PAYMENT', kind: 'contract', title: 'Contrato assinado', description: 'Frete recorrente · R$ 4.800,00', source: 'TemPix Pay', severity: 'SUCCESS' },
   { type: 'SIGNAL', title: 'Obra de ampliação detectada', description: 'Licença de instalação publicada', source: 'Agente de Sinais', severity: 'SUCCESS' },
   { type: 'AGENT', title: 'Compatibilidade calculada: 86%', source: 'Agente de Pontuação' },
   { type: 'OPPORTUNITY', title: 'Oportunidade criada', description: 'Negócio estimado: R$ 32.000', source: 'Inteligência Comercial', severity: 'SUCCESS' },

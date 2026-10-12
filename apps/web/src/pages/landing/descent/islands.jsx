@@ -118,7 +118,7 @@ function Lamp({ p }) {
 }
 
 /** The TemPix mark as a floating 2.5D tile: navy base, teal top, dark check. */
-function BrandTile(props) {
+export function BrandTile(props) {
   const ch = useChapter();
   const ref = useRef();
   useFrame((state) => {

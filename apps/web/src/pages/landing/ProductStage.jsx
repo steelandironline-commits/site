@@ -3,6 +3,7 @@
 import { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { PipelineFlow } from '../../components/activity/Flow.jsx';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../lib/hooks.js';
+import { KIND_STYLE, eventKind } from '../../lib/eventKind.js';
 import { DESKTOP_SCENE_SCALE } from './descent/framing.js';
 import s from './landing.module.css';
 
@@ -39,7 +40,10 @@ export default function ProductStage({ latest }) {
   const reduced = usePrefersReducedMotion();
   const [webgl, setWebgl] = useState(true);
   useEffect(() => setWebgl(webglAvailable()), []);
-  const step = latest ? (STEP_OF[latest.type] ?? 0) : -1;
+  const kind = eventKind(latest);
+  const step = latest ? (kind ? STEPS.length - 1 : (STEP_OF[latest.type] ?? 0)) : -1;
+  const color = kind ? KIND_STYLE[kind].color : 'var(--primary)';
+  const name = kind ? KIND_STYLE[kind].label.toUpperCase() : step >= 0 ? STEPS[step] : 'PROCURANDO';
   const flat = <PipelineFlow latest={latest} className={s.flowPipeline} />;
   return (
     <div ref={ref} className={s.productStage} style={{ '--desktop-scene-scale': webgl ? DESKTOP_SCENE_SCALE : 1 }}>
@@ -52,13 +56,15 @@ export default function ProductStage({ latest }) {
       ) : (
         flat
       )}
-      <div className={s.productSteps} aria-hidden="true">
+      <div className={s.productSteps} style={{ '--step': color }} aria-hidden="true">
         <span className={s.stepBars}>
           {STEPS.map((x, i) => (
-            <i key={x} className={i <= step ? s.stepOn : undefined} />
+            <i key={x} className={i <= step ? s.stepOn : undefined} style={{ animationDelay: `${i * 0.14}s` }} />
           ))}
         </span>
-        <span className={s.stepName}>{step >= 0 ? STEPS[step] : 'PROCURANDO'}</span>
+        <span key={name} className={s.stepName}>
+          {name}
+        </span>
       </div>
     </div>
   );

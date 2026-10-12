@@ -312,3 +312,24 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Cadastro Empresas (CNPJ / MEI): premium golden frame */
+.typeChoice .typeGold {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(120deg, #8a6418, #f3d77a 30%, #c9952c 50%, #fff1b8 65%, #b8821f) border-box;
+}
+
+.typeChoice .typeGold svg,
+.typeChoice .typeGold span {
+  color: #e8c766;
+}
+
+.typeChoice .typeGold.typeOn {
+  background:
+    linear-gradient(rgba(232, 199, 102, 0.1), rgba(232, 199, 102, 0.1)) padding-box,
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(120deg, #8a6418, #f3d77a 30%, #c9952c 50%, #fff1b8 65%, #b8821f) border-box;
+  box-shadow: 0 0 0 3px rgba(232, 199, 102, 0.14), 0 10px 30px -12px rgba(232, 199, 102, 0.45);
+}

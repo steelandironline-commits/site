@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { KIND_STYLE, eventKind } from '../../lib/eventKind.js';
 import { Link } from 'react-router-dom';
 import { animate, motion, useReducedMotion } from 'framer-motion';
 import {
@@ -248,14 +249,19 @@ export function AgentCard({ agent, index = 0 }) {
 export const ACTIVITY_ICON = { SEARCH: Radar, RESEARCH: Globe, SIGNAL: Zap, OPPORTUNITY: Target, AGENT: Cpu, SYSTEM: Server, PAYMENT: QrCode };
 
 export function ActivityCard({ event: e, compact = false }) {
-  const Icon = ACTIVITY_ICON[e.type] || Server;
+  const kind = eventKind(e);
+  const Icon = kind ? KIND_STYLE[kind].Icon : ACTIVITY_ICON[e.type] || Server;
   const agentName = e.agent?.name || e.source;
   const content = (
     <>
       <time className={cx(s.actTime, 'mono')} dateTime={e.createdAt}>
         {fmtTime(e.createdAt)}
       </time>
-      <span className={cx(s.actIcon, s[`sev-${e.severity}`])} aria-hidden="true">
+      <span
+        className={cx(s.actIcon, s[`sev-${e.severity}`])}
+        style={kind ? { color: KIND_STYLE[kind].color, borderColor: `${KIND_STYLE[kind].color}66`, background: `${KIND_STYLE[kind].color}1f` } : undefined}
+        aria-hidden="true"
+      >
         <Icon size={14} />
       </span>
       <div className={s.actBody}>

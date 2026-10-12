@@ -207,29 +207,56 @@
 
 .stepBars {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 
+/* › › › › › — a light runs through them all the time; reached steps stay lit. */
 .stepBars i {
-  width: 18px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.16);
-  transition:
-    background 0.4s,
-    box-shadow 0.4s;
+  width: 9px;
+  height: 9px;
+  border-top: 2.5px solid rgba(255, 255, 255, 0.18);
+  border-right: 2.5px solid rgba(255, 255, 255, 0.18);
+  transform: rotate(45deg);
+  animation: chevron 1.2s ease-in-out infinite;
 }
 
 .stepBars .stepOn {
-  background: var(--primary);
-  box-shadow: 0 0 8px rgba(42, 209, 184, 0.6);
+  border-color: var(--step, var(--primary));
+  filter: drop-shadow(0 0 4px var(--step, var(--primary)));
+}
+
+@keyframes chevron {
+  0%,
+  100% {
+    opacity: 0.45;
+    translate: 0 0;
+  }
+  40% {
+    opacity: 1;
+    translate: 2px -2px;
+  }
 }
 
 .stepName {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: var(--primary);
+  color: var(--step, var(--primary));
+  animation: stepIn 0.35s ease-out;
+}
+
+@keyframes stepIn {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepBars i,
+  .stepName {
+    animation: none;
+  }
 }
 
 .flowPipeline {
@@ -851,8 +878,38 @@
   flex: 1;
 }
 
+/* Empresas (CNPJ / MEI): premium golden frame with a slow shine. */
 .priceMain {
-  border-color: var(--navy-line) !important;
+  border: 2px solid transparent !important;
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(232, 199, 102, 0.1), transparent 70%) padding-box,
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(120deg, #8a6418, #f3d77a 22%, #c9952c 40%, #fff1b8 50%, #c9952c 60%, #f3d77a 78%, #8a6418) border-box !important;
+  background-size: 100% 100%, 100% 100%, 300% 300% !important;
+  box-shadow:
+    0 0 0 1px rgba(232, 199, 102, 0.08),
+    0 24px 60px -24px rgba(232, 199, 102, 0.4),
+    var(--shadow-3) !important;
+  animation: goldShine 6s linear infinite;
+}
+
+.priceMain :global(.eyebrow) {
+  color: #e8c766;
+}
+
+@keyframes goldShine {
+  0% {
+    background-position: 0 0, 0 0, 0% 50%;
+  }
+  100% {
+    background-position: 0 0, 0 0, 300% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .priceMain {
+    animation: none;
+  }
 }
 
 .priceFoot {

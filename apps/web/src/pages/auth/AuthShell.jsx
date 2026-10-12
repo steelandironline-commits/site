@@ -1,8 +1,22 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Logo } from '../../components/brand/Logo.jsx';
-import { MiniRadar } from '../../components/ui/ui.jsx';
 import s from './auth.module.css';
+
+/** › › › rows with a light running through them (no radar). */
+function ChevronFlow() {
+  return (
+    <div className={s.chevrons}>
+      {[0, 1, 2].map((row) => (
+        <div key={row} className={s.chevRow} style={{ '--row': row }}>
+          {Array.from({ length: 7 }, (_, i) => (
+            <i key={i} style={{ '--i': i }} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function AuthShell({ title, subtitle, children, footer }) {
   return (
@@ -12,7 +26,7 @@ export function AuthShell({ title, subtitle, children, footer }) {
           <Logo />
         </Link>
         <div className={s.asideCenter}>
-          <MiniRadar size={220} />
+          <ChevronFlow />
           <p className={s.asideQuote}>Tem emprego, tem rota, tem serviço. TemPix.</p>
         </div>
         <p className={s.asideFoot}>Clientes, cargas, profissionais e Pix numa tela só.</p>

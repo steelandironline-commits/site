@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ActivityCard } from '../cards/Cards.jsx';
+import { KIND_STYLE, eventKind } from '../../lib/eventKind.js';
 import { Badge, DemoBadge, Skeleton } from '../ui/ui.jsx';
 import s from './activity.module.css';
 
@@ -33,7 +34,9 @@ export function ActivityStream({ events, mode = 'live', demo = false, badge = tr
           ))}
         {!loading && events.length === 0 && empty}
         <AnimatePresence initial={false}>
-          {events.slice(0, max).map((e) => (
+          {events.slice(0, max).map((e) => {
+            const kind = eventKind(e);
+            return (
             <motion.div
               key={e.id}
               layout="position"
@@ -43,9 +46,17 @@ export function ActivityStream({ events, mode = 'live', demo = false, badge = tr
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               className={s.streamItem}
             >
+              {kind && (
+                <span
+                  className={`${s.sweep} ${kind === 'contract' ? '' : s.sweepBlink}`}
+                  style={{ '--sweep': KIND_STYLE[kind].color }}
+                  aria-hidden="true"
+                />
+              )}
               <ActivityCard event={demo ? { ...e, isDemo: false } : e} compact={compact} />
             </motion.div>
-          ))}
+            );
+          })}
         </AnimatePresence>
       </div>
     </section>

@@ -229,3 +229,54 @@
 .strengthBars span[data-on='true'][data-level='4'] {
   background: var(--primary);
 }
+
+/* Aside: chevrons marching to the right */
+.chevrons {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.chevRow {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.chevRow i {
+  width: 24px;
+  height: 24px;
+  border-top: 5px solid var(--primary);
+  border-right: 5px solid var(--primary);
+  border-radius: 3px;
+  color: var(--primary);
+  opacity: 0.12;
+  transform: rotate(45deg);
+  animation: march 1.5s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.12s + var(--row) * 0.22s);
+}
+
+.chevRow:nth-child(2) i {
+  border-color: #ecebe6;
+  color: #ecebe6;
+}
+
+@keyframes march {
+  0%,
+  100% {
+    opacity: 0.12;
+    translate: 0 0;
+  }
+  35% {
+    opacity: 1;
+    translate: 4px 0;
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevRow i {
+    animation: none;
+    opacity: 0.5;
+  }
+}

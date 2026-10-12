@@ -17,7 +17,7 @@ export function AccountStartFields({ account, setAccount, errors = {}, hasSessio
             type="button"
             role="radio"
             aria-checked={account.accountType === type}
-            className={account.accountType === type ? s.typeOn : undefined}
+            className={[account.accountType === type ? s.typeOn : '', type === 'COMPANY' ? s.typeGold : ''].join(' ').trim() || undefined}
             disabled={hasSession}
             onClick={() => setAccount({ ...account, accountType: type, document: account.accountType === type ? account.document : '' })}
           >

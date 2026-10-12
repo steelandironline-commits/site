@@ -338,3 +338,94 @@
     transform: none;
   }
 }
+
+/* Contract / route / service / works: a fast opaque wipe from left to right
+   in the event's colour; route, service and works also blink. */
+.streamItem {
+  position: relative;
+  overflow: hidden;
+}
+
+.sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--sweep) 55%, transparent) 30%,
+    color-mix(in srgb, var(--sweep) 80%, transparent) 50%,
+    color-mix(in srgb, var(--sweep) 55%, transparent) 70%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: sweep 0.6s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+}
+
+.sweep::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--sweep);
+  box-shadow: 0 0 10px var(--sweep);
+  animation: tail 1.6s ease-out forwards;
+}
+
+.sweepBlink {
+  animation:
+    sweep 0.6s cubic-bezier(0.35, 0, 0.25, 1) forwards,
+    blink 0.6s steps(2, jump-none) 0.6s 2;
+}
+
+.streamItem > :not(.sweep) {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes blink {
+  0% {
+    transform: translateX(0);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+}
+
+@keyframes tail {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep,
+  .sweepBlink {
+    animation: none;
+    opacity: 0;
+  }
+}

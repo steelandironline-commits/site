@@ -3,8 +3,9 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Ball, Cy, GEO, Glow, Island, Label, Rise, Tree, ChapterCtx, WorldCtx, bump, clamp01, damp, eo, mat, sweepTex } from './kit.jsx';
-import { Company } from './islands.jsx';
+import { Ball, Cy, GEO, Glow, Island, Label, Rise, Tree, ChapterCtx, WorldCtx, bump, clamp01, damp, eo } from './kit.jsx';
+import { BrandTile, Company } from './islands.jsx';
+import { KIND_STYLE, eventKind } from '../../../lib/eventKind.js';
 
 const SITES = [
   { kind: 'factory', angle: 0.35, h: 2.2 },
@@ -52,37 +53,66 @@ function Rig({ pointer }) {
   return null;
 }
 
+/** TemPix hub at the centre (no radar): base, tower and the floating brand tile. */
 function Hub() {
-  const sweep = useRef();
-  const dish = useRef();
-  const material = useMemo(() => new THREE.MeshBasicMaterial({ map: sweepTex(), color: '#13b8a2', transparent: true, depthWrite: false, toneMapped: false }), []);
-  useFrame((state) => {
-    const th = state.clock.elapsedTime * 1.05;
-    sweep.current.rotation.y = -th;
-    dish.current.rotation.y = -th - Math.PI / 2;
-  });
   return (
     <>
-      {[2.3, 4.2, 6.0].map((r) => (
-        <mesh key={r} geometry={GEO.ring} material={mat('#9cc9c1')} position={[0, 0.01, 0]} scale={[r, 1, r]} />
-      ))}
-      <mesh ref={sweep} geometry={GEO.disc} material={material} position={[0, 0.02, 0]} scale={[6.2, 1, 6.2]} renderOrder={1} />
       <Rise delay={0.05} dur={0.8}>
         <Cy s={[2.2, 0.3, 2.2]} c="#dfe9e7" />
-        <Cy p={[0, 0.3, 0]} s={[1.2, 0.9, 1.2]} c="#24365e" />
-        <Cy p={[0, 1.0, 0]} s={[1.24, 0.1, 1.24]} c="#2ad1b8" e="#2ad1b8" ei={0.8} />
-        <Cy p={[0, 1.2, 0]} s={[0.2, 1.1, 0.2]} c="#c9d3e0" />
+        <Cy p={[0, 0.3, 0]} s={[1.2, 1.2, 1.2]} c="#24365e" />
+        <Cy p={[0, 1.5, 0]} s={[1.24, 0.12, 1.24]} c="#2ad1b8" e="#2ad1b8" ei={0.8} />
       </Rise>
-      <group ref={dish} position={[0, 2.35, 0]}>
-        <Rise delay={0.35} all>
-          <group rotation={[-0.95, 0, 0]}>
-            <mesh geometry={GEO.hemi} material={mat('#f3f6f9', { side: THREE.DoubleSide })} rotation={[Math.PI, 0, 0]} scale={[1.7, 0.62, 1.7]} />
-            <Ball p={[0, 0.6, 0]} s={0.15} c="#2ad1b8" e="#2ad1b8" ei={1.4} />
-          </group>
-        </Rise>
-      </group>
-      <Glow color="#2ad1b8" size={2.2} position={[0, 2.5, 0]} pulse={0.2} />
+      <BrandTile position={[0, 2.55, 0]} />
+      <Glow color="#2ad1b8" size={2.6} position={[0, 2.55, -0.2]} pulse={0.2} />
     </>
+  );
+}
+
+/**
+ * Animated chevrons on the ground (› › ›) from the hub to every company.
+ * They march softly all the time and light up in the event's colour when an
+ * agent heads to that company.
+ */
+const STEPS_PER_LANE = 4;
+function Lanes({ active }) {
+  const lanes = useMemo(
+    () =>
+      SITES.map((site) => {
+        const dir = new THREE.Vector2(site.x, site.z).normalize();
+        const yaw = Math.atan2(dir.x, dir.y);
+        return Array.from({ length: STEPS_PER_LANE }, (_, i) => {
+          const d = 1.5 + i * 0.72;
+          return { pos: [dir.x * d, 0.03, dir.y * d], yaw, material: new THREE.MeshBasicMaterial({ color: '#2ad1b8', transparent: true, depthWrite: false, toneMapped: false }) };
+        });
+      }),
+    [],
+  );
+  const base = useMemo(() => new THREE.Color('#2ad1b8'), []);
+  const hot = useMemo(() => new THREE.Color(), []);
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    lanes.forEach((lane, li) => {
+      const a = active.current[li];
+      const age = a ? now() - a.t0 : 9;
+      const firing = age < 1.6;
+      if (firing) hot.set(a.color);
+      lane.forEach((c, i) => {
+        // a light that runs outwards: soft and slow at rest, bright and fast when firing
+        const phase = firing ? age * 3.2 - i * 0.35 : (t * 0.9 - i * 0.28 + li * 0.17) % 1.4;
+        const wave = firing ? Math.max(0, 1 - Math.abs(phase - 0.5) * 1.6) : Math.max(0, 1 - Math.abs(phase - 0.5) * 2);
+        c.material.color.copy(firing ? hot : base);
+        c.material.opacity = firing ? 0.25 + 0.75 * wave : 0.12 + 0.35 * wave;
+      });
+    });
+  });
+  return lanes.map((lane, li) =>
+    lane.map((c, i) => (
+      <group key={`${li}-${i}`} position={c.pos} rotation={[0, c.yaw, 0]}>
+        {/* "›" pointing away from the hub: arms meet at the front */}
+        <mesh geometry={GEO.box} material={c.material} position={[0.17, 0, 0.17]} rotation={[0, -Math.PI / 4, 0]} scale={[0.09, 0.02, 0.55]} renderOrder={2} />
+        <mesh geometry={GEO.box} material={c.material} position={[-0.17, 0, 0.17]} rotation={[0, Math.PI / 4, 0]} scale={[0.09, 0.02, 0.55]} renderOrder={2} />
+      </group>
+    )),
   );
 }
 
@@ -94,7 +124,7 @@ function Pop({ pop, compact }) {
   const arc = useMemo(() => new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, 2.5, 0), new THREE.Vector3(to[0] * 0.5, 5.2, to[2] * 0.5), new THREE.Vector3(...to)), [to[0], to[1], to[2]]); // eslint-disable-line react-hooks/exhaustive-deps
   const orb = useRef();
   const ring = useRef();
-  const accent = ACCENT[pop.type] || '#2ad1b8';
+  const accent = pop.color;
   const ringMat = useMemo(() => new THREE.MeshBasicMaterial({ color: accent, transparent: true, depthWrite: false, toneMapped: false }), [accent]);
   const age = () => now() - pop.t0;
   useFrame(() => {
@@ -121,7 +151,7 @@ function Pop({ pop, compact }) {
         text={pop.text}
         sub={compact ? undefined : pop.sub}
         accent={accent}
-        check={pop.type === 'OPPORTUNITY'}
+        check={pop.type === 'OPPORTUNITY' || pop.kind === 'contract'}
         position={at}
         vis={() => bump(age(), site ? 0.55 : 0, site ? 0.85 : 0.3, life - 0.35, life)}
       />
@@ -129,10 +159,11 @@ function Pop({ pop, compact }) {
   );
 }
 
-function City() {
+function City({ active }) {
   return (
     <Island w={13} d={13} top="#e5efec" lip="#c9dcd7" strata={['#a9d1c9', '#5f9d93', '#2f6660']} seed={91}>
       <Hub />
+      <Lanes active={active} />
       {SITES.map((s, i) => (
         <group key={s.kind} position={[s.x, 0, s.z]}>
           <Rise delay={0.2 + i * 0.08}>
@@ -165,20 +196,25 @@ export default function ProductScene({ latest, mobile, reduced, running }) {
   const pointer = useRef({ x: 0, y: 0 });
   const [pops, setPops] = useState([]);
   const turn = useRef(0);
+  const active = useRef([]);
 
   useEffect(() => {
     if (!latest) return;
     const hub = latest.type === 'SEARCH';
     turn.current = (turn.current + 1) % ORDER.length;
+    const kind = eventKind(latest);
     const pop = {
       id: `${latest.id}:${Date.now()}`,
       site: hub ? -1 : ORDER[turn.current],
       type: latest.type,
+      kind,
+      color: kind ? KIND_STYLE[kind].color : ACCENT[latest.type] || '#2ad1b8',
       text: latest.title,
       sub: latest.description || latest.source,
       t0: now(),
       end: now() + POP_LIFE,
     };
+    if (pop.site >= 0) active.current[pop.site] = { t0: pop.t0, color: pop.color };
     // On phones only one pop-out at a time: the previous one bows out quickly.
     setPops((list) => [
       ...list.filter((p) => now() < p.end).map((p) => (mobile ? { ...p, end: Math.min(p.end, now() + 0.35) } : p)),
@@ -212,7 +248,7 @@ export default function ProductScene({ latest, mobile, reduced, running }) {
             <ambientLight intensity={0.25} />
             <directionalLight position={[9, 16, 5]} intensity={2} color="#fff4e2" />
             <Rig pointer={pointer} />
-            <City />
+            <City active={active} />
             {pops.map((p) => (
               <Pop key={p.id} pop={p} compact={mobile} />
             ))}
