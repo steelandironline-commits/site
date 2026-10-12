@@ -68,22 +68,6 @@ function Letterbox({ progress }) {
   );
 }
 
-function Timecode({ progress }) {
-  const ref = useRef(null);
-  useMotionValueEvent(progress, 'change', (v) => {
-    if (!ref.current) return;
-    const total = Math.round(v * 90 * 24); // a 90s "film" at 24fps
-    const sec = Math.floor(total / 24);
-    const f = String(total % 24).padStart(2, '0');
-    ref.current.textContent = `00:${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}:${f}`;
-  });
-  return (
-    <span ref={ref} className={s.timecode} aria-hidden="true">
-      00:00:00:00
-    </span>
-  );
-}
-
 function ActRail({ progress }) {
   return (
     <ol className={s.rail} aria-hidden="true">
@@ -99,24 +83,10 @@ function RailItem({ act, progress, w }) {
   const fill = useTransform(progress, [w[1], w[2]], ['0%', '100%']);
   return (
     <motion.li style={{ opacity: on }}>
-      <span className={s.railN}>{act.n}</span>
-      <span className={s.railLabel}>{act.label}</span>
       <span className={s.railTrack}>
         <motion.i style={{ width: fill }} />
       </span>
     </motion.li>
-  );
-}
-
-function ActTitle({ act, kicker, title }) {
-  const Icon = act.icon;
-  return (
-    <header className={s.actHead}>
-      <p className={s.actKicker}>
-        <span>ATO {act.n}</span> <Icon size={14} aria-hidden="true" /> {kicker}
-      </p>
-      <h2 className={s.actTitle}>{title}</h2>
-    </header>
   );
 }
 
@@ -137,7 +107,6 @@ function Transporte({ progress }) {
   });
   return (
     <motion.div className={s.scene} style={st}>
-      <ActTitle act={ACTS[0]} kicker="Fretes" title="A carga encontra o caminhão." />
       <div className={s.stage}>
         <svg viewBox="0 0 760 340" className={s.map} role="img" aria-label="Rota ilustrativa de Santos a Campinas">
           <defs>
@@ -189,7 +158,6 @@ function Pessoas({ progress }) {
   const link = useTransform(progress, [0.26, 0.36], [0, 1]);
   return (
     <motion.div className={s.scene} style={st}>
-      <ActTitle act={ACTS[1]} kicker="Mão de obra" title="O profissional certo, na hora certa." />
       <div className={s.stage}>
         <svg viewBox="0 0 760 320" className={s.map} role="img" aria-label="Rede ilustrativa de profissionais">
           {LINKS.map(([a, b]) => (
@@ -236,7 +204,6 @@ function Servicos({ progress }) {
   const st = useWindow(progress, W.servicos);
   return (
     <motion.div className={s.scene} style={st}>
-      <ActTitle act={ACTS[2]} kicker="Ordens e Pix" title="Do pedido ao Pix, sem atrito." />
       <div className={`${s.stage} ${s.orders}`}>
         {ORDERS.map((o, i) => (
           <OrderCard key={o.t} o={o} i={i} progress={progress} />
@@ -316,10 +283,9 @@ function StaticPrologue() {
           Transporte. Pessoas. Serviços. <em>Uma plataforma.</em>
         </h1>
         <ul className={s.staticActs}>
-          {ACTS.map(({ key, n, label, icon: Icon }) => (
+          {ACTS.map(({ key, label, icon: Icon }) => (
             <li key={key}>
               <Icon size={20} aria-hidden="true" />
-              <span>ATO {n}</span>
               <strong>{label}</strong>
             </li>
           ))}
@@ -368,7 +334,6 @@ export default function Cinematic() {
         <Letterbox progress={progress} />
 
         <div className={s.hud}>
-          <Timecode progress={progress} />
           <DemoBadge label="CENA ILUSTRATIVA" />
           <a href="#hero" className={s.skip}>
             Pular introdução
