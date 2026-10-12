@@ -1,0 +1,43 @@
+import { Router } from 'express';
+import { changePasswordSchema } from '@autopix/shared';
+import { unauthorized } from '@autopix/core';
+import { parse } from '../middleware/validate.js';
+import { requireAuth } from '../middleware/session.js';
+
+export function meRoutes({ auth, prisma, config }) {
+  const r = Router();
+
+  /** Current session (onboarding or full). 401 when anonymous. */
+  r.get('/', async (req, res) => {
+    if (!req.session) throw unauthorized('Sessão não encontrada.');
+    const subscription = await prisma.subscription.findUnique({
+      where: { companyId: req.user.companyId },
+      select: { status: true, currentPeriodEnd: true, cancelAtPeriodEnd: true },
+    });
+    res.json({
+      scope: req.session.scope,
+      user: { id: req.user.id, name: req.user.name, email: req.user.email, status: req.user.status, role: req.user.role },
+      company: req.user.company,
+      subscription,
+      demoMode: config.demoMode,
+    });
+  });
+
+  r.put('/password', requireAuth, async (req, res) => {
+    const { currentPassword, newPassword } = parse(changePasswordSchema, req.body);
+    await auth.changePassword(req.user.id, currentPassword, newPassword, req.session.id);
+    res.json({ ok: true });
+  });
+
+  r.get('/sessions', requireAuth, async (req, res) => {
+    const sessions = await auth.listSessions(req.user.id);
+    res.json({ items: sessions.map((s) => ({ ...s, current: s.id === req.session.id })) });
+  });
+
+  r.delete('/sessions', requireAuth, async (req, res) => {
+    const revoked = await auth.revokeAllSessions(req.user.id, { exceptSessionId: req.session.id });
+    res.json({ revoked });
+  });
+
+  return r;
+}

@@ -1,0 +1,43 @@
+{
+  "name": "autopix",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AutoPix — Procuramos vendas e serviços pra você.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "workspaces": [
+    "packages/shared",
+    "packages/core",
+    "apps/api",
+    "apps/worker",
+    "apps/web"
+  ],
+  "scripts": {
+    "postinstall": "prisma generate",
+    "dev": "concurrently -k -n api,worker,web -c cyan,magenta,green \"npm run dev -w @autopix/api\" \"npm run dev -w @autopix/worker\" \"npm run dev -w @autopix/web\"",
+    "build": "prisma generate && npm run build -w @autopix/web",
+    "start": "node apps/api/src/server.js",
+    "start:worker": "node apps/worker/src/index.js",
+    "test": "npm test -w @autopix/shared -w @autopix/core -w @autopix/api --if-present",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "prisma studio",
+    "lint": "node --check apps/api/src/server.js && node --check apps/worker/src/index.js"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "prisma": "6.19.3"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.6",
+    "vitest": "4.0.18"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@autopix/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@autopix/shared": "1.0.0",
+    "@fontsource/ibm-plex-mono": "5.2.7",
+    "@fontsource/ibm-plex-sans": "5.2.8",
+    "@react-three/fiber": "9.4.0",
+    "framer-motion": "12.23.24",
+    "lucide-react": "0.548.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-router-dom": "7.18.4",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "5.2.0",
+    "vite": "7.3.7"
+  }
+}

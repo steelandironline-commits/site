@@ -1,0 +1,22 @@
+{
+  "name": "@autopix/core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@autopix/shared": "1.0.0",
+    "@prisma/client": "6.19.3",
+    "argon2": "0.44.0",
+    "dotenv": "17.2.3",
+    "qrcode": "1.5.4",
+    "zod": "3.25.76"
+  }
+}

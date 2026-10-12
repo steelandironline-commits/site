@@ -1,0 +1,470 @@
+// AutoPix — database schema
+// PostgreSQL + Prisma. Money for subscriptions/payments is stored in cents;
+// business estimates (ticket, opportunity value) are stored in whole reais.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  PENDING_PAYMENT
+  PENDING_ACTIVATION
+  ACTIVE
+  DISABLED
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum SessionScope {
+  ONBOARDING
+  FULL
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  EXPIRED
+  REFUNDED
+  CANCELED
+}
+
+enum OpportunityStatus {
+  NEW
+  RESEARCHING
+  CONTACTED
+  INTERESTED
+  PROPOSAL
+  WON
+  LOST
+  ARCHIVED
+}
+
+enum OpportunityPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum Severity {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum ActivityType {
+  SEARCH
+  RESEARCH
+  SIGNAL
+  OPPORTUNITY
+  AGENT
+  SYSTEM
+  PAYMENT
+}
+
+enum AgentKey {
+  RADAR
+  RESEARCH
+  SIGNAL
+  SCORING
+  SALES
+}
+
+enum RunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum JobTrigger {
+  PAYMENT
+  SCHEDULED
+  PROFILE_UPDATE
+  MANUAL
+}
+
+enum SignalType {
+  EXPANSION
+  HIRING
+  CONSTRUCTION
+  PURCHASE
+  NEW_PROJECT
+  DEMAND
+}
+
+enum SourceType {
+  DEMO
+  SEARCH
+  WEBSITE
+  NEWS
+  PUBLIC_REGISTRY
+}
+
+model User {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  name              String
+  passwordHash      String?
+  status            UserStatus   @default(PENDING_PAYMENT)
+  role              UserRole     @default(OWNER)
+  companyId         String
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  sessions            Session[]
+  activationTokens    ActivationToken[]
+  passwordResetTokens PasswordResetToken[]
+  activityEvents      ActivityEvent[]
+
+  @@index([companyId])
+}
+
+model Session {
+  id         String       @id @default(cuid())
+  tokenHash  String       @unique
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope      SessionScope @default(FULL)
+  expiresAt  DateTime
+  lastSeenAt DateTime     @default(now())
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime     @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Company {
+  id                    String    @id @default(cuid())
+  name                  String
+  cnpj                  String?
+  website               String?
+  instagram             String?
+  phone                 String?
+  city                  String?
+  state                 String?
+  serviceLocations      String[]  @default([])
+  serviceRadiusKm       Int?
+  description           String?
+  products              String[]  @default([])
+  services              String[]  @default([])
+  idealCustomer         String?
+  averageTicket         Int?
+  minimumDeal           Int?
+  preferredIndustries   String[]  @default([])
+  excludedIndustries    String[]  @default([])
+  keywords              String[]  @default([])
+  onboardingStep        Int       @default(0)
+  onboardingCompletedAt DateTime?
+  searchConfigVersion   Int       @default(1)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  users          User[]
+  subscription   Subscription?
+  payments       Payment[]
+  opportunities  Opportunity[]
+  activityEvents ActivityEvent[]
+  agentRuns      AgentRun[]
+  signals        CompanySignal[]
+  searchJobs     SearchJob[]
+
+  @@index([cnpj])
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  companyId              String             @unique
+  company                Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan                   String             @default("AUTOPIX")
+  priceCents             Int
+  status                 SubscriptionStatus @default(PENDING)
+  provider               String
+  providerSubscriptionId String?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  activatedAt            DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  payments Payment[]
+
+  @@index([status, currentPeriodEnd])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  subscriptionId    String
+  subscription      Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  companyId         String
+  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider          String
+  providerPaymentId String?
+  amountCents       Int
+  currency          String        @default("BRL")
+  method            String        @default("PIX")
+  status            PaymentStatus @default(PENDING)
+  pixQrCodeBase64   String?
+  pixCopyPaste      String?
+  expiresAt         DateTime?
+  paidAt            DateTime?
+  idempotencyKey    String        @unique
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  events PaymentEvent[]
+
+  @@unique([provider, providerPaymentId])
+  @@index([companyId, createdAt])
+  @@index([status])
+}
+
+model PaymentEvent {
+  id                String   @id @default(cuid())
+  paymentId         String?
+  payment           Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  provider          String
+  providerEventId   String
+  providerPaymentId String?
+  type              String
+  status            String?
+  processed         Boolean  @default(false)
+  payload           Json?
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerEventId])
+  @@index([providerPaymentId])
+}
+
+model Opportunity {
+  id                String              @id @default(cuid())
+  companyId         String
+  company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  targetKey         String
+  targetCompanyName String
+  targetWebsite     String?
+  industry          String?
+  city              String?
+  state             String?
+  score             Int
+  confidence        Float
+  priority          OpportunityPriority @default(MEDIUM)
+  signal            String
+  signalType        SignalType?
+  description       String?
+  reasons           String[]            @default([])
+  matchingServices  String[]            @default([])
+  estimatedMinValue Int?
+  estimatedMaxValue Int?
+  suggestedApproach String?
+  notes             String?
+  status            OpportunityStatus   @default(NEW)
+  isDemo            Boolean             @default(false)
+  metadata          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  sources        OpportunitySource[]
+  contacts       Contact[]
+  signals        CompanySignal[]
+  activityEvents ActivityEvent[]
+
+  @@unique([companyId, targetKey])
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+  @@index([companyId, score])
+}
+
+model OpportunitySource {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  type          SourceType
+  title         String
+  url           String?
+  snippet       String?
+  retrievedAt   DateTime    @default(now())
+
+  @@index([opportunityId])
+}
+
+model ActivityEvent {
+  id            String       @id @default(cuid())
+  userId        String?
+  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  companyId     String
+  company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId       String?
+  agent         Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  opportunityId String?
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  jobId         String?
+  type          ActivityType
+  title         String
+  description   String?
+  source        String?
+  severity      Severity     @default(INFO)
+  isDemo        Boolean      @default(false)
+  metadata      Json?
+  createdAt     DateTime     @default(now())
+
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([type])
+  @@index([companyId, createdAt])
+}
+
+model Agent {
+  id          String   @id @default(cuid())
+  key         AgentKey @unique
+  name        String
+  description String
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  runs           AgentRun[]
+  activityEvents ActivityEvent[]
+}
+
+model AgentRun {
+  id         String     @id @default(cuid())
+  agentId    String
+  agent      Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobId      String?
+  job        SearchJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  status     RunStatus  @default(RUNNING)
+  startedAt  DateTime   @default(now())
+  finishedAt DateTime?
+  durationMs Int?
+  error      String?
+  metrics    Json?
+  metadata   Json?
+
+  @@index([companyId, startedAt])
+  @@index([agentId, startedAt])
+  @@index([jobId])
+}
+
+model CompanySignal {
+  id                String       @id @default(cuid())
+  companyId         String
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  opportunityId     String?
+  opportunity       Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  targetCompanyName String
+  type              SignalType
+  title             String
+  description       String?
+  strength          Float
+  sourceUrl         String?
+  isDemo            Boolean      @default(false)
+  detectedAt        DateTime     @default(now())
+
+  @@index([companyId, detectedAt])
+  @@index([opportunityId])
+}
+
+model Contact {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  name          String?
+  role          String?
+  companyPhone  String?
+  businessEmail String?
+  linkedinUrl   String?
+  publicSource  String
+  verified      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+
+  @@index([opportunityId])
+}
+
+model ActivationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model SearchJob {
+  id                   String     @id @default(cuid())
+  companyId            String
+  company              Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status               JobStatus  @default(QUEUED)
+  trigger              JobTrigger @default(SCHEDULED)
+  runAt                DateTime   @default(now())
+  attempts             Int        @default(0)
+  maxAttempts          Int        @default(3)
+  lockedAt             DateTime?
+  lockedBy             String?
+  startedAt            DateTime?
+  finishedAt           DateTime?
+  error                String?
+  configVersion        Int        @default(1)
+  isDemo               Boolean    @default(false)
+  companiesAnalyzed    Int        @default(0)
+  signalsDetected      Int        @default(0)
+  opportunitiesCreated Int        @default(0)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  agentRuns AgentRun[]
+
+  @@index([status, runAt])
+  @@index([companyId, createdAt])
+}

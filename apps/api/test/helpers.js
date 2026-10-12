@@ -1,0 +1,117 @@
+import request from 'supertest';
+import { loadConfig, setConfig, getPrisma, ensureAgents, resetPaymentProviders, resetAgentCache, EmailService } from '@autopix/core';
+import { buildServices, createApp } from '../src/app.js';
+
+export const hasDb = Boolean(process.env.DATABASE_URL);
+
+export const STRONG_PASSWORD = 'autopix-teste-2024';
+
+export function testConfig(overrides = {}) {
+  return loadConfig({
+    NODE_ENV: 'test',
+    DATABASE_URL: process.env.DATABASE_URL,
+    APP_URL: 'http://localhost:5173',
+    API_URL: 'http://localhost:3000',
+    SESSION_SECRET: 'test-session-secret-0123456789abcdef0123456789',
+    ACTIVATION_TOKEN_SECRET: 'test-activation-secret-0123456789abcdef012345',
+    PASSWORD_RESET_SECRET: 'test-reset-secret-0123456789abcdef0123456789',
+    PAYMENT_PROVIDER: 'mock',
+    PAYMENT_WEBHOOK_SECRET: 'test-webhook-secret-0123456789abcdef01234567',
+    DEMO_MODE: 'true',
+    OPPORTUNITY_SCORE_THRESHOLD: '50',
+    ...overrides,
+  });
+}
+
+/** Fresh app wired to the test DB. */
+export async function setupApp(overrides = {}) {
+  const config = setConfig(testConfig(overrides));
+  resetPaymentProviders();
+  resetAgentCache();
+  const prisma = getPrisma();
+  await ensureAgents(prisma);
+  const email = new EmailService({ config });
+  const services = buildServices({ config, prisma, email });
+  const hub = { mode: 'test', subscribe: () => () => {} };
+  const app = createApp({ services, hub, serveWeb: false });
+  return { app, config, prisma, services, email };
+}
+
+const TABLES = [
+  'PaymentEvent',
+  'Payment',
+  'Subscription',
+  'Contact',
+  'OpportunitySource',
+  'CompanySignal',
+  'ActivityEvent',
+  'AgentRun',
+  'SearchJob',
+  'Opportunity',
+  'ActivationToken',
+  'PasswordResetToken',
+  'Session',
+  'User',
+  'Company',
+];
+
+export async function resetDb(prisma) {
+  await prisma.$executeRawUnsafe(`TRUNCATE ${TABLES.map((t) => `"${t}"`).join(', ')} CASCADE`);
+}
+
+/** supertest agent with cookie jar + CSRF header helper. */
+export function client(app) {
+  const agent = request.agent(app);
+  const h = (req) => req.set('X-Requested-With', 'autopix');
+  return {
+    agent,
+    get: (url) => agent.get(url),
+    post: (url, body) => h(agent.post(url)).send(body ?? {}),
+    put: (url, body) => h(agent.put(url)).send(body ?? {}),
+    patch: (url, body) => h(agent.patch(url)).send(body ?? {}),
+    del: (url) => h(agent.delete(url)),
+  };
+}
+
+let seq = 0;
+export const PROFILE = {
+  cnpj: '11.222.333/0001-81',
+  services: ['Usinagem', 'Caldeiraria', 'Manutenção'],
+  products: ['Peças usinadas'],
+  idealCustomer: 'Indústrias de médio porte',
+  city: 'Joinville',
+  state: 'SC',
+  serviceLocations: ['Joinville - SC'],
+  serviceRadiusKm: 200,
+  averageTicket: 18000,
+  minimumDeal: 3000,
+  preferredIndustries: ['Indústria', 'Metalurgia'],
+  excludedIndustries: [],
+  keywords: ['manutenção preventiva'],
+};
+
+/** Run the onboarding up to a pending Pix charge. */
+export async function onboardToCheckout(app, { email } = {}) {
+  seq += 1;
+  const c = client(app);
+  const mail = email || `cliente${seq}-${Date.now()}@empresa.example`;
+  const start = await c.post('/api/onboarding/start', { name: 'Ana Souza', email: mail, companyName: `Empresa ${seq}` });
+  if (start.status !== 201) throw new Error(`start failed ${start.status} ${JSON.stringify(start.body)}`);
+  const step = await c.put('/api/onboarding/step', { step: 9, data: PROFILE, complete: true });
+  if (step.status !== 200) throw new Error(`step failed ${JSON.stringify(step.body)}`);
+  const pix = await c.post('/api/payments/pix');
+  if (pix.status !== 201) throw new Error(`pix failed ${JSON.stringify(pix.body)}`);
+  return { c, email: mail, payment: pix.body.payment, companyId: start.body.company.id };
+}
+
+/** Full happy path: onboarding → Pix → webhook → activation → password. */
+export async function createActiveUser(app) {
+  const ctx = await onboardToCheckout(app);
+  const sim = await ctx.c.post(`/api/payments/${ctx.payment.id}/simulate`);
+  if (sim.status !== 200) throw new Error(`simulate failed ${JSON.stringify(sim.body)}`);
+  const claim = await ctx.c.post(`/api/payments/${ctx.payment.id}/activation`);
+  if (!claim.body.token) throw new Error(`claim failed ${JSON.stringify(claim.body)}`);
+  const act = await ctx.c.post('/api/auth/activate', { token: claim.body.token, password: STRONG_PASSWORD });
+  if (act.status !== 200) throw new Error(`activate failed ${JSON.stringify(act.body)}`);
+  return { ...ctx, activationToken: claim.body.token };
+}
