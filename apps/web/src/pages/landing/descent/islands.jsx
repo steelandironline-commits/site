@@ -118,7 +118,7 @@ function Lamp({ p }) {
 }
 
 /** The TemPix mark as a floating 2.5D tile: navy base, teal top, dark check. */
-export function BrandTile(props) {
+function BrandTile(props) {
   const ch = useChapter();
   const ref = useRef();
   useFrame((state) => {
@@ -332,7 +332,7 @@ const COMPANIES = [
 const SWEEP_PERIOD = 6;
 const W_SWEEP = (Math.PI * 2) / SWEEP_PERIOD;
 
-export function Company({ kind }) {
+function Company({ kind }) {
   switch (kind) {
     case 'factory':
       return (

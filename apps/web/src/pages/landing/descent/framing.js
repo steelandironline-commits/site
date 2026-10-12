@@ -1,5 +1,3 @@
-export const DESKTOP_SCENE_SCALE = 1.6;
-
 /** Screen footprint of one island (tip to tip), in world units. */
 export const ISLAND_W = 22;
 export const ISLAND_H = 14.5;

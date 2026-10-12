@@ -32,9 +32,12 @@ function makeEvent(i) {
   return { id: `demo-${n}`, severity: 'INFO', isDemo: true, createdAt: new Date().toISOString(), ...item };
 }
 
-export function useDemoFeed({ enabled = true, interval = [1600, 2800], initial = 5 } = {}) {
+const FEED_INTERVAL = [5200, 8000];
+
+/** Calm pace: one new event every ~5–8 s, so each one can be read. */
+export function useDemoFeed({ enabled = true, interval = FEED_INTERVAL, initial = 5 } = {}) {
+  const [minMs, maxMs] = interval;
   const [events, setEvents] = useState(() => Array.from({ length: initial }, (_, i) => makeEvent(initial - 1 - i)));
-  const [latest, setLatest] = useState(null);
   const idx = useRef(initial);
   useEffect(() => {
     if (!enabled) return undefined;
@@ -43,13 +46,13 @@ export function useDemoFeed({ enabled = true, interval = [1600, 2800], initial =
       const e = makeEvent(idx.current);
       idx.current += 1;
       setEvents((prev) => [e, ...prev].slice(0, 14));
-      setLatest(e);
-      t = setTimeout(tick, interval[0] + Math.random() * (interval[1] - interval[0]));
+      t = setTimeout(tick, minMs + Math.random() * (maxMs - minMs));
     };
-    t = setTimeout(tick, 1200);
+    t = setTimeout(tick, 2500);
     return () => clearTimeout(t);
-  }, [enabled, interval]);
-  return { events, latest };
+    // Depend on the numbers, not the array: a new array each render restarted the timer.
+  }, [enabled, minMs, maxMs]);
+  return { events };
 }
 
 /** Fictional radar nodes for the landing hero (labelled DEMO). */

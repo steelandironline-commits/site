@@ -177,93 +177,18 @@
 
 .productStage {
   position: relative;
-  height: 340px;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
   background:
-    radial-gradient(70% 70% at 50% 46%, rgba(42, 209, 184, 0.16), transparent 72%),
-    linear-gradient(180deg, #11302f 0%, #0b1517 100%);
+    radial-gradient(60% 55% at 70% 50%, rgba(42, 209, 184, 0.16), transparent 72%),
+    radial-gradient(50% 50% at 15% 20%, rgba(83, 189, 235, 0.08), transparent 70%),
+    linear-gradient(180deg, #10292b 0%, #0b1517 100%);
 }
 
 @media (min-width: 960px) {
-  .productStage {
-    height: calc(400px * var(--desktop-scene-scale, 1.6));
-  }
-
   .values {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-}
-
-.productSteps {
-  position: absolute;
-  left: 14px;
-  bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  pointer-events: none;
-}
-
-.stepBars {
-  display: flex;
-  gap: 2px;
-}
-
-/* › › › › › — a light runs through them all the time; reached steps stay lit. */
-.stepBars i {
-  width: 9px;
-  height: 9px;
-  border-top: 2.5px solid rgba(255, 255, 255, 0.18);
-  border-right: 2.5px solid rgba(255, 255, 255, 0.18);
-  transform: rotate(45deg);
-  animation: chevron 1.2s ease-in-out infinite;
-}
-
-.stepBars .stepOn {
-  border-color: var(--step, var(--primary));
-  filter: drop-shadow(0 0 4px var(--step, var(--primary)));
-}
-
-@keyframes chevron {
-  0%,
-  100% {
-    opacity: 0.45;
-    translate: 0 0;
-  }
-  40% {
-    opacity: 1;
-    translate: 2px -2px;
-  }
-}
-
-.stepName {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  color: var(--step, var(--primary));
-  animation: stepIn 0.35s ease-out;
-}
-
-@keyframes stepIn {
-  from {
-    opacity: 0;
-    transform: translateX(-6px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stepBars i,
-  .stepName {
-    animation: none;
-  }
-}
-
-.flowPipeline {
-  flex: 1;
-  display: grid;
-  align-content: center;
-  min-height: 120px;
 }
 
 .flowHead {

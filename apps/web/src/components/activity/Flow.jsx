@@ -4,7 +4,6 @@ import { formatNumber } from '@autopix/shared';
 import s from './activity.module.css';
 
 /** Map an activity event type to the stage index it reaches. */
-const LANDING_STAGE = { SEARCH: 0, RESEARCH: 1, SIGNAL: 2, AGENT: 3, OPPORTUNITY: 4, SYSTEM: 0, PAYMENT: 0 };
 const BUSINESS_STAGE = { SEARCH: 1, RESEARCH: 1, SIGNAL: 2, AGENT: 2, OPPORTUNITY: 3, SYSTEM: 0, PAYMENT: 0 };
 
 function usePulses(latest, stageMap) {
@@ -25,42 +24,6 @@ function usePulses(latest, stageMap) {
   }, [latest, stageMap]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   return { pulses, lit };
-}
-
-/**
- * FONTE → PESQUISA → SINAL → NOTA → OPORTUNIDADE.
- * When an event happens, a pulse travels through the stages it touched.
- */
-export function PipelineFlow({ latest, stages = ['FONTE', 'PESQUISA', 'SINAL', 'NOTA', 'OPORTUNIDADE'], className }) {
-  const { pulses, lit } = usePulses(latest, LANDING_STAGE);
-  const reduce = useReducedMotion();
-  const pct = (i) => (i / (stages.length - 1)) * 100;
-  return (
-    <div className={`${s.pipeline} ${className || ''}`} role="img" aria-label={`Fluxo: ${stages.join(', ')}`}>
-      <div className={s.track}>
-        <span className={s.trackLine} />
-        <AnimatePresence>
-          {!reduce &&
-            pulses.map((p) => (
-              <motion.span
-                key={p.id}
-                className={s.pulse}
-                initial={{ left: '0%', opacity: 0 }}
-                animate={{ left: `${pct(p.to)}%`, opacity: [0, 1, 1, 0.6] }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.9, ease: [0.45, 0, 0.2, 1] }}
-              />
-            ))}
-        </AnimatePresence>
-        {stages.map((st, i) => (
-          <div key={st} className={`${s.stage} ${lit >= i ? s.stageLit : ''} ${lit === i ? s.stageHit : ''}`} style={{ left: `${pct(i)}%` }}>
-            <span className={s.stageNode} />
-            <span className={s.stageLabel}>{st}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 /**

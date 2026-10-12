@@ -187,7 +187,7 @@ function Nav() {
 
 /* -------------------------------------------------------------- product */
 function Product() {
-  const { events, latest } = useDemoFeed();
+  const { events } = useDemoFeed();
   const values = [
     { icon: Radar, title: 'Monitoramento contínuo', text: 'Agentes procuram empresas e sinais no mercado 24 horas por dia.' },
     { icon: Gauge, title: 'Nota de oportunidade', text: 'Cada oportunidade recebe uma nota de 0 a 100, com o motivo explicado.' },
@@ -207,7 +207,7 @@ function Product() {
             <header className={s.flowHead}>
               <span className="eyebrow">Como o TemPix encontra oportunidades</span>
             </header>
-            <ProductStage latest={latest} />
+            <ProductStage />
             <ul className={s.values}>
               {values.map(({ icon: Icon, title, text }) => (
                 <li key={title}>
