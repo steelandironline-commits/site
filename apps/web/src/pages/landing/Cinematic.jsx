@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion, useMotionValueEvent, useScroll, useSpring, useTransform } from 'framer-motion';
-import { ArrowRight, HardHat, ShieldCheck, Truck, Wrench } from 'lucide-react';
+import { ArrowRight, ChevronDown, HardHat, ShieldCheck, Truck, Wrench } from 'lucide-react';
 import { Button, DemoBadge } from '../../components/ui/ui.jsx';
 import { usePrefersReducedMotion } from '../../lib/hooks.js';
 import s from './cinematic.module.css';
@@ -19,14 +19,16 @@ const ACTS = [
 
 // Scroll windows (fractions of the sequence) for each scene.
 // Act I is already on screen at the top of the page (no empty title card).
+// The opening phrase is already fully visible at the top of the page.
 const W = {
-  transporte: [-0.02, 0, 0.2, 0.26],
-  pessoas: [0.24, 0.3, 0.48, 0.54],
-  servicos: [0.52, 0.58, 0.74, 0.8],
-  finale: [0.78, 0.86, 1, 1.01],
+  intro: [-0.02, 0, 0.08, 0.13],
+  transporte: [0.11, 0.16, 0.3, 0.36],
+  pessoas: [0.34, 0.4, 0.54, 0.6],
+  servicos: [0.58, 0.64, 0.76, 0.82],
+  finale: [0.8, 0.88, 1, 1.01],
 };
-// Where each act is fully visible — the scroll dot jumps between these.
-const STOPS = [0.39, 0.66, 0.93];
+// Where each scene is fully visible — the scroll button jumps between these.
+const STOPS = [0.23, 0.47, 0.7, 0.94];
 
 const ROUTE = 'M70 300 C 170 290, 210 210, 300 200 S 450 150, 520 110 S 640 60, 700 56';
 
@@ -91,9 +93,22 @@ function RailItem({ act, progress, w }) {
 }
 
 /* ------------------------------------------------------------- scenes */
+function Intro({ progress }) {
+  const st = useWindow(progress, W.intro);
+  return (
+    <motion.div className={s.scene} style={st}>
+      <h1 className={s.introTitle}>
+        Tudo que move <br />
+        <em>o seu negócio.</em>
+      </h1>
+      <p className={s.introSub}>Transporte · Pessoas · Serviços</p>
+    </motion.div>
+  );
+}
+
 function Transporte({ progress }) {
   const st = useWindow(progress, W.transporte);
-  const draw = useTransform(progress, [0, 0.22], [0.04, 1]);
+  const draw = useTransform(progress, [0.13, 0.3], [0, 1]);
   const pathRef = useRef(null);
   const truckRef = useRef(null);
   const kmRef = useRef(null);
@@ -155,7 +170,7 @@ function Transporte({ progress }) {
 
 function Pessoas({ progress }) {
   const st = useWindow(progress, W.pessoas);
-  const link = useTransform(progress, [0.26, 0.36], [0, 1]);
+  const link = useTransform(progress, [0.38, 0.48], [0, 1]);
   return (
     <motion.div className={s.scene} style={st}>
       <div className={s.stage}>
@@ -214,7 +229,7 @@ function Servicos({ progress }) {
 }
 
 function OrderCard({ o, i, progress }) {
-  const start = 0.54 + i * 0.04;
+  const start = 0.62 + i * 0.035;
   const opacity = useTransform(progress, [start, start + 0.04], [0, 1]);
   const x = useTransform(progress, [start, start + 0.05], [i % 2 ? 60 : -60, 0]);
   return (
@@ -233,7 +248,7 @@ function OrderCard({ o, i, progress }) {
 
 function Finale({ progress }) {
   const st = useWindow(progress, W.finale);
-  const spread = useTransform(progress, [0.78, 0.88], [1, 0]);
+  const spread = useTransform(progress, [0.8, 0.9], [1, 0]);
   const tx = useTransform(spread, (v) => v * 140);
   const negTx = useTransform(tx, (v) => -v);
   const pointerEvents = useTransform(st.opacity, (v) => (v > 0.6 ? 'auto' : 'none'));
@@ -308,7 +323,7 @@ export default function Cinematic() {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, mass: 0.4 });
-  const cueOpacity = useTransform(progress, [0.8, 0.86], [1, 0]);
+  const cueOpacity = useTransform(progress, [0.82, 0.88], [1, 0]);
   const cueEvents = useTransform(cueOpacity, (v) => (v > 0.4 ? 'auto' : 'none'));
 
   /** Scroll smoothly to the next act (or past the prologue on the last one). */
@@ -341,14 +356,15 @@ export default function Cinematic() {
         </div>
         <ActRail progress={progress} />
 
+        <Intro progress={progress} />
         <Transporte progress={progress} />
         <Pessoas progress={progress} />
         <Servicos progress={progress} />
         <Finale progress={progress} />
 
-        <motion.button type="button" className={s.scrollCue} style={{ opacity: cueOpacity, pointerEvents: cueEvents }} onClick={next} aria-label="Avançar para a próxima cena">
-          <span className={s.mouse} aria-hidden="true">
-            <i className={s.wheel} />
+        <motion.button type="button" className={s.scrollCue} style={{ opacity: cueOpacity, pointerEvents: cueEvents }} onClick={next} aria-label="Descer para a próxima cena">
+          <span className={s.ball} aria-hidden="true">
+            <ChevronDown size={22} strokeWidth={2.4} />
           </span>
         </motion.button>
       </div>
