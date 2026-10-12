@@ -125,7 +125,7 @@ export default function OpportunityDetail() {
         </div>
         <div className={s.detailScore}>
           <div style={{ textAlign: 'right' }}>
-            <p className="eyebrow">Opportunity Score</p>
+            <p className="eyebrow">Nota de oportunidade</p>
             <p className="mono" style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
               confiança {Math.round(o.confidence * 100)}%
             </p>

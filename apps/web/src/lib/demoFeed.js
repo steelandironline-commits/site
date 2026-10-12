@@ -3,21 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 
 const SCRIPT = [
-  { type: 'SEARCH', title: 'Analisando 24 empresas', source: 'Radar Agent' },
-  { type: 'RESEARCH', title: 'Website encontrado', description: 'Indústria Porto Atlântico', source: 'Research Agent' },
-  { type: 'RESEARCH', title: 'Perfil comercial identificado', description: 'Metalurgia · Joinville/SC', source: 'Research Agent' },
-  { type: 'SEARCH', title: 'Nova fonte analisada', description: 'Diário regional de negócios', source: 'Radar Agent' },
-  { type: 'SIGNAL', title: 'Possível demanda detectada', description: 'Cotação aberta para manutenção industrial', source: 'Signal Agent', severity: 'SUCCESS' },
-  { type: 'SIGNAL', title: 'Expansão operacional identificada', description: 'Nova unidade fabril anunciada', source: 'Signal Agent', severity: 'SUCCESS' },
-  { type: 'AGENT', title: 'Compatibilidade calculada: 91%', source: 'Scoring Agent' },
-  { type: 'OPPORTUNITY', title: 'Oportunidade criada', description: 'Estimated deal: R$18.000', source: 'Sales Intelligence', severity: 'SUCCESS' },
-  { type: 'OPPORTUNITY', title: 'Lead classificado como alta prioridade', source: 'Scoring Agent', severity: 'SUCCESS' },
-  { type: 'RESEARCH', title: 'Contato comercial público identificado', description: 'comercial@ · site oficial', source: 'Research Agent' },
-  { type: 'OPPORTUNITY', title: 'Abordagem comercial sugerida', source: 'Sales Intelligence' },
-  { type: 'SEARCH', title: 'Analisando 17 empresas', source: 'Radar Agent' },
-  { type: 'SIGNAL', title: 'Obra de ampliação detectada', description: 'Licença de instalação publicada', source: 'Signal Agent', severity: 'SUCCESS' },
-  { type: 'AGENT', title: 'Compatibilidade calculada: 86%', source: 'Scoring Agent' },
-  { type: 'OPPORTUNITY', title: 'Oportunidade criada', description: 'Estimated deal: R$32.000', source: 'Sales Intelligence', severity: 'SUCCESS' },
+  { type: 'SEARCH', title: 'Analisando 24 empresas', source: 'Agente Radar' },
+  { type: 'RESEARCH', title: 'Site encontrado', description: 'Indústria Porto Atlântico', source: 'Agente de Pesquisa' },
+  { type: 'RESEARCH', title: 'Perfil comercial identificado', description: 'Metalurgia · Joinville/SC', source: 'Agente de Pesquisa' },
+  { type: 'SEARCH', title: 'Nova fonte analisada', description: 'Diário regional de negócios', source: 'Agente Radar' },
+  { type: 'SIGNAL', title: 'Possível demanda detectada', description: 'Cotação aberta para manutenção industrial', source: 'Agente de Sinais', severity: 'SUCCESS' },
+  { type: 'SIGNAL', title: 'Expansão operacional identificada', description: 'Nova unidade fabril anunciada', source: 'Agente de Sinais', severity: 'SUCCESS' },
+  { type: 'AGENT', title: 'Compatibilidade calculada: 91%', source: 'Agente de Pontuação' },
+  { type: 'OPPORTUNITY', title: 'Oportunidade criada', description: 'Negócio estimado: R$ 18.000', source: 'Inteligência Comercial', severity: 'SUCCESS' },
+  { type: 'OPPORTUNITY', title: 'Cliente classificado como alta prioridade', source: 'Agente de Pontuação', severity: 'SUCCESS' },
+  { type: 'RESEARCH', title: 'Contato comercial público identificado', description: 'comercial@ · site oficial', source: 'Agente de Pesquisa' },
+  { type: 'OPPORTUNITY', title: 'Abordagem comercial sugerida', source: 'Inteligência Comercial' },
+  { type: 'SEARCH', title: 'Analisando 17 empresas', source: 'Agente Radar' },
+  { type: 'SIGNAL', title: 'Obra de ampliação detectada', description: 'Licença de instalação publicada', source: 'Agente de Sinais', severity: 'SUCCESS' },
+  { type: 'AGENT', title: 'Compatibilidade calculada: 86%', source: 'Agente de Pontuação' },
+  { type: 'OPPORTUNITY', title: 'Oportunidade criada', description: 'Negócio estimado: R$ 32.000', source: 'Inteligência Comercial', severity: 'SUCCESS' },
 ];
 
 let n = 0;

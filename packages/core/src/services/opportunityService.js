@@ -126,7 +126,7 @@ export class OpportunityService {
         type: 'OPPORTUNITY',
         title: 'Abordagem comercial sugerida',
         description: current.targetCompanyName,
-        source: 'Sales Intelligence',
+        source: 'Inteligência Comercial',
         isDemo: current.isDemo,
       });
     }

@@ -7,10 +7,10 @@ const MODE_LABEL = { live: 'Ao vivo', polling: 'Atualizando', connecting: 'Conec
 
 /**
  * ATIVIDADE — live list of events.
- *  mode="demo": landing showcase, always labelled DEMO.
+ *  mode="demo": landing showcase (badge optional: `badge={false}` on the landing).
  *  otherwise:   only events stored in the database (REAL).
  */
-export function ActivityStream({ events, mode = 'live', demo = false, loading, title = 'Atividade', max = 12, compact, empty, className }) {
+export function ActivityStream({ events, mode = 'live', demo = false, badge = true, loading, title = 'Atividade', max = 12, compact, empty, className }) {
   return (
     <section className={`${s.stream} ${className || ''}`} aria-label={title}>
       <header className={s.streamHead}>
@@ -19,7 +19,7 @@ export function ActivityStream({ events, mode = 'live', demo = false, loading, t
           <h2 className="eyebrow">{title}</h2>
         </div>
         <div className={s.streamBadges}>
-          {demo ? <DemoBadge /> : <Badge tone={mode === 'live' ? 'primary' : 'neutral'}>{MODE_LABEL[mode] || mode}</Badge>}
+          {badge && (demo ? <DemoBadge /> : <Badge tone={mode === 'live' ? 'primary' : 'neutral'}>{MODE_LABEL[mode] || mode}</Badge>)}
         </div>
       </header>
       <div className={s.streamList} aria-live="polite" aria-relevant="additions">

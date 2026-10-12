@@ -87,7 +87,7 @@
 
 /* ---------------- Pipeline (landing) ---------------- */
 .pipeline {
-  padding: 22px 28px 34px;
+  padding: 22px 52px 34px;
 }
 
 .track {
@@ -170,7 +170,7 @@
 
 @media (max-width: 520px) {
   .pipeline {
-    padding: 20px 18px 34px;
+    padding: 20px 36px 34px;
   }
   .stageLabel {
     font-size: 8.5px;

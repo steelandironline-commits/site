@@ -108,7 +108,7 @@ export class AgentOrchestrator {
         type: 'SEARCH',
         title: 'Busca iniciada',
         description: `Fontes: ${this.discovery.adapters.map((a) => a.name).join(', ')}`,
-        source: 'Radar Agent',
+        source: 'Agente Radar',
         metadata: { trigger: job.trigger, configVersion: profile.searchConfigVersion },
       });
       const result = await this.discovery.discover(profile, { limit: isDemo ? 6 : 15 });
@@ -119,7 +119,7 @@ export class AgentOrchestrator {
           type: 'AGENT',
           title: `Fonte indisponível: ${err.adapter}`,
           description: 'A busca continuou com as demais fontes.',
-          source: 'Radar Agent',
+          source: 'Agente Radar',
           severity: 'WARNING',
           pace: 0,
         });
@@ -128,7 +128,7 @@ export class AgentOrchestrator {
         agentKey: 'RADAR',
         type: 'SEARCH',
         title: `Analisando ${candidates.length} empresas`,
-        source: 'Radar Agent',
+        source: 'Agente Radar',
         metadata: { candidates: candidates.length },
       });
       await this.#finishRun(radarRun, {
@@ -173,7 +173,7 @@ export class AgentOrchestrator {
             type: 'RESEARCH',
             title: 'Website analisado',
             description: label,
-            source: 'Research Agent',
+            source: 'Agente de Pesquisa',
             metadata: { url: candidate.website },
           });
         }
@@ -183,7 +183,7 @@ export class AgentOrchestrator {
             type: 'RESEARCH',
             title: 'Perfil comercial identificado',
             description: `${label} · ${research.industry}${research.city ? ` · ${research.city}/${research.state || ''}` : ''}`,
-            source: 'Research Agent',
+            source: 'Agente de Pesquisa',
             pace: 0.6,
           });
         }
@@ -193,7 +193,7 @@ export class AgentOrchestrator {
             type: 'RESEARCH',
             title: 'Contato comercial público identificado',
             description: label,
-            source: 'Research Agent',
+            source: 'Agente de Pesquisa',
             pace: 0.6,
           });
         }
@@ -208,7 +208,7 @@ export class AgentOrchestrator {
             type: 'SIGNAL',
             title: s.title,
             description: `${label}: ${s.description}`,
-            source: 'Signal Agent',
+            source: 'Agente de Sinais',
             severity: s.strength >= 0.8 ? 'SUCCESS' : 'INFO',
             metadata: { signalType: s.type, strength: s.strength },
           });
@@ -222,7 +222,7 @@ export class AgentOrchestrator {
           type: 'AGENT',
           title: `Compatibilidade calculada: ${scored.score}%`,
           description: label,
-          source: 'Scoring Agent',
+          source: 'Agente de Pontuação',
           metadata: { score: scored.score, breakdown: scored.breakdown, disqualified: scored.disqualified },
           pace: 0.6,
         });
@@ -353,7 +353,7 @@ export class AgentOrchestrator {
             jobId: job.id,
             title: 'Oportunidade criada',
             description: `${label} · ${formatBRL(scored.estimate.min)} – ${formatBRL(scored.estimate.max)}`,
-            source: 'Sales Intelligence',
+            source: 'Inteligência Comercial',
             severity: 'SUCCESS',
             metadata: { score: scored.score, estimatedMax: scored.estimate.max, priority: scored.priority },
           },
@@ -374,7 +374,7 @@ export class AgentOrchestrator {
               jobId: job.id,
               title: `Lead classificado como ${PRIORITY_LABELS.HIGH.toLowerCase()} prioridade`,
               description: label,
-              source: 'Scoring Agent',
+              source: 'Agente de Pontuação',
               severity: 'SUCCESS',
             },
           });
@@ -386,7 +386,7 @@ export class AgentOrchestrator {
           opportunityId: opportunity.id,
           title: 'Abordagem comercial sugerida',
           description: label,
-          source: 'Sales Intelligence',
+          source: 'Inteligência Comercial',
           pace: 0.6,
         });
       }

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PRICING, formatCents } from '@autopix/shared';
 import { Logo } from '../../components/brand/Logo.jsx';
-import { Button, DemoBadge, Dialog, ScoreRing } from '../../components/ui/ui.jsx';
+import { Button, Dialog, ScoreRing } from '../../components/ui/ui.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import { PipelineFlow } from '../../components/activity/Flow.jsx';
 import { useDemoFeed } from '../../lib/demoFeed.js';
@@ -190,7 +190,7 @@ function Product() {
   const { events, latest } = useDemoFeed();
   const values = [
     { icon: Radar, title: 'Monitoramento contínuo', text: 'Agentes procuram empresas e sinais no mercado 24 horas por dia.' },
-    { icon: Gauge, title: 'Opportunity Score', text: 'Cada oportunidade recebe uma nota explicável de 0 a 100.' },
+    { icon: Gauge, title: 'Nota de oportunidade', text: 'Cada oportunidade recebe uma nota de 0 a 100, com o motivo explicado.' },
     { icon: MessageSquareText, title: 'Abordagem pronta', text: 'Sugestões de contato com base no sinal detectado.' },
   ];
   return (
@@ -205,10 +205,9 @@ function Product() {
         <div className={s.productGrid}>
           <motion.div className={s.flowCard} {...reveal}>
             <header className={s.flowHead}>
-              <span className="eyebrow">Pipeline de inteligência comercial</span>
-              <DemoBadge />
+              <span className="eyebrow">Como o TemPix encontra oportunidades</span>
             </header>
-            <PipelineFlow latest={latest} />
+            <PipelineFlow latest={latest} className={s.flowPipeline} />
             <ul className={s.values}>
               {values.map(({ icon: Icon, title, text }) => (
                 <li key={title}>
@@ -222,7 +221,7 @@ function Product() {
             </ul>
           </motion.div>
           <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.1 }}>
-            <ActivityStream events={events} mode="demo" demo title="Atividade" max={8} className={s.landingStream} />
+            <ActivityStream events={events} mode="demo" demo badge={false} title="Atividade" max={8} className={s.landingStream} />
           </motion.div>
         </div>
       </div>
@@ -239,7 +238,7 @@ function LiveDemo() {
         <motion.header className={s.sectionHead} {...reveal}>
           <p className="eyebrow">Oportunidades</p>
           <h2 id="demo-title">É isso que chega ao seu painel.</h2>
-          <p>Empresa fictícia, para demonstração.</p>
+          <p>Uma oportunidade encontrada pelos agentes, com o motivo e a abordagem sugerida.</p>
         </motion.header>
         <motion.div className={s.preview} {...reveal}>
           <div className={s.previewChrome} aria-hidden="true">
@@ -247,7 +246,6 @@ function LiveDemo() {
             <span />
             <span />
             <p className="mono">tempix / app / oportunidades</p>
-            <DemoBadge />
           </div>
           <div className={s.previewBody}>
             <div className={s.previewMain}>
@@ -258,13 +256,13 @@ function LiveDemo() {
                   <p className={s.previewMeta}>Indústria · Joinville / SC</p>
                 </div>
                 <div className={s.previewScore}>
-                  <span className="eyebrow">Match</span>
+                  <span className="eyebrow">Compatível</span>
                   <ScoreRing score={94} size={72} />
                 </div>
               </div>
               <dl className={s.previewFacts}>
                 <div>
-                  <dt>Signal</dt>
+                  <dt>Sinal</dt>
                   <dd>Nova expansão operacional.</dd>
                 </div>
                 <div>
@@ -280,7 +278,7 @@ function LiveDemo() {
                   <dd className={s.previewValue}>R$20.000 – R$60.000</dd>
                 </div>
                 <div>
-                  <dt>Status</dt>
+                  <dt>Situação</dt>
                   <dd>
                     <span className={s.previewHigh}>● ALTA PRIORIDADE</span>
                   </dd>

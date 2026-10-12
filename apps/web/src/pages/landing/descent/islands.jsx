@@ -322,11 +322,11 @@ export function CityIsland() {
 
 /* ================================================================= 1 · demanda */
 const COMPANIES = [
-  { kind: 'factory', match: { text: 'Precisa de frete', sub: 'Match 94 · Joinville/SC' } },
+  { kind: 'factory', match: { text: 'Precisa de frete', sub: '94% compatível · Joinville/SC' } },
   { kind: 'office' },
-  { kind: 'warehouse', match: { text: 'Pediu orçamento', sub: 'Match 91 · manutenção' } },
+  { kind: 'warehouse', match: { text: 'Pediu orçamento', sub: '91% compatível · manutenção' } },
   { kind: 'store' },
-  { kind: 'site', match: { text: 'Vaga aberta', sub: 'Match 88 · 2 operadores' } },
+  { kind: 'site', match: { text: 'Vaga aberta', sub: '88% compatível · 2 operadores' } },
   { kind: 'silo' },
 ];
 const SWEEP_PERIOD = 6;
@@ -1400,7 +1400,7 @@ function dashboardTexture() {
 }
 
 const NOTES = [
-  { text: 'Nova oportunidade', sub: 'Match 94 · indústria', accent: '#2ad1b8', x: -2.7 },
+  { text: 'Nova oportunidade', sub: '94% compatível · indústria', accent: '#2ad1b8', x: -2.7 },
   { text: 'Carga entregue', sub: 'Campinas · 14:40', accent: '#ffb35c', x: 2.7 },
   { text: 'Pix confirmado', sub: 'R$ 4.800,00', accent: '#4fe0c9', x: -2.4 },
   { text: 'Contratação registrada', sub: 'operador logístico', accent: '#5fe39a', x: 2.4 },

@@ -114,32 +114,32 @@ export const SIGNAL_TYPE_LABELS = {
 export const AGENTS = [
   {
     key: 'RADAR',
-    name: 'Radar Agent',
-    title: 'RADAR AGENT',
+    name: 'Agente Radar',
+    title: 'AGENTE RADAR',
     description: 'Procura empresas e oportunidades compatíveis com o seu perfil.',
   },
   {
     key: 'RESEARCH',
-    name: 'Research Agent',
-    title: 'RESEARCH AGENT',
+    name: 'Agente de Pesquisa',
+    title: 'AGENTE DE PESQUISA',
     description: 'Pesquisa as empresas encontradas em fontes públicas.',
   },
   {
     key: 'SIGNAL',
-    name: 'Signal Agent',
-    title: 'SIGNAL AGENT',
+    name: 'Agente de Sinais',
+    title: 'AGENTE DE SINAIS',
     description: 'Detecta sinais comerciais: expansão, obras, compras, contratações.',
   },
   {
     key: 'SCORING',
-    name: 'Scoring Agent',
-    title: 'SCORING AGENT',
+    name: 'Agente de Pontuação',
+    title: 'AGENTE DE PONTUAÇÃO',
     description: 'Calcula a compatibilidade comercial de cada oportunidade.',
   },
   {
     key: 'SALES',
-    name: 'Sales Intelligence',
-    title: 'SALES INTELLIGENCE',
+    name: 'Inteligência Comercial',
+    title: 'INTELIGÊNCIA COMERCIAL',
     description: 'Cria recomendações de abordagem comercial.',
   },
 ];

@@ -175,6 +175,13 @@
   overflow: hidden;
 }
 
+.flowPipeline {
+  flex: 1;
+  display: grid;
+  align-content: center;
+  min-height: 120px;
+}
+
 .flowHead {
   display: flex;
   justify-content: space-between;

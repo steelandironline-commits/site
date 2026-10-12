@@ -28,15 +28,15 @@ function usePulses(latest, stageMap) {
 }
 
 /**
- * SOURCE → RESEARCH → SIGNAL → SCORE → OPPORTUNITY.
+ * FONTE → PESQUISA → SINAL → NOTA → OPORTUNIDADE.
  * When an event happens, a pulse travels through the stages it touched.
  */
-export function PipelineFlow({ latest, stages = ['SOURCE', 'RESEARCH', 'SIGNAL', 'SCORE', 'OPPORTUNITY'] }) {
+export function PipelineFlow({ latest, stages = ['FONTE', 'PESQUISA', 'SINAL', 'NOTA', 'OPORTUNIDADE'], className }) {
   const { pulses, lit } = usePulses(latest, LANDING_STAGE);
   const reduce = useReducedMotion();
   const pct = (i) => (i / (stages.length - 1)) * 100;
   return (
-    <div className={s.pipeline} role="img" aria-label={`Fluxo: ${stages.join(', ')}`}>
+    <div className={`${s.pipeline} ${className || ''}`} role="img" aria-label={`Fluxo: ${stages.join(', ')}`}>
       <div className={s.track}>
         <span className={s.trackLine} />
         <AnimatePresence>
