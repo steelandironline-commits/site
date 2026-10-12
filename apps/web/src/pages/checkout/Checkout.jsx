@@ -195,7 +195,7 @@ export default function Checkout() {
 
       <main className={s.grid}>
         {/* Summary (left on desktop, below on mobile) */}
-        <section className={`${s.summary} ${oneTime ? s.summaryGold : ''}`} aria-labelledby="summary-title">
+        <section className={`${s.summary} ${oneTime ? `${s.summaryGold} gold-icons` : ''}`} aria-labelledby="summary-title">
           <p className="eyebrow">{oneTime ? 'Taxa de cadastro · empresa' : 'Assinatura'}</p>
           <h1 id="summary-title" className={s.planName}>
             TEMPIX

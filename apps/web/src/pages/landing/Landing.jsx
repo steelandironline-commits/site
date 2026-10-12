@@ -374,7 +374,7 @@ function Pricing() {
                 Cadastro único de {formatCents(signup)}: menos de R$ {perDay(signup)} por dia no primeiro ano, e nada de mensalidade depois.
               </p>
             </div>
-            <ul className={s.priceList}>
+            <ul className={`${s.priceList} gold-icons`}>
               {PRICING.company.map((f) => (
                 <li key={f}>
                   <Check size={15} aria-hidden="true" /> {f}

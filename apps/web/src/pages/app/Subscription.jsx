@@ -188,7 +188,7 @@ function CommissionPlan() {
         </div>
       </header>
       <div className={s.subGrid}>
-        <section className={`${s.planCard} ${company ? s.planGold : ''}`} aria-labelledby="plan">
+        <section className={`${s.planCard} ${company ? `${s.planGold} gold-icons` : ''}`} aria-labelledby="plan">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <h2 id="plan" className="mono" style={{ letterSpacing: '0.2em', fontSize: 16 }}>
               TEMPIX

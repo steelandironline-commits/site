@@ -188,3 +188,10 @@ label {
     -webkit-user-select: text;
   }
 }
+
+/* Premium gold line icons: strokes painted with the same gold as the premium frames. */
+.gold-icons svg.lucide {
+  color: #e8c766;
+  stroke: url(#tempix-gold) #e8c766;
+  filter: drop-shadow(0 0 3px rgba(232, 199, 102, 0.35));
+}
