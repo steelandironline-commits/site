@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Check, QrCode } from 'lucide-react';
 import { PLAN, SUBSCRIPTION_STATUS_LABELS, formatCents } from '@autopix/shared';
-import { post } from '../../lib/api.js';
+import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useSession } from '../../lib/session.jsx';
 import { useToast } from '../../lib/toast.jsx';
@@ -24,11 +24,11 @@ export default function Subscription() {
     document.title = 'Assinatura — AutoPix';
   }, []);
 
-  const act = async (path, message) => {
+  const act = async (action, message) => {
     setBusy(true);
     try {
-      const res = await post(path);
-      sub.setData(res);
+      const { result } = await executeAction(action);
+      sub.setData(result);
       toast.success(message);
       setConfirm(false);
       refresh();
@@ -122,7 +122,7 @@ export default function Subscription() {
                 </Button>
               )}
               {data?.status === 'ACTIVE' && data.cancelAtPeriodEnd && (
-                <Button variant="secondary" loading={busy} onClick={() => act('/api/subscription/resume', 'Cancelamento revertido.')}>
+                <Button variant="secondary" loading={busy} onClick={() => act('RESUME_SUBSCRIPTION', 'Cancelamento revertido.')}>
                   Manter assinatura
                 </Button>
               )}
@@ -161,7 +161,7 @@ export default function Subscription() {
             <Button variant="ghost" onClick={() => setConfirm(false)}>
               Voltar
             </Button>
-            <Button variant="danger" loading={busy} onClick={() => act('/api/subscription/cancel', 'Cancelamento agendado.')}>
+            <Button variant="danger" loading={busy} onClick={() => act('CANCEL_SUBSCRIPTION', 'Cancelamento agendado.')}>
               Confirmar cancelamento
             </Button>
           </>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useOutletContext, useParams } from 'react-router-dom';
 import { ArrowLeft, Building2, Check, Copy, ExternalLink, Globe, Mail, MapPin, Phone, RefreshCw, ShieldCheck } from 'lucide-react';
 import { OPPORTUNITY_STATUSES, OPPORTUNITY_STATUS_LABELS, formatRange } from '@autopix/shared';
-import { patch } from '../../lib/api.js';
+import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
@@ -45,11 +45,11 @@ export default function OpportunityDetail() {
     if (stream.latest?.opportunityId === id) reload();
   }, [stream.latest, id, reload]);
 
-  const save = async (body, kind, message) => {
+  const save = async (action, input, kind, message) => {
     setSaving(kind);
     try {
-      const res = await patch(`/api/opportunities/${id}`, body);
-      setData(res);
+      const { result } = await executeAction(action, { id, ...input });
+      setData({ opportunity: result.opportunity });
       toast.success(message);
     } catch (err) {
       toast.error(err.message);
@@ -200,7 +200,7 @@ export default function OpportunityDetail() {
                     Copiar
                   </Button>
                 )}
-                <Button size="sm" variant="secondary" icon={RefreshCw} loading={saving === 'approach'} onClick={() => save({ generateApproach: true }, 'approach', 'Nova abordagem gerada.')}>
+                <Button size="sm" variant="secondary" icon={RefreshCw} loading={saving === 'approach'} onClick={() => save('GENERATE_APPROACH', {}, 'approach', 'Nova abordagem gerada.')}>
                   {o.suggestedApproach ? 'Gerar outra' : 'Gerar abordagem'}
                 </Button>
               </div>
@@ -229,7 +229,7 @@ export default function OpportunityDetail() {
             </h2>
             <Field label="Etapa do funil">
               {(a) => (
-                <Select {...a} value={o.status} disabled={saving === 'status'} onChange={(e) => save({ status: e.target.value }, 'status', 'Status atualizado.')}>
+                <Select {...a} value={o.status} disabled={saving === 'status'} onChange={(e) => save('SET_OPPORTUNITY_STATUS', { status: e.target.value }, 'status', 'Status atualizado.')}>
                   {OPPORTUNITY_STATUSES.map((st) => (
                     <option key={st} value={st}>
                       {OPPORTUNITY_STATUS_LABELS[st]}
@@ -243,7 +243,7 @@ export default function OpportunityDetail() {
                 {(a) => <Textarea {...a} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Registre contatos, combinados e próximos passos." maxLength={10000} />}
               </Field>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-                <Button size="sm" variant="secondary" disabled={notes === (o.notes || '')} loading={saving === 'notes'} onClick={() => save({ notes: notes || null }, 'notes', 'Notas salvas.')}>
+                <Button size="sm" variant="secondary" disabled={notes === (o.notes || '')} loading={saving === 'notes'} onClick={() => save('UPDATE_OPPORTUNITY_NOTES', { notes: notes || null }, 'notes', 'Notas salvas.')}>
                   Salvar notas
                 </Button>
               </div>

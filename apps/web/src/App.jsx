@@ -19,6 +19,13 @@ const Agents = lazy(() => import('./pages/app/Agents.jsx'));
 const Company = lazy(() => import('./pages/app/Company.jsx'));
 const Subscription = lazy(() => import('./pages/app/Subscription.jsx'));
 const Settings = lazy(() => import('./pages/app/Settings.jsx'));
+const Payments = lazy(() => import('./pages/app/Payments.jsx'));
+const PaymentDetail = lazy(() => import('./pages/app/PaymentDetail.jsx'));
+const Freight = lazy(() => import('./pages/app/Freight.jsx'));
+const FreightMatchDetail = lazy(() => import('./pages/app/Freight.jsx').then((m) => ({ default: m.FreightMatchDetail })));
+const Workforce = lazy(() => import('./pages/app/Workforce.jsx'));
+const WorkforceMatchDetail = lazy(() => import('./pages/app/Workforce.jsx').then((m) => ({ default: m.WorkforceMatchDetail })));
+const ConfirmChallenge = lazy(() => import('./pages/app/ConfirmChallenge.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 function ScrollToTop() {
@@ -52,6 +59,13 @@ export default function App() {
             <Route path="company" element={<Company />} />
             <Route path="subscription" element={<Subscription />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="payments/:id" element={<PaymentDetail />} />
+            <Route path="freight" element={<Freight />} />
+            <Route path="freight/matches/:id" element={<FreightMatchDetail />} />
+            <Route path="workforce" element={<Workforce />} />
+            <Route path="workforce/matches/:id" element={<WorkforceMatchDetail />} />
+            <Route path="confirm/:id" element={<ConfirmChallenge />} />
             <Route path="*" element={<Navigate to="/app" replace />} />
           </Route>
           <Route path="*" element={<NotFound />} />

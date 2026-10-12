@@ -1,9 +1,15 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Navigate, useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity as ActivityIcon,
+  ArrowLeft,
   Building2,
+  Download,
+  HardHat,
+  RefreshCw,
+  Truck,
+  Wallet,
   Cpu,
   CreditCard,
   LayoutDashboard,
@@ -18,7 +24,9 @@ import { SUBSCRIPTION_STATUS_LABELS } from '@autopix/shared';
 import { useSession } from '../../lib/session.jsx';
 import { useActivityStream } from '../../lib/activityStream.js';
 import { Logo } from '../../components/brand/Logo.jsx';
-import { DemoBadge, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Button, DemoBadge, SkeletonCard } from '../../components/ui/ui.jsx';
+import { useInstallPrompt, useServiceWorkerUpdate } from '../../lib/pwa.js';
+import { safeStorage, useIsMobile } from '../../lib/hooks.js';
 import { PageLoader } from '../PageLoader.jsx';
 import s from './app.module.css';
 
@@ -27,12 +35,68 @@ const NAV = [
   { to: '/app/radar', label: 'Radar', icon: Radar },
   { to: '/app/opportunities', label: 'Oportunidades', icon: Target },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
+  { to: '/app/payments', label: 'Pagamentos', icon: Wallet },
+  { to: '/app/freight', label: 'Cargas', icon: Truck },
+  { to: '/app/workforce', label: 'Equipes', icon: HardHat },
   { to: '/app/agents', label: 'Agentes', icon: Cpu },
   { to: '/app/company', label: 'Empresa', icon: Building2 },
   { to: '/app/subscription', label: 'Assinatura', icon: CreditCard },
   { to: '/app/settings', label: 'Configurações', icon: Settings },
 ];
-const MOBILE_TABS = NAV.slice(0, 4);
+const MOBILE_TABS = [NAV[0], NAV[2], NAV[3], NAV[4]];
+const MORE = NAV.filter((n) => !MOBILE_TABS.includes(n));
+
+/** Deep pages get a native-style back header on mobile. */
+const BACK = [
+  [/^\/app\/opportunities\/[^/]+$/, '/app/opportunities', 'Oportunidades'],
+  [/^\/app\/payments\/[^/]+$/, '/app/payments', 'Pagamentos'],
+  [/^\/app\/freight\/matches\/[^/]+$/, '/app/freight', 'Cargas'],
+  [/^\/app\/workforce\/matches\/[^/]+$/, '/app/workforce', 'Equipes'],
+  [/^\/app\/confirm\/[^/]+$/, '/app', 'Painel'],
+];
+
+function InstallBanner() {
+  const install = useInstallPrompt();
+  const storage = safeStorage();
+  const [dismissed, setDismissed] = useState(() => storage?.getItem('autopix:install-dismissed') === '1');
+  if (install.installed || dismissed || (!install.canPrompt && !install.iosInstructions)) return null;
+  const close = () => {
+    try {
+      storage?.setItem('autopix:install-dismissed', '1');
+    } catch {
+      /* ignore */
+    }
+    setDismissed(true);
+  };
+  return (
+    <div className={s.banner} role="region" aria-label="Instalar aplicativo">
+      <Download size={16} aria-hidden="true" />
+      <p>{install.canPrompt ? 'Instale o AutoPix para usar em tela cheia.' : 'No Safari: Compartilhar → Adicionar à Tela de Início.'}</p>
+      {install.canPrompt && (
+        <Button size="sm" onClick={() => install.prompt().then(close)}>
+          Instalar
+        </Button>
+      )}
+      <button type="button" className={s.bannerClose} onClick={close} aria-label="Dispensar">
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+
+function UpdatePrompt() {
+  const update = useServiceWorkerUpdate();
+  if (!update.available) return null;
+  return (
+    <div className={s.banner} role="status">
+      <RefreshCw size={16} aria-hidden="true" />
+      <p>Nova versão do AutoPix disponível.</p>
+      <Button size="sm" onClick={update.apply}>
+        Atualizar
+      </Button>
+    </div>
+  );
+}
 
 function GlobalState({ subscription }) {
   const active = subscription?.status === 'ACTIVE';
@@ -58,15 +122,32 @@ function PageFallback() {
 }
 
 export default function AppLayout() {
-  const { loading, me, isAuthenticated, demoMode, logout } = useSession();
+  const { loading, me, isAuthenticated, demoMode, logout, offline, refresh } = useSession();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const loggingOut = useRef(false);
+  const mobile = useIsMobile();
   const stream = useActivityStream({ enabled: isAuthenticated, initialLimit: 40 });
+  // Freeze the routed element per transition: the exiting page must keep
+  // rendering its own route, not the new one (prevents double mounts).
+  const onLogoutRef = useRef(null);
+  const outlet = useOutlet({ stream, me, demoMode, onLogout: () => onLogoutRef.current?.() });
 
   useEffect(() => setMoreOpen(false), [location.pathname]);
 
   if (loading) return <PageLoader />;
+  if (!isAuthenticated && offline) {
+    return (
+      <div className={s.offline} role="alert">
+        <Logo />
+        <h1>Você está sem conexão</h1>
+        <p>Seus agentes continuam trabalhando no servidor. Reconecte para ver as novidades.</p>
+        <Button icon={RefreshCw} onClick={refresh}>
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
   if (!isAuthenticated) {
     if (me?.scope === 'ONBOARDING') return <Navigate to={me.user.status === 'PENDING_PAYMENT' ? '/checkout' : '/onboarding'} replace />;
     if (loggingOut.current) return <Navigate to="/login" replace />;
@@ -78,6 +159,7 @@ export default function AppLayout() {
     loggingOut.current = true;
     await logout();
   };
+  onLogoutRef.current = onLogout;
 
   return (
     <div className={s.shell}>
@@ -113,12 +195,21 @@ export default function AppLayout() {
 
       <div className={s.content}>
         <header className={s.topbar}>
-          <Link to="/app" className={s.topLogo} aria-label="AutoPix">
-            <Logo compact />
-          </Link>
+          {(() => {
+            const back = mobile && BACK.find(([re]) => re.test(location.pathname));
+            return back ? (
+              <Link to={back[1]} className={s.topBack} aria-label={`Voltar para ${back[2]}`}>
+                <ArrowLeft size={18} /> <span>{back[2]}</span>
+              </Link>
+            ) : (
+              <Link to="/app" className={s.topLogo} aria-label="AutoPix">
+                <Logo compact />
+              </Link>
+            );
+          })()}
           <GlobalState subscription={me.subscription} />
           <div className={s.topRight}>
-            {demoMode && <DemoBadge label="MODO DEMO" />}
+            {demoMode && <DemoBadge label={mobile ? 'DEMO' : 'MODO DEMO'} />}
             <span className={s.streamMode} title="Conexão em tempo real">
               <span data-mode={stream.mode} aria-hidden="true" />
               {stream.mode === 'live' ? 'tempo real' : stream.mode === 'polling' ? 'atualização periódica' : 'conectando'}
@@ -127,16 +218,18 @@ export default function AppLayout() {
         </header>
 
         <main id="app-main" className={s.main}>
+          <UpdatePrompt />
+          <InstallBanner />
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
+              initial={mobile ? { opacity: 0, x: 18 } : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              exit={mobile ? { opacity: 0, x: -12 } : { opacity: 0, y: -4 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             >
               <Suspense fallback={<PageFallback />}>
-                <Outlet context={{ stream, me, demoMode, onLogout }} />
+                {outlet}
               </Suspense>
             </motion.div>
           </AnimatePresence>
@@ -148,7 +241,7 @@ export default function AppLayout() {
         {MOBILE_TABS.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => `${s.tab} ${isActive ? s.tabActive : ''}`}>
             <Icon size={20} aria-hidden="true" />
-            <span>{label === 'Visão Geral' ? 'Visão' : label}</span>
+            <span>{label === 'Visão Geral' ? 'Visão' : label === 'Oportunidades' ? 'Oportun.' : label}</span>
           </NavLink>
         ))}
         <button type="button" className={`${s.tab} ${moreOpen ? s.tabActive : ''}`} onClick={() => setMoreOpen(true)} aria-expanded={moreOpen}>
@@ -176,7 +269,7 @@ export default function AppLayout() {
                   <X size={18} />
                 </button>
               </div>
-              {NAV.slice(4).map(({ to, label, icon: Icon }) => (
+              {MORE.map(({ to, label, icon: Icon }) => (
                 <NavLink key={to} to={to} className={({ isActive }) => `${s.sheetItem} ${isActive ? s.navActive : ''}`}>
                   <Icon size={18} aria-hidden="true" /> {label}
                 </NavLink>

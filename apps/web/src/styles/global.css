@@ -158,3 +158,33 @@ canvas {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- App-like behaviour (PWA / mobile) ---------- */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+}
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  input,
+  textarea,
+  [contenteditable],
+  .mono,
+  p {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}

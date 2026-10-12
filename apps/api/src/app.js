@@ -4,7 +4,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { getConfig, getPrisma, ROOT_DIR, buildPlatform } from '@autopix/core';
+import { ROOT_DIR, buildPlatform } from '@autopix/core';
 import { buildLimiters, csrfGuard } from './middleware/security.js';
 import { loadSession } from './middleware/session.js';
 import { errorHandler, notFoundApi } from './middleware/errors.js';
@@ -110,7 +110,20 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
       '/assets',
       express.static(path.join(webDist, 'assets'), { immutable: true, maxAge: '1y', index: false }),
     );
-    app.use(express.static(webDist, { index: false, maxAge: '1h' }));
+    // The service worker and manifest must always be revalidated so updates ship.
+    app.get(['/sw.js', '/manifest.webmanifest'], (req, res, next) => {
+      res.set('Cache-Control', 'no-cache');
+      next();
+    });
+    app.use(
+      express.static(webDist, {
+        index: false,
+        maxAge: '1h',
+        setHeaders: (res, filePath) => {
+          if (/(sw\.js|manifest\.webmanifest)$/.test(filePath)) res.set('Cache-Control', 'no-cache');
+        },
+      }),
+    );
     app.get('/{*splat}', (req, res) => {
       res.set('Cache-Control', 'no-cache');
       res.sendFile(path.join(webDist, 'index.html'));

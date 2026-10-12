@@ -29,6 +29,7 @@ commercial approach to a realtime dashboard.
 - [Security](#security)
 - [Tests](#tests)
 - [Project structure](#project-structure)
+- [Platform layer: ActionEngine, events, WhatsApp, PWA](#platform-layer-actionengine-events-whatsapp-pwa)
 - [Known limitations](#known-limitations)
 
 ---
@@ -396,6 +397,14 @@ npm test
   LISTEN/NOTIFY, Pix charge creation, webhook signature validation, idempotency (duplicate
   and concurrent deliveries), subscription activation, cancellation, job claiming, agent run
   creation, DEMO isolation.
+- `apps/api/test/platform.test.js` — the two end-to-end acceptance scenarios
+  (WhatsApp link → opportunity → notification → ABORDAR → state/activity on the
+  dashboard; “gere Pix de 1400” → confirm → charge → reply → provider webhook →
+  PAYMENT_RECEIVED on the dashboard), unverified numbers and bad signatures,
+  step-up release/bank details, ActionEngine validation/audit, Bearer clients,
+  notification preferences, freight/workforce commands.
+- `packages/core/test/whatsapp.unit.test.js` — intent parser, LLM output
+  validation, Cloud API signature/handshake/payloads, templates, phone variants.
 
 The API suite uses `TEST_DATABASE_URL`, or `DATABASE_URL` with the database name suffixed
 `_test`. It refuses to run against a database whose name does not contain `test`, applies
@@ -420,7 +429,9 @@ database the DB suites are skipped with a warning.
 │           └── styles/          # design tokens + global CSS
 ├── packages/
 │   ├── shared/                  # constants, formatters, Zod schemas
-│   └── core/                    # config, db, security, services, payments, engine
+│   └── core/                    # config, db, security, services, payments, engine,
+│                                # actions (ActionEngine), events (EventEngine),
+│                                # whatsapp, notifications, domains (freight, workforce)
 ├── prisma/                      # schema, migrations, seed
 ├── docs/                        # architecture & operations notes
 ├── .env.example
@@ -428,6 +439,58 @@ database the DB suites are skipped with a warning.
 ```
 
 ---
+
+## Platform layer: ActionEngine, events, WhatsApp, PWA
+
+AutoPix is **one platform with multiple clients** — web/PWA, WhatsApp and
+(future) native apps all use the same business layer in `packages/core`.
+Full description: [`docs/PLATFORM.md`](docs/PLATFORM.md); endpoints:
+[`docs/API.md`](docs/API.md).
+
+- **ActionEngine** — every business mutation (`POST /api/actions/:name`) runs
+  authentication → authorization → validation → business rules → step-up for
+  sensitive actions → audit (`ActionLog`) → execution → domain events.
+- **EventEngine** — stored `DomainEvent`s drive the dashboard feed and the
+  notification channels (WhatsApp, Web Push, e-mail) with per-user
+  `NotificationPreference`s and idempotent deliveries.
+- **WhatsApp Business Platform (Cloud API)** — number linking by inbound code,
+  decision buttons (ANALISAR, ABORDAR, DESCARTAR, TENHO INTERESSE, VER ROTA,
+  CONVIDAR, RECUSAR, ABRIR AUTOPIX) and pt-BR commands (“gere um Pix de 1400”,
+  “procura carga de Santos para São Paulo amanhã”, “preciso de 3 soldadores
+  segunda”, …) — always through the ActionEngine, with confirmation.
+- **Step-up authentication** — `RELEASE_PAYMENT`, `REFUND_PAYMENT`,
+  `CHANGE_BANK_DETAILS` require a `SensitiveActionChallenge` confirmed with the
+  password in an authenticated web/PWA session. A WhatsApp number alone never
+  authorizes them.
+- **Protected Pix charges** — created from web or WhatsApp; funds are held
+  until a step-up-confirmed release.
+- **Freight & workforce** — routes/demands and matches with deep links
+  (`/app/freight/matches/:id`, `/app/workforce/matches/:id`).
+- **PWA** — installable (`manifest.webmanifest`, standalone, `start_url=/app`),
+  versioned service worker that never caches `/api`, offline shell, install
+  and update prompts, Web Push with deep-link clicks, mobile tab bar, back
+  headers and native-style transitions.
+- **Native-ready auth** — `POST /api/auth/native/login` + `Authorization: Bearer`.
+
+### Configure WhatsApp (Meta)
+
+1. Create a Meta app with the WhatsApp product; get a permanent access token,
+   the phone number id and the app secret.
+2. Set `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`,
+   `WHATSAPP_VERIFY_TOKEN` (any random string), `WHATSAPP_BUSINESS_NUMBER`.
+3. Webhook URL: `https://<domain>/api/webhooks/whatsapp`, verify token =
+   `WHATSAPP_VERIFY_TOKEN`, subscribe to `messages`.
+4. (Recommended) Approve templates for business-initiated notifications and set
+   `WHATSAPP_TEMPLATE_OPPORTUNITY|PAYMENT|FREIGHT|WORKFORCE` (quick-reply buttons
+   in the order shown above).
+
+Without credentials the provider is `disabled` in production (nothing is sent)
+and `mock` in development/test.
+
+### Configure Web Push
+
+`npx web-push generate-vapid-keys` → `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`,
+`WEB_PUSH_SUBJECT`. Users enable push per device in *Configurações*.
 
 ## Known limitations
 
@@ -442,3 +505,14 @@ database the DB suites are skipped with a warning.
 - Single plan, single user per company (the schema supports more users/roles).
 - Rate limiting is in-memory per instance (use a shared store if you run many API replicas).
 - `npm audit` reports advisories in dev-only tooling (vitest mocker, Prisma CLI config).
+- Freight and workforce have no real marketplace source yet: outside DEMO mode,
+  requests and demands are stored and no matches are invented. Plug sources into
+  `FreightService`/`WorkforceService` (`find(request)` contract).
+- Fund release is implemented for Asaas (`/transfers`) and the mock provider;
+  the Mercado Pago adapter reports it as unsupported.
+- The LLM intent parser is a boundary (`LlmIntentParser({ generate })`) and is
+  not wired to a model by default; the deterministic pt-BR parser is used.
+- WhatsApp notifications outside the 24-hour window require Meta-approved
+  templates. iOS Web Push requires the PWA to be installed (iOS 16.4+).
+- Step-up uses the account password; PIN/passkey/OTP mechanisms are modelled
+  (`SensitiveActionChallenge.mechanism`) but not implemented.

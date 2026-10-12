@@ -12,6 +12,9 @@ import './styles/global.css';
 import App from './App.jsx';
 import { SessionProvider } from './lib/session.jsx';
 import { ToastProvider } from './lib/toast.jsx';
+import { registerServiceWorker } from './lib/pwa.js';
+
+registerServiceWorker();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Play } from 'lucide-react';
-import { post } from '../../lib/api.js';
+import { Pause, Play } from 'lucide-react';
+import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, formatDuration, relative } from '../../lib/time.js';
@@ -45,8 +45,8 @@ export default function Agents() {
   const runNow = async () => {
     setRunning(true);
     try {
-      const res = await post('/api/agents/run');
-      toast.success(res.created ? 'Novo ciclo na fila.' : 'Já existe um ciclo na fila ou em execução.');
+      const { result } = await executeAction('START_AGENT');
+      toast.success(result.resumed ? 'Agentes retomados.' : result.created ? 'Novo ciclo na fila.' : 'Já existe um ciclo na fila ou em execução.');
       agents.reload();
     } catch (err) {
       toast.error(err.message);
@@ -56,6 +56,19 @@ export default function Agents() {
   };
 
   const job = agents.data?.latestJob;
+  const paused = agents.data?.paused;
+  const pause = async () => {
+    setRunning(true);
+    try {
+      await executeAction('PAUSE_AGENT');
+      toast.success('Agentes pausados.');
+      agents.reload();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setRunning(false);
+    }
+  };
 
   return (
     <>
@@ -73,9 +86,16 @@ export default function Agents() {
             )}
           </p>
         </div>
-        <Button icon={Play} onClick={runNow} loading={running} disabled={!active}>
-          Executar busca agora
-        </Button>
+        <div className={s.pageActions}>
+          {!paused && (
+            <Button variant="secondary" icon={Pause} onClick={pause} disabled={running || !active}>
+              Pausar agentes
+            </Button>
+          )}
+          <Button icon={Play} onClick={runNow} loading={running} disabled={!active}>
+            {paused ? 'Retomar agentes' : 'Executar busca agora'}
+          </Button>
+        </div>
       </header>
 
       {agents.error ? (

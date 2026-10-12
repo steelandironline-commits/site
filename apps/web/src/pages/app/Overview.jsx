@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { Building2, CircleDollarSign, Play, Radar as RadarIcon, Target } from 'lucide-react';
 import { formatBRL } from '@autopix/shared';
-import { post } from '../../lib/api.js';
+import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { greeting, relative } from '../../lib/time.js';
@@ -41,8 +41,8 @@ export default function Overview() {
   const runNow = async () => {
     setRunning(true);
     try {
-      const res = await post('/api/agents/run');
-      toast.success(res.created ? 'Busca solicitada. Acompanhe na atividade.' : 'Já existe uma busca em andamento.');
+      const { result } = await executeAction('START_AGENT');
+      toast.success(result.created ? 'Busca solicitada. Acompanhe na atividade.' : 'Já existe uma busca em andamento.');
     } catch (err) {
       toast.error(err.message);
     } finally {

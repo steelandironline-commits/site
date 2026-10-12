@@ -8,6 +8,7 @@ import { fmtDateTime, relative } from '../../lib/time.js';
 import { Badge, Button, DemoBadge, ErrorState, Field, SkeletonCard } from '../../components/ui/ui.jsx';
 import { PasswordInput } from '../auth/PasswordInput.jsx';
 import { PasswordStrength } from '../auth/AuthShell.jsx';
+import { InstallCard, NotificationPrefsCard, PayoutCard, WhatsAppCard } from './SettingsPlatform.jsx';
 import s from './app.module.css';
 
 export default function Settings() {
@@ -101,6 +102,8 @@ export default function Settings() {
         </form>
 
         <div className={s.stack}>
+          <WhatsAppCard />
+          <InstallCard />
           <section className={`${s.panel} ${s.panelPad}`} aria-labelledby="sess">
             <div className={s.sectionHead}>
               <h2 id="sess" className={s.panelTitle}>
@@ -147,6 +150,10 @@ export default function Settings() {
             )}
           </section>
         </div>
+      </div>
+      <div className={`${s.section} ${s.subGrid}`}>
+        <NotificationPrefsCard />
+        <PayoutCard />
       </div>
     </>
   );

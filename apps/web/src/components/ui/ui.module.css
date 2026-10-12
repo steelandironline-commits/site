@@ -193,6 +193,8 @@
 }
 
 .demo {
+  flex: none;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   height: 20px;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Save } from 'lucide-react';
 import { BR_STATES, INDUSTRY_SUGGESTIONS, formatCnpj, onlyDigits } from '@autopix/shared';
-import { put } from '../../lib/api.js';
+import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { CompanyCard } from '../../components/cards/Cards.jsx';
@@ -57,8 +57,9 @@ export default function Company() {
     setSaving(true);
     setErrors({});
     try {
-      const res = await put('/api/company', toPayload(form));
-      setData({ company: res.company });
+      const { result: res } = await executeAction('UPDATE_COMPANY_PROFILE', toPayload(form));
+      const { payoutPixKey, ...company } = res.company;
+      setData({ company: { ...company, payoutPixKeyLast4: payoutPixKey ? payoutPixKey.slice(-4) : null } });
       toast.success(res.searchRequeued ? 'Perfil salvo. Os agentes vão buscar com a nova configuração.' : 'Perfil salvo.');
     } catch (err) {
       setErrors(err.fields || {});

@@ -25,6 +25,15 @@ export default defineRailway((ctx) => {
     APP_URL: preserve(),
     API_URL: preserve(),
     DEMO_MODE: prod ? 'false' : 'true',
+    // WhatsApp Business Platform (Cloud API) + Web Push — optional.
+    WHATSAPP_ACCESS_TOKEN: preserve(),
+    WHATSAPP_PHONE_NUMBER_ID: preserve(),
+    WHATSAPP_APP_SECRET: preserve(),
+    WHATSAPP_VERIFY_TOKEN: preserve(),
+    WHATSAPP_BUSINESS_NUMBER: preserve(),
+    WEB_PUSH_PUBLIC_KEY: preserve(),
+    WEB_PUSH_PRIVATE_KEY: preserve(),
+    WEB_PUSH_SUBJECT: preserve(),
   };
 
   const web = service('autopix-web', {
