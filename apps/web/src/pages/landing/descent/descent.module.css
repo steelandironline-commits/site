@@ -88,6 +88,12 @@
   align-items: center;
 }
 
+@media (min-width: 960px) {
+  .copyBox {
+    top: calc(52% - 50px);
+  }
+}
+
 /* Outgoing and incoming captions share one cell, so fast scrolling never stacks them. */
 .copy {
   grid-area: 1 / 1;
