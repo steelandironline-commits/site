@@ -920,3 +920,138 @@
   font-size: var(--fs-12);
   color: var(--dim);
 }
+
+/* ---------------- Steps carousel (mobile) ---------------- */
+.carousel {
+  margin: 0 calc(var(--gutter) * -1);
+}
+
+.carouselTrack {
+  display: flex;
+  gap: 12px;
+  padding: 4px var(--gutter) 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 var(--gutter);
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+}
+
+.carouselTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.stepCard {
+  flex: 0 0 86%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  padding: 22px 20px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(90% 70% at 100% 0%, rgba(42, 209, 184, 0.05), transparent 60%),
+    linear-gradient(180deg, var(--elevated), var(--surface));
+  box-shadow: var(--shadow-2);
+  opacity: 0.55;
+  transform: scale(0.97);
+  transition:
+    opacity 0.3s var(--ease),
+    transform 0.3s var(--ease),
+    border-color 0.3s var(--ease);
+  user-select: none;
+}
+
+.stepCardActive {
+  opacity: 1;
+  transform: none;
+  border-color: var(--primary-line);
+}
+
+.stepCard h3 {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-16);
+  letter-spacing: 0.06em;
+}
+
+.stepCard .stepText {
+  font-size: var(--fs-16);
+}
+
+.carouselNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 0 var(--gutter);
+}
+
+.carouselArrow {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+  transition:
+    opacity 0.2s,
+    border-color 0.2s;
+}
+
+.carouselArrow:disabled {
+  opacity: 0.35;
+}
+
+.carouselArrow:not(:disabled):active {
+  border-color: var(--primary);
+}
+
+.carouselDots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 24px tap target around an 8px dot. */
+.carouselDot {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.carouselDot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 999px;
+  background: var(--line-3);
+  transition:
+    width 0.3s var(--ease),
+    margin 0.3s var(--ease),
+    background 0.3s var(--ease);
+}
+
+.carouselDotActive::after {
+  width: 20px;
+  margin-left: -10px;
+  background: var(--primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepCard,
+  .carouselDot::after {
+    transition: none;
+  }
+}

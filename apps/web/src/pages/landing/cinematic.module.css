@@ -1,7 +1,8 @@
 /* ---------------- Cinematic prologue ---------------- */
 .cine {
   position: relative;
-  height: 520vh;
+  --cine-bar: 7vh;
+  height: 420vh;
   background: #050607;
 }
 
@@ -459,21 +460,63 @@
 
 .scrollCue {
   position: absolute;
-  z-index: 6;
-  bottom: 64px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-mono);
-  font-size: var(--fs-11);
-  letter-spacing: 0.24em;
-  color: var(--muted);
-  animation: bob 1.8s ease-in-out infinite;
+  z-index: 7;
+  bottom: 56px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-left: -28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-@keyframes bob {
-  50% { transform: translateY(5px); }
+.scrollCue:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* Mouse-shaped pill with a dot that rolls down — "keep scrolling". */
+.mouse {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 40px;
+  border: 2px solid rgba(236, 235, 230, 0.7);
+  border-radius: 14px;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+}
+
+.scrollCue:hover .mouse {
+  border-color: var(--primary);
+  transform: translateY(2px);
+}
+
+.wheel {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 10px rgba(42, 209, 184, 0.8);
+  animation: wheel 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes wheel {
+  0% { opacity: 1; transform: translateY(0); }
+  65% { opacity: 1; transform: translateY(16px); }
+  85% { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 0; transform: translateY(0); }
 }
 
 /* Reduced motion */
@@ -523,6 +566,12 @@
 }
 
 @media (max-width: 767px) {
+  .cine {
+    --cine-bar: 4vh;
+  }
+  .scrollCue {
+    bottom: 48px;
+  }
   .rail li {
     font-size: 10px;
     letter-spacing: 0.06em;
@@ -560,7 +609,18 @@
   .grain,
   .pinPulse,
   .personHalo,
-  .scrollCue {
+  .wheel {
     animation: none;
+  }
+  .wheel {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .scrollCue {
+    left: auto;
+    right: var(--gutter);
+    margin-left: 0;
   }
 }
