@@ -17,7 +17,7 @@ import { PRICING, formatCents } from '@autopix/shared';
 import { Logo } from '../../components/brand/Logo.jsx';
 import { Button, Dialog, ScoreRing } from '../../components/ui/ui.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
-import { PipelineFlow } from '../../components/activity/Flow.jsx';
+import ProductStage from './ProductStage.jsx';
 import { useDemoFeed } from '../../lib/demoFeed.js';
 import { useSession } from '../../lib/session.jsx';
 import { isIos, useInstallPrompt } from '../../lib/pwa.js';
@@ -207,7 +207,7 @@ function Product() {
             <header className={s.flowHead}>
               <span className="eyebrow">Como o TemPix encontra oportunidades</span>
             </header>
-            <PipelineFlow latest={latest} className={s.flowPipeline} />
+            <ProductStage latest={latest} />
             <ul className={s.values}>
               {values.map(({ icon: Icon, title, text }) => (
                 <li key={title}>
@@ -461,7 +461,7 @@ export default function Landing() {
         Pular para o conteúdo
       </a>
       <Nav />
-      <main id="main">
+      <main id="main" style={{ overflowX: 'clip' }}>
         <Descent />
         <Product />
         <LiveDemo />

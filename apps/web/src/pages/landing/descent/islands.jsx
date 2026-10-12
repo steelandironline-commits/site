@@ -332,7 +332,7 @@ const COMPANIES = [
 const SWEEP_PERIOD = 6;
 const W_SWEEP = (Math.PI * 2) / SWEEP_PERIOD;
 
-function Company({ kind }) {
+export function Company({ kind }) {
   switch (kind) {
     case 'factory':
       return (

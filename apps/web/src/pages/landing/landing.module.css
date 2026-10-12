@@ -175,6 +175,59 @@
   overflow: hidden;
 }
 
+.productStage {
+  position: relative;
+  height: 340px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(70% 70% at 50% 46%, rgba(42, 209, 184, 0.16), transparent 72%),
+    linear-gradient(180deg, #11302f 0%, #0b1517 100%);
+}
+
+@media (min-width: 960px) {
+  .productStage {
+    height: 400px;
+  }
+}
+
+.productSteps {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.stepBars {
+  display: flex;
+  gap: 4px;
+}
+
+.stepBars i {
+  width: 18px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.16);
+  transition:
+    background 0.4s,
+    box-shadow 0.4s;
+}
+
+.stepBars .stepOn {
+  background: var(--primary);
+  box-shadow: 0 0 8px rgba(42, 209, 184, 0.6);
+}
+
+.stepName {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--primary);
+}
+
 .flowPipeline {
   flex: 1;
   display: grid;
