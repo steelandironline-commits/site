@@ -1,0 +1,164 @@
+.wrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.canvas {
+  position: absolute !important;
+  inset: 0;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.label,
+.coreLabel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+.label span {
+  display: inline-block;
+  transform: translate(10px, -150%);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  background: rgba(10, 11, 13, 0.72);
+  border: 1px solid var(--line-2);
+  white-space: nowrap;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.labelActive span {
+  border-color: currentColor;
+  background: rgba(10, 11, 13, 0.92);
+}
+
+.primary {
+  color: var(--primary);
+}
+
+.revenue {
+  color: var(--revenue);
+}
+
+.amber {
+  color: var(--amber);
+}
+
+.coreLabel span {
+  display: inline-block;
+  transform: translate(-50%, 18px);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text);
+  white-space: nowrap;
+  padding: 3px 7px;
+  border-radius: 3px;
+  background: rgba(10, 11, 13, 0.8);
+  border: 1px solid var(--line-3);
+}
+
+.card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 236px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: rgba(23, 26, 31, 0.96);
+  border: 1px solid var(--line-3);
+  box-shadow: var(--shadow-3);
+  font-size: var(--fs-13);
+  will-change: transform;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cardHead strong {
+  font-size: var(--fs-13);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cardDemo {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--amber);
+  border: 1px dashed rgba(229, 165, 59, 0.6);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.cardMatch {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.cardMatch b {
+  color: var(--primary);
+  font-size: var(--fs-14);
+  margin-left: 4px;
+}
+
+.cardSignal {
+  margin-top: 6px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.cardRange {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cardRange span {
+  font-size: var(--fs-11);
+  color: var(--muted);
+}
+
+.cardRange b {
+  font-family: var(--font-mono);
+  color: var(--revenue);
+  font-weight: 500;
+}
+
+/* Static fallback while Three.js loads */
+.fallback {
+  position: relative;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.fallback svg {
+  width: min(92%, 640px);
+  height: auto;
+  opacity: 0.85;
+}

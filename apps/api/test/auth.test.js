@@ -67,6 +67,9 @@ describe.skipIf(!hasDb)('auth flows', () => {
     const after = await ctx.prisma.session.count({ where: { user: { email }, scope: 'FULL' } });
     expect(after).toBe(before - 1);
     expect((await c.get('/api/me')).status).toBe(401);
+    const anon = await c.get('/api/session');
+    expect(anon.status).toBe(200);
+    expect(anon.body.session).toBeNull();
   });
 
   it('expires sessions', async () => {

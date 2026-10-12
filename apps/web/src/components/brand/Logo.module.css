@@ -1,0 +1,54 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.word {
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.16em;
+  line-height: 1;
+}
+
+.auto {
+  color: var(--text-2);
+  font-weight: 400;
+}
+
+.pix {
+  color: var(--primary);
+  font-weight: 600;
+  margin-left: 1px;
+}
+
+.mark {
+  flex: none;
+}
+
+.animated .sweep {
+  transform-origin: 16px 16px;
+  animation: sweep 3.6s linear infinite;
+}
+
+.animated .pulse {
+  stroke-dasharray: 34;
+  animation: pulse 2.4s var(--ease) infinite;
+}
+
+@keyframes sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    stroke-dashoffset: 34;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}

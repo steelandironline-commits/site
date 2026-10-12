@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { PLAN } from '@autopix/shared';
+import { describeSession } from './me.js';
 
 export function systemRoutes({ config, prisma, hub }) {
   const r = Router();
@@ -12,6 +13,11 @@ export function systemRoutes({ config, prisma, hub }) {
       db = 'error';
     }
     res.status(db === 'ok' ? 200 : 503).json({ status: db === 'ok' ? 'ok' : 'degraded', db, realtime: hub?.mode ?? 'off' });
+  });
+
+  /** SPA bootstrap: always 200, `session` is null when anonymous. */
+  r.get('/session', async (req, res) => {
+    res.json({ session: req.session ? await describeSession({ prisma, config }, req) : null });
   });
 
   /** Public, non-secret runtime flags for the web app. */

@@ -4,24 +4,30 @@ import { unauthorized } from '@autopix/core';
 import { parse } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/session.js';
 
+/** Public description of the current session (never includes secrets). */
+export async function describeSession({ prisma, config }, req) {
+  const subscription = await prisma.subscription.findUnique({
+    where: { companyId: req.user.companyId },
+    select: { status: true, currentPeriodEnd: true, cancelAtPeriodEnd: true },
+  });
+  return {
+    scope: req.session.scope,
+    user: { id: req.user.id, name: req.user.name, email: req.user.email, status: req.user.status, role: req.user.role },
+    company: req.user.company,
+    subscription,
+    demoMode: config.demoMode,
+  };
+}
+
 export function meRoutes({ auth, prisma, config }) {
   const r = Router();
 
   /** Current session (onboarding or full). 401 when anonymous. */
   r.get('/', async (req, res) => {
     if (!req.session) throw unauthorized('Sessão não encontrada.');
-    const subscription = await prisma.subscription.findUnique({
-      where: { companyId: req.user.companyId },
-      select: { status: true, currentPeriodEnd: true, cancelAtPeriodEnd: true },
-    });
-    res.json({
-      scope: req.session.scope,
-      user: { id: req.user.id, name: req.user.name, email: req.user.email, status: req.user.status, role: req.user.role },
-      company: req.user.company,
-      subscription,
-      demoMode: config.demoMode,
-    });
+    res.json(await describeSession({ prisma, config }, req));
   });
+
 
   r.put('/password', requireAuth, async (req, res) => {
     const { currentPassword, newPassword } = parse(changePasswordSchema, req.body);

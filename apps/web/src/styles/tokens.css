@@ -1,0 +1,77 @@
+/* AutoPix design tokens — dark-first command center */
+:root {
+  color-scheme: dark;
+
+  /* Graphite scale */
+  --bg: #0a0b0d;
+  --bg-2: #0d0f12;
+  --surface: #121418;
+  --elevated: #171a1f;
+  --elevated-2: #1d2127;
+  --elevated-3: #242931;
+
+  /* Lines */
+  --line: #20242b;
+  --line-2: #2a2f37;
+  --line-3: #3a404a;
+
+  /* Text */
+  --text: #ecebe6;
+  --text-2: #b4b7bd;
+  --muted: #868b94;
+  --dim: #5c616b;
+
+  /* Signal colors */
+  --primary: #2ad1b8;
+  --primary-strong: #4fe0c9;
+  --primary-ink: #03201b;
+  --primary-soft: rgba(42, 209, 184, 0.1);
+  --primary-line: rgba(42, 209, 184, 0.32);
+
+  --revenue: #3fbf86;
+  --revenue-soft: rgba(63, 191, 134, 0.1);
+  --amber: #e5a53b;
+  --amber-soft: rgba(229, 165, 59, 0.1);
+  --danger: #e5574f;
+  --danger-soft: rgba(229, 87, 79, 0.1);
+  --info: #8fa6c7;
+  --info-soft: rgba(143, 166, 199, 0.1);
+
+  /* Type */
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --fs-11: 0.6875rem;
+  --fs-12: 0.75rem;
+  --fs-13: 0.8125rem;
+  --fs-14: 0.875rem;
+  --fs-16: 1rem;
+  --fs-18: 1.125rem;
+  --fs-20: 1.25rem;
+  --fs-24: 1.5rem;
+  --fs-32: 2rem;
+
+  /* Geometry */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  --gutter: 16px;
+  --container: 1200px;
+
+  /* Physical layering: inner highlight + soft drop */
+  --shadow-1: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 10px 30px -14px rgba(0, 0, 0, 0.75), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-3: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 24px 60px -24px rgba(0, 0, 0, 0.85), 0 6px 18px rgba(0, 0, 0, 0.4);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--primary);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+  }
+}

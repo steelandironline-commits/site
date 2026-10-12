@@ -1,0 +1,51 @@
+.region {
+  position: fixed;
+  z-index: 80;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .region {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--elevated-2);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-3);
+  font-size: var(--fs-14);
+}
+
+.toast button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 4px;
+  border-radius: var(--r-xs);
+}
+
+.success svg:first-child {
+  color: var(--revenue);
+}
+
+.error svg:first-child {
+  color: var(--danger);
+}
+
+.info svg:first-child {
+  color: var(--primary);
+}

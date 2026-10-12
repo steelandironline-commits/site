@@ -1,0 +1,247 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(60% 40% at 50% 0%, rgba(42, 209, 184, 0.05), transparent 70%),
+    var(--bg);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 var(--gutter);
+}
+
+.counter {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.progress {
+  height: 2px;
+  background: var(--line);
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  box-shadow: 0 0 12px rgba(42, 209, 184, 0.6);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(24px, 6vh, 72px) var(--gutter) calc(32px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+}
+
+.card {
+  width: 100%;
+  max-width: 560px;
+}
+
+.title {
+  margin-top: 10px;
+  font-size: clamp(1.6rem, 1.2rem + 1.8vw, 2.4rem);
+  letter-spacing: -0.03em;
+}
+
+.title:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.subtitle {
+  margin-top: 10px;
+  color: var(--muted);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 28px;
+  padding: clamp(16px, 3vw, 24px);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+@media (min-width: 520px) {
+  .row2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .row2:has(select) {
+    grid-template-columns: 1fr 110px;
+  }
+}
+
+.range {
+  width: 100%;
+  accent-color: var(--primary);
+  height: 32px;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.legal {
+  margin-top: 20px;
+  font-size: var(--fs-14);
+  color: var(--muted);
+}
+
+.legal a {
+  color: var(--primary);
+}
+
+.formError {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--danger-soft);
+  border: 1px solid rgba(229, 87, 79, 0.35);
+  color: #f2a29d;
+  font-size: var(--fs-13);
+}
+
+/* -------- analysis -------- */
+.analysis {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 420px;
+  margin-top: 6vh;
+  text-align: center;
+}
+
+.analysisTitle {
+  font-size: clamp(1.4rem, 1.1rem + 1.4vw, 2rem);
+}
+
+.analysisList {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.analysisList li {
+  display: grid;
+  grid-template-columns: 20px 1fr 90px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  color: var(--dim);
+  transition:
+    color 0.3s,
+    border-color 0.3s;
+}
+
+.aMark {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line-3);
+}
+
+.aBar {
+  height: 2px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.aBar span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+.aActive {
+  color: var(--text-2) !important;
+  border-color: var(--line-3) !important;
+}
+
+.aDone {
+  color: var(--text) !important;
+}
+
+.aDone .aMark {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+}
+
+/* -------- ready -------- */
+.ready {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: 520px;
+  margin-top: 6vh;
+  text-align: center;
+}
+
+.readyIcon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-ink);
+  box-shadow: 0 0 0 8px var(--primary-soft);
+}
+
+.readyTitle {
+  font-size: clamp(1.6rem, 1.2rem + 2vw, 2.5rem);
+  letter-spacing: -0.03em;
+}
+
+.readyText {
+  color: var(--text-2);
+}
+
+.readySafe {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-13);
+  color: var(--muted);
+}
