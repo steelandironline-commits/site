@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import { disconnectPrisma, getPaymentProvider, buildPlatform, PAYMENTS_UNAVAILABLE_MESSAGE } from '@autopix/core';
-import { setupApp, resetDb, createActiveUser, client, hasDb, STRONG_PASSWORD } from './helpers.js';
+import { setupApp, resetDb, createActiveUser, client, hasDb, STRONG_PASSWORD, testCnpj } from './helpers.js';
 import { createApp } from '../src/app.js';
 
 const WA_FROM = '5511977776666';
@@ -429,7 +429,7 @@ describe.skipIf(!hasDb)('TemPix Pay — gateway disabled (PAYMENT_PROVIDER=none)
 
   it('the app runs, but no Pix charge is created and nothing is recorded', async () => {
     const c = client(ctx.app);
-    const start = await c.post('/api/onboarding/start', { name: 'Ana', email: `sem-gateway-${Date.now()}@empresa.example`, companyName: 'Sem Gateway' });
+    const start = await c.post('/api/onboarding/start', { name: 'Ana', email: `sem-gateway-${Date.now()}@empresa.example`, companyName: 'Sem Gateway', document: testCnpj() });
     expect(start.status).toBe(201);
     const pix = await c.post('/api/payments/pix', {});
     expect(pix.status).toBe(503);

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Building2, Check, Lock, UserRound } from 'lucide-react';
-import { BR_STATES, INDUSTRY_SUGGESTIONS, PRICING, formatCents, formatCnpj, isValidCnpj, onlyDigits } from '@autopix/shared';
+import { BR_STATES, INDUSTRY_SUGGESTIONS, PRICING, formatCents, formatCnpj, formatCpf, isValidCnpj, isValidCpf, onlyDigits } from '@autopix/shared';
 import { api, post, put } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { safeStorage } from '../../lib/hooks.js';
@@ -27,7 +27,6 @@ const STEPS = [
   { key: 'ticket', title: 'Qual o ticket médio?', subtitle: 'E qual o menor negócio que vale a sua atenção.', fields: ['averageTicket', 'minimumDeal'] },
   { key: 'keywords', title: 'Palavras-chave', subtitle: 'Termos que indicam demanda pelo que você faz.', fields: ['keywords'] },
   { key: 'presence', title: 'Presença digital', subtitle: 'Ajuda os agentes a entender seu posicionamento.', fields: ['website', 'instagram', 'phone'] },
-  { key: 'company', title: 'Dados da empresa', subtitle: 'Usados no contrato e na cobrança Pix.', fields: ['name', 'cnpj'] },
 ];
 
 /** Professionals (pessoa física): a short, free signup. */
@@ -92,16 +91,14 @@ function validate(stepKey, form, account) {
     if (account.name.trim().length < 2) e.name = 'Informe seu nome';
     if (!/^\S+@\S+\.\S+$/.test(account.email.trim())) e.email = 'E-mail inválido';
     if (account.accountType === 'COMPANY' && account.companyName.trim().length < 2) e.companyName = 'Informe o nome da empresa';
+    if (account.accountType === 'COMPANY' && !isValidCnpj(account.document)) e.document = 'CNPJ inválido';
+    if (account.accountType === 'PERSON' && !isValidCpf(account.document)) e.document = 'CPF inválido';
   }
   if (stepKey === 'work' && !form.services.length) e.services = 'Adicione sua profissão ou um serviço';
   if (stepKey === 'sells' && !form.products.length && !form.description.trim()) e.products = 'Adicione pelo menos um produto ou uma descrição';
   if (stepKey === 'services' && !form.services.length && !form.products.length) e.services = 'Adicione pelo menos um serviço';
   if (stepKey === 'customer' && form.idealCustomer.trim().length < 3) e.idealCustomer = 'Descreva seu cliente ideal';
   if (stepKey === 'where' && !form.city.trim() && !form.serviceLocations.length) e.city = 'Informe sua cidade ou regiões atendidas';
-  if (stepKey === 'company') {
-    if (!form.name.trim()) e.name = 'Informe a razão social ou nome fantasia';
-    if (!isValidCnpj(form.cnpj)) e.cnpj = 'CNPJ inválido';
-  }
   return e;
 }
 
@@ -227,7 +224,7 @@ export default function Onboarding() {
   const [form, setForm] = useState(EMPTY);
   const [params] = useSearchParams();
   const preset = { profissional: 'PERSON', empresa: 'COMPANY' }[params.get('tipo')] || '';
-  const [account, setAccount] = useState({ accountType: preset, name: '', email: '', companyName: '' });
+  const [account, setAccount] = useState({ accountType: preset, name: '', email: '', companyName: '', document: '' });
   const [errors, setErrors] = useState({});
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -254,7 +251,13 @@ export default function Onboarding() {
         if (st.user.status === 'ACTIVE') return navigate('/app', { replace: true });
         setHasSession(true);
         const type = st.company.accountType || 'COMPANY';
-        setAccount({ accountType: type, name: st.user.name, email: st.user.email, companyName: type === 'COMPANY' ? st.company.name : '' });
+        setAccount({
+          accountType: type,
+          name: st.user.name,
+          email: st.user.email,
+          companyName: type === 'COMPANY' ? st.company.name : '',
+          document: type === 'COMPANY' && st.company.cnpj ? formatCnpj(st.company.cnpj) : '',
+        });
         setForm((f) => ({ ...f, ...fromCompany(st.company), ...(draft?.form || {}) }));
         if (st.company.onboardingCompletedAt) setPhase('ready');
         else setStep(Math.min(Math.max(1, st.company.onboardingStep), stepsFor(type).length - 1));
@@ -301,6 +304,7 @@ export default function Onboarding() {
             accountType: account.accountType,
             name: account.name,
             email: account.email,
+            document: account.document,
             ...(company ? { companyName: account.companyName } : {}),
           });
           setHasSession(true);
@@ -396,8 +400,8 @@ export default function Onboarding() {
                   <>
                     <div className={s.typeChoice} role="radiogroup" aria-label="Tipo de cadastro">
                       {[
-                        { type: 'PERSON', Icon: UserRound, title: 'Sou profissional', note: 'Pessoa física · cadastro grátis' },
-                        { type: 'COMPANY', Icon: Building2, title: 'Sou empresa', note: `CNPJ · taxa única de ${feeLabel}` },
+                        { type: 'PERSON', Icon: UserRound, title: 'Cadastro Pessoa Física', note: 'Login pelo CPF · grátis' },
+                        { type: 'COMPANY', Icon: Building2, title: 'Cadastro Empresas', note: `CNPJ ou MEI · taxa única de ${feeLabel}` },
                       ].map(({ type, Icon, title, note }) => (
                         <button
                           key={type}
@@ -406,7 +410,7 @@ export default function Onboarding() {
                           aria-checked={account.accountType === type}
                           className={account.accountType === type ? s.typeOn : undefined}
                           disabled={hasSession}
-                          onClick={() => setAccount({ ...account, accountType: type })}
+                          onClick={() => setAccount({ ...account, accountType: type, document: account.accountType === type ? account.document : '' })}
                         >
                           <Icon size={20} aria-hidden="true" />
                           <strong>{title}</strong>
@@ -424,7 +428,43 @@ export default function Onboarding() {
                         <Input {...a} autoComplete="name" value={account.name} disabled={hasSession} onChange={(e) => setAccount({ ...account, name: e.target.value })} />
                       )}
                     </Field>
-                    <Field label="E-mail" hint="Usado para acesso e para o link de ativação." error={errors.email}>
+                    {account.accountType && (
+                      <Field
+                        label={account.accountType === 'COMPANY' ? 'CNPJ (empresa ou MEI)' : 'CPF'}
+                        hint={
+                          account.accountType === 'COMPANY'
+                            ? 'Será o login da empresa: um login por CNPJ. Colaboradores entram com o próprio CPF.'
+                            : 'Será o seu login.'
+                        }
+                        error={errors.document}
+                      >
+                        {(a) => (
+                          <Input
+                            {...a}
+                            inputMode="numeric"
+                            autoComplete="off"
+                            placeholder={account.accountType === 'COMPANY' ? '00.000.000/0000-00' : '000.000.000-00'}
+                            value={account.document}
+                            disabled={hasSession}
+                            onChange={(e) =>
+                              setAccount({ ...account, document: account.accountType === 'COMPANY' ? formatCnpj(e.target.value) : formatCpf(e.target.value) })
+                            }
+                          />
+                        )}
+                      </Field>
+                    )}
+                    {account.accountType === 'COMPANY' && (
+                      <Field label="Nome da empresa" error={errors.companyName}>
+                        {(a) => (
+                          <Input
+                            {...a}
+                            autoComplete="organization"
+                            value={account.companyName}
+                            disabled={hasSession}
+                            onChange={(e) => setAccount({ ...account, companyName: e.target.value })}
+                          />
+                        )}
+                    <Field label="E-mail" hint="Para ativar a conta e recuperar a senha." error={errors.email}>
                       {(a) => (
                         <Input
                           {...a}
@@ -437,17 +477,6 @@ export default function Onboarding() {
                         />
                       )}
                     </Field>
-                    {account.accountType === 'COMPANY' && (
-                      <Field label="Nome da empresa" error={errors.companyName}>
-                        {(a) => (
-                          <Input
-                            {...a}
-                            autoComplete="organization"
-                            value={account.companyName}
-                            disabled={hasSession}
-                            onChange={(e) => setAccount({ ...account, companyName: e.target.value })}
-                          />
-                        )}
                       </Field>
                     )}
                   </>
@@ -597,20 +626,6 @@ export default function Onboarding() {
                         {(a) => <Input {...a} type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="(11) 4000-0000" />}
                       </Field>
                     </div>
-                  </>
-                )}
-
-                {current.key === 'company' && (
-                  <>
-                    <Field label="Nome da empresa" error={errors.name}>
-                      {(a) => <Input {...a} autoComplete="organization" value={form.name} onChange={set('name')} />}
-                    </Field>
-                    <Field label="CNPJ" error={errors.cnpj}>
-                      {(a) => (
-                        <Input {...a} inputMode="numeric" value={form.cnpj} onChange={(e) => set('cnpj')(formatCnpj(e.target.value))} placeholder="00.000.000/0000-00" />
-                      )}
-                    </Field>
-                    <Field label="E-mail">{(a) => <Input {...a} value={account.email} disabled />}</Field>
                   </>
                 )}
               </div>

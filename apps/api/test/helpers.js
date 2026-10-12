@@ -100,6 +100,31 @@ export function client(app) {
 }
 
 let seq = 0;
+
+/** Valid, unique CNPJ / CPF for tests (check digits computed). */
+let docSeq = Math.floor(Date.now() / 1000) % 1_000_000;
+export function testCnpj() {
+  docSeq += 1;
+  const base = `${String(docSeq).padStart(8, '0').slice(-8)}0001`;
+  const calc = (b) => {
+    const w = b.length === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const r = [...b].reduce((a, d, i) => a + Number(d) * w[i], 0) % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  const d1 = calc(base);
+  return `${base}${d1}${calc(base + d1)}`;
+}
+export function testCpf() {
+  docSeq += 1;
+  const base = `1${String(docSeq).padStart(8, '0').slice(-8)}`;
+  const calc = (b) => {
+    const sum = [...b].reduce((a, d, i) => a + Number(d) * (b.length + 1 - i), 0);
+    const r = (sum * 10) % 11;
+    return r === 10 ? 0 : r;
+  };
+  const d1 = calc(base);
+  return `${base}${d1}${calc(base + d1)}`;
+}
 export const PROFILE = {
   cnpj: '11.222.333/0001-81',
   services: ['Usinagem', 'Caldeiraria', 'Manutenção'],
@@ -117,17 +142,17 @@ export const PROFILE = {
 };
 
 /** Run the onboarding up to a pending Pix charge. */
-export async function onboardToCheckout(app, { email } = {}) {
+export async function onboardToCheckout(app, { email, cnpj = testCnpj() } = {}) {
   seq += 1;
   const c = client(app);
   const mail = email || `cliente${seq}-${Date.now()}@empresa.example`;
-  const start = await c.post('/api/onboarding/start', { name: 'Ana Souza', email: mail, companyName: `Empresa ${seq}` });
+  const start = await c.post('/api/onboarding/start', { name: 'Ana Souza', email: mail, companyName: `Empresa ${seq}`, document: cnpj });
   if (start.status !== 201) throw new Error(`start failed ${start.status} ${JSON.stringify(start.body)}`);
   const step = await c.put('/api/onboarding/step', { step: 9, data: PROFILE, complete: true });
   if (step.status !== 200) throw new Error(`step failed ${JSON.stringify(step.body)}`);
   const pix = await c.post('/api/payments/pix');
   if (pix.status !== 201) throw new Error(`pix failed ${JSON.stringify(pix.body)}`);
-  return { c, email: mail, payment: pix.body.payment, companyId: start.body.company.id };
+  return { c, email: mail, cnpj, payment: pix.body.payment, companyId: start.body.company.id };
 }
 
 /** Full happy path: onboarding → Pix → webhook → activation → password. */

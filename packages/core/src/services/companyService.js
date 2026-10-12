@@ -1,6 +1,6 @@
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
-import { notFound } from '../errors.js';
+import { badRequest, notFound } from '../errors.js';
 import { ActivityService } from './activityService.js';
 import { JobQueue } from '../engine/jobQueue.js';
 
@@ -69,6 +69,10 @@ export class CompanyService {
   async update(companyId, data, { userId } = {}) {
     const current = await this.get(companyId);
     const patch = pickCompanyFields(data);
+    if ('cnpj' in patch && current.cnpj && patch.cnpj !== current.cnpj) {
+      throw badRequest('O CNPJ é o login da empresa e não pode ser alterado.');
+    }
+    if (current.accountType === 'PERSON') delete patch.cnpj;
     const changed = Object.keys(patch).filter((k) => JSON.stringify(patch[k]) !== JSON.stringify(current[k]));
     if (!changed.length) return { company: current, changed: [], searchRequeued: false };
 

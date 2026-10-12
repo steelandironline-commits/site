@@ -11,6 +11,7 @@ export { ActivityService, ACTIVITY_SELECT } from './services/activityService.js'
 export { AuthService } from './services/authService.js';
 export { CompanyService } from './services/companyService.js';
 export { OnboardingService } from './services/onboardingService.js';
+export { TeamService } from './services/teamService.js';
 export { OpportunityService } from './services/opportunityService.js';
 export { PaymentService } from './services/paymentService.js';
 export { SubscriptionService } from './services/subscriptionService.js';

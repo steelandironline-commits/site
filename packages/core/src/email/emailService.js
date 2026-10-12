@@ -51,6 +51,14 @@ export class EmailService {
     });
   }
 
+  collaboratorInviteEmail({ to, name, company, link }) {
+    return this.send({
+      to,
+      subject: `Você foi convidado para o TemPix de ${company}`,
+      text: `Olá, ${name}.\n\n${company} liberou seu acesso ao TemPix. Crie sua senha (link válido por 48 horas, uso único):\n\n${link}\n\nDepois, entre com o seu CPF e a senha que você criar.\n\nSe você não esperava este convite, ignore este e-mail.`,
+    });
+  }
+
   passwordResetEmail({ to, name, link }) {
     return this.send({
       to,

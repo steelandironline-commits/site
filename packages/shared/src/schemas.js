@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isValidCnpj, onlyDigits } from './format.js';
+import { isValidCnpj, isValidCpf, onlyDigits } from './format.js';
 
 const trimmed = (max) => z.string().trim().max(max);
 const optionalText = (max) =>
@@ -71,18 +71,44 @@ export const companyProfileSchema = z.object({
 
 export const companyUpdateSchema = companyProfileSchema.partial();
 
+export const cpfSchema = z
+  .string()
+  .trim()
+  .max(20)
+  .transform(onlyDigits)
+  .refine((v) => isValidCpf(v), 'CPF inválido');
+
+/**
+ * Empresa (CNPJ, MEI included) or pessoa física (CPF). The document is the
+ * login: one login per company CNPJ, one per CPF.
+ */
 export const onboardingStartSchema = z
   .object({
     accountType: z.enum(['COMPANY', 'PERSON']).default('COMPANY'),
     name: trimmed(120).min(2, 'Informe seu nome'),
     email: emailSchema,
     companyName: z.string().trim().max(120).optional(),
+    document: z.string().trim().max(24),
   })
   .superRefine((v, ctx) => {
     if (v.accountType === 'COMPANY' && (!v.companyName || v.companyName.length < 2)) {
       ctx.addIssue({ code: 'custom', path: ['companyName'], message: 'Informe o nome da empresa' });
     }
-  });
+    if (v.accountType === 'COMPANY' && !isValidCnpj(v.document)) {
+      ctx.addIssue({ code: 'custom', path: ['document'], message: 'CNPJ inválido' });
+    }
+    if (v.accountType === 'PERSON' && !isValidCpf(v.document)) {
+      ctx.addIssue({ code: 'custom', path: ['document'], message: 'CPF inválido' });
+    }
+  })
+  .transform((v) => ({ ...v, document: onlyDigits(v.document) }));
+
+/** A collaborator joins a company account and logs in with their own CPF. */
+export const collaboratorInviteSchema = z.object({
+  name: trimmed(120).min(2, 'Informe o nome'),
+  email: emailSchema,
+  cpf: cpfSchema,
+});
 
 export const onboardingStepSchema = z.object({
   step: z.coerce.number().int().min(0).max(20),
@@ -90,10 +116,15 @@ export const onboardingStepSchema = z.object({
   complete: z.boolean().optional(),
 });
 
-export const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1, 'Informe a senha').max(200),
-});
+/** Login with CPF or CNPJ (e-mail still accepted for older accounts). */
+export const loginSchema = z
+  .object({
+    identifier: z.string().trim().max(254).optional(),
+    email: z.string().trim().max(254).optional(),
+    password: z.string().min(1, 'Informe a senha').max(200),
+  })
+  .refine((v) => Boolean(v.identifier || v.email), { message: 'Informe CPF ou CNPJ', path: ['identifier'] })
+  .transform((v) => ({ identifier: v.identifier || v.email, password: v.password }));
 
 export const activateSchema = z.object({
   token: z.string().min(20).max(200),

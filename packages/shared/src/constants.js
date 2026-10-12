@@ -19,6 +19,7 @@ export const PRICING = Object.freeze({
   ],
   company: [
     'Taxa única de cadastro: paga uma vez, sem mensalidade',
+    'Login pelo CNPJ (MEI também) e acesso para colaboradores',
     'Clientes, cargas e profissionais para a sua empresa',
     'Pagamento assegurado até a conclusão',
     'Cobrança e recebimento por Pix',

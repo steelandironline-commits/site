@@ -9,6 +9,7 @@ import { Badge, Button, DemoBadge, ErrorState, Field, SkeletonCard } from '../..
 import { PasswordInput } from '../auth/PasswordInput.jsx';
 import { PasswordStrength } from '../auth/AuthShell.jsx';
 import { InstallCard, NotificationPrefsCard, PayoutCard, WhatsAppCard } from './SettingsPlatform.jsx';
+import { TeamCard } from './TeamCard.jsx';
 import s from './app.module.css';
 
 export default function Settings() {
@@ -102,6 +103,7 @@ export default function Settings() {
         </form>
 
         <div className={s.stack}>
+          {me.company?.accountType !== 'PERSON' && <TeamCard me={me} />}
           <WhatsAppCard />
           <InstallCard />
           <section className={`${s.panel} ${s.panelPad}`} aria-labelledby="sess">

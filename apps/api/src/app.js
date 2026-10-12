@@ -19,6 +19,7 @@ import { dashboardRoutes } from './routes/dashboard.js';
 import { paymentRoutes } from './routes/payments.js';
 import { webhookRoutes } from './routes/webhooks.js';
 import { subscriptionRoutes } from './routes/subscription.js';
+import { teamRoutes } from './routes/team.js';
 import { systemRoutes } from './routes/system.js';
 import { actionRoutes } from './routes/actions.js';
 import { whatsappRoutes, whatsappWebhookRoutes } from './routes/whatsapp.js';
@@ -96,6 +97,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/dashboard', dashboardRoutes(ctx));
   app.use('/api/payments', paymentRoutes(ctx));
   app.use('/api/subscription', subscriptionRoutes(ctx));
+  app.use('/api/team', teamRoutes(ctx));
   app.use('/api', actionRoutes(ctx));
   app.use('/api/whatsapp', whatsappRoutes(ctx));
   app.use('/api/notifications', notificationRoutes(ctx));

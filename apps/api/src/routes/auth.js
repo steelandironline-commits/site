@@ -8,16 +8,16 @@ export function authRoutes({ auth, config, limiters }) {
   const meta = (req) => ({ ip: req.ip, userAgent: req.get('user-agent') });
 
   r.post('/login', limiters.login, async (req, res) => {
-    const { email, password } = parse(loginSchema, req.body);
-    const { token, session, user } = await auth.login(email, password, meta(req));
+    const { identifier, password } = parse(loginSchema, req.body);
+    const { token, session, user } = await auth.login(identifier, password, meta(req));
     setSessionCookie(res, config, token, session.expiresAt);
     res.json({ user: { id: user.id, name: user.name, email: user.email } });
   });
 
   /** Native/non-browser clients: returns a bearer token instead of a cookie. */
   r.post('/native/login', limiters.login, async (req, res) => {
-    const { email, password } = parse(loginSchema, req.body);
-    const { token, session, user } = await auth.login(email, password, meta(req));
+    const { identifier, password } = parse(loginSchema, req.body);
+    const { token, session, user } = await auth.login(identifier, password, meta(req));
     res.json({ token, tokenType: 'Bearer', expiresAt: session.expiresAt, user: { id: user.id, name: user.name, email: user.email } });
   });
 

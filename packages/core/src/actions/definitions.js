@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { companyUpdateSchema, formatCents, formatRange, OPPORTUNITY_STATUSES } from '@autopix/shared';
+import { collaboratorInviteSchema, companyUpdateSchema, formatCents, formatRange, OPPORTUNITY_STATUSES } from '@autopix/shared';
 import { conflict } from '../errors.js';
 import { auditSourceFor } from '../finance/FinancialAuditService.js';
 
@@ -501,6 +501,25 @@ export function registerCoreActions(engine) {
     roles: ['OWNER', 'ADMIN'],
     channels: ['WEB', 'API'],
     handler: async (ctx, data) => s().companies.update(ctx.company.id, data, { userId: ctx.user.id }),
+  });
+
+  // ---------------------------------------------------------- collaborators
+  engine.register({
+    name: 'INVITE_COLLABORATOR',
+    description: 'Libera acesso de um colaborador à conta da empresa (login pelo CPF).',
+    schema: collaboratorInviteSchema,
+    roles: ['OWNER'],
+    channels: ['WEB', 'API'],
+    handler: async (ctx, data) => s().team.invite(ctx.company, ctx.user, data),
+  });
+
+  engine.register({
+    name: 'REMOVE_COLLABORATOR',
+    description: 'Remove o acesso de um colaborador.',
+    schema: byId,
+    roles: ['OWNER'],
+    channels: ['WEB', 'API'],
+    handler: async (ctx, { id: memberId }) => ({ member: await s().team.remove(ctx.company, ctx.user, memberId) }),
   });
 
   engine.register({

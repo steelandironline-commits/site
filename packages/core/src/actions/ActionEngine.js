@@ -5,7 +5,7 @@ import { AppError, badRequest, conflict, forbidden, notFound, unauthorized } fro
 import { logger } from '../logger.js';
 
 const CHALLENGE_TTL_MS = 10 * 60 * 1000;
-const SECRET_KEYS = /password|token|secret|code|pixKey/i;
+const SECRET_KEYS = /password|token|secret|code|pixKey|cpf|document|link/i;
 
 function sanitize(value, depth = 0) {
   if (value === null || typeof value !== 'object' || depth > 3) return value;

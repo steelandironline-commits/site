@@ -9,6 +9,7 @@ import { ActivityService } from './services/activityService.js';
 import { AuthService } from './services/authService.js';
 import { CompanyService } from './services/companyService.js';
 import { OnboardingService } from './services/onboardingService.js';
+import { TeamService } from './services/teamService.js';
 import { OpportunityService } from './services/opportunityService.js';
 import { PaymentService } from './services/paymentService.js';
 import { SubscriptionService } from './services/subscriptionService.js';
@@ -55,6 +56,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
     auth: new AuthService({ prisma, config, email }),
     companies: new CompanyService({ prisma, config }),
     onboarding: new OnboardingService({ prisma, config }),
+    team: new TeamService({ prisma, config, email }),
     opportunities: new OpportunityService({ prisma, events }),
     payments: new PaymentService({ prisma, config, email, events, audit }),
     commissions: new CommissionService({ prisma }),

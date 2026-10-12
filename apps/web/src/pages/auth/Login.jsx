@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { formatDocument } from '@autopix/shared';
 import { post } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { Button, Field, Input } from '../../components/ui/ui.jsx';
@@ -12,7 +13,7 @@ export default function Login() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { refresh, isAuthenticated, loading: sessionLoading, expired } = useSession();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ identifier: '', password: '' });
   const [errors, setErrors] = useState({});
   const [error, setError] = useState(params.get('expired') || expired ? 'Sua sessão expirou. Entre novamente.' : null);
   const [loading, setLoading] = useState(false);
@@ -54,15 +55,19 @@ export default function Login() {
     >
       <form onSubmit={submit} noValidate>
         <FormError error={error} />
-        <Field label="E-mail" error={errors.email}>
+        <Field label="CPF ou CNPJ" hint="Empresas e MEI entram com o CNPJ. Pessoa física e colaboradores, com o CPF." error={errors.identifier}>
           {(a) => (
             <Input
               {...a}
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              autoComplete="username"
+              inputMode="numeric"
+              placeholder="000.000.000-00 ou 00.000.000/0000-00"
+              value={form.identifier}
+              onChange={(e) => {
+                const v = e.target.value;
+                // Older accounts may still type their e-mail.
+                setForm({ ...form, identifier: /[a-z@]/i.test(v) ? v : formatDocument(v) });
+              }}
               required
             />
           )}

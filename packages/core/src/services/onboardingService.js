@@ -17,15 +17,27 @@ export class OnboardingService {
     this.auth = new AuthService({ prisma, config });
   }
 
-  async start({ name, email, companyName, accountType = 'COMPANY' }, meta = {}) {
+  async start({ name, email, companyName, accountType = 'COMPANY', document }, meta = {}) {
     // A professional's account is named after the person.
     const accountName = accountType === 'PERSON' ? name : companyName;
+    const loginId = document; // CNPJ (company) or CPF (person), digits only
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing && existing.status !== 'PENDING_PAYMENT') {
       throw conflict('Este e-mail já possui uma conta TemPix. Entre ou recupere sua senha.');
     }
+    // One login per CNPJ / CPF. An unfinished draft never holds it.
+    const holder = loginId ? await this.prisma.user.findUnique({ where: { loginId } }) : null;
+    const staleDraft = holder && holder.id !== existing?.id && holder.status === 'PENDING_PAYMENT';
+    if (holder && holder.id !== existing?.id && !staleDraft) {
+      throw conflict(
+        accountType === 'COMPANY'
+          ? 'Este CNPJ já tem cadastro no TemPix. Entre com ele ou recupere a senha.'
+          : 'Este CPF já tem cadastro no TemPix. Entre com ele ou recupere a senha.',
+      );
+    }
 
     return this.prisma.$transaction(async (tx) => {
+      if (staleDraft) await tx.user.update({ where: { id: holder.id }, data: { loginId: null } });
       let user;
       if (existing) {
         // Unpaid draft: restart it. Previous draft data is overwritten, never
@@ -33,12 +45,14 @@ export class OnboardingService {
         await tx.session.deleteMany({ where: { userId: existing.id } });
         await tx.company.update({
           where: { id: existing.companyId },
-          data: { name: accountName, accountType, onboardingStep: 1, onboardingCompletedAt: null },
+          data: { name: accountName, accountType, cnpj: accountType === 'COMPANY' ? loginId : null, onboardingStep: 1, onboardingCompletedAt: null },
         });
-        user = await tx.user.update({ where: { id: existing.id }, data: { name } });
+        user = await tx.user.update({ where: { id: existing.id }, data: { name, loginId } });
       } else {
-        const company = await tx.company.create({ data: { name: accountName, accountType, onboardingStep: 1 } });
-        user = await tx.user.create({ data: { email, name, companyId: company.id, status: 'PENDING_PAYMENT' } });
+        const company = await tx.company.create({
+          data: { name: accountName, accountType, cnpj: accountType === 'COMPANY' ? loginId : null, onboardingStep: 1 },
+        });
+        user = await tx.user.create({ data: { email, name, loginId, companyId: company.id, status: 'PENDING_PAYMENT' } });
       }
       const { token, session } = await this.auth.createSession(user.id, { scope: 'ONBOARDING', ...meta }, tx);
       return { token, session, user };
@@ -77,6 +91,9 @@ export class OnboardingService {
     }
     const company = await this.prisma.company.findUnique({ where: { id: user.companyId } });
     const patch = pickCompanyFields(data || {});
+    // The CNPJ given at the start is the company's login: it can't change here.
+    if (company.cnpj) delete patch.cnpj;
+    if (company.accountType === 'PERSON') delete patch.cnpj;
     const next = { ...company, ...patch };
 
     if (complete) {

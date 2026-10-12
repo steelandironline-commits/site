@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { disconnectPrisma } from '@autopix/core';
 import { COMMISSION_PLAN_CODE } from '@autopix/shared';
-import { setupApp, resetDb, client, hasDb, PROFILE, STRONG_PASSWORD } from './helpers.js';
+import { setupApp, resetDb, client, hasDb, PROFILE, STRONG_PASSWORD, testCnpj, testCpf } from './helpers.js';
 
 const WORKER_PROFILE = { services: ['Eletricista'], city: 'Joinville', state: 'SC', serviceLocations: ['Joinville - SC'] };
 
@@ -22,7 +22,10 @@ describe.skipIf(!hasDb)('commission model: free professionals, one-time company 
   });
 
   async function start(c, accountType, email = `${accountType.toLowerCase()}-${Date.now()}@empresa.example`) {
-    const body = accountType === 'PERSON' ? { accountType, name: 'João Pereira', email } : { accountType, name: 'Bia Lima', email, companyName: 'Construtora Lima' };
+    const body =
+      accountType === 'PERSON'
+        ? { accountType, name: 'João Pereira', email, document: testCpf() }
+        : { accountType, name: 'Bia Lima', email, companyName: 'Construtora Lima', document: testCnpj() };
     const res = await c.post('/api/onboarding/start', body);
     expect(res.status).toBe(201);
     expect(res.body.billingModel).toBe('commission');
@@ -108,7 +111,7 @@ describe.skipIf(!hasDb)('commission model: free professionals, one-time company 
   it('requires the onboarding session and a company name for companies', async () => {
     const anon = client(ctx.app);
     expect((await anon.post('/api/onboarding/finish')).status).toBe(401);
-    const bad = await anon.post('/api/onboarding/start', { accountType: 'COMPANY', name: 'Bia', email: 'x@empresa.example' });
+    const bad = await anon.post('/api/onboarding/start', { accountType: 'COMPANY', name: 'Bia', email: 'x@empresa.example', document: testCnpj() });
     expect(bad.status).toBe(400);
   });
 
@@ -129,7 +132,13 @@ describe.skipIf(!hasDb)('commission model with the company fee waived', () => {
 
   it('lets a company finish without paying', async () => {
     const c = client(ctx.app);
-    await c.post('/api/onboarding/start', { accountType: 'COMPANY', name: 'Bia Lima', email: `free-${Date.now()}@empresa.example`, companyName: 'Construtora Lima' });
+    await c.post('/api/onboarding/start', {
+      accountType: 'COMPANY',
+      name: 'Bia Lima',
+      email: `free-${Date.now()}@empresa.example`,
+      companyName: 'Construtora Lima',
+      document: testCnpj(),
+    });
     await c.put('/api/onboarding/step', { step: 9, data: PROFILE, complete: true });
     const fin = await c.post('/api/onboarding/finish');
     expect(fin.status).toBe(200);

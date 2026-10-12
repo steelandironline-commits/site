@@ -1,3 +1,4 @@
+import { onlyDigits } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { generateToken, hashToken } from '../security/tokens.js';
@@ -91,14 +92,24 @@ export class AuthService {
 
   // ------------------------------------------------------------------- login
 
-  async login(email, password, meta = {}) {
-    const user = await this.prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
+  /**
+   * Login with CNPJ (company, one login per company) or CPF (pessoa física,
+   * collaborator). E-mail is still accepted for accounts created before.
+   * Every failure answers the same way, so documents can't be enumerated.
+   */
+  async login(identifier, password, meta = {}) {
+    const raw = String(identifier || '').trim();
+    const digits = onlyDigits(raw);
+    let where = null;
+    if (raw.includes('@')) where = { email: raw.toLowerCase() };
+    else if (digits.length === 11 || digits.length === 14) where = { loginId: digits };
+    const user = where ? await this.prisma.user.findUnique({ where }) : null;
     if (!user || !user.passwordHash) {
       await burnPasswordCheck(password);
-      throw unauthorized('E-mail ou senha incorretos.');
+      throw unauthorized('CPF/CNPJ ou senha incorretos.');
     }
     const ok = await verifyPassword(user.passwordHash, password);
-    if (!ok) throw unauthorized('E-mail ou senha incorretos.');
+    if (!ok) throw unauthorized('CPF/CNPJ ou senha incorretos.');
     if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_INACTIVE', 'Sua conta ainda não foi ativada.');
 
     const { token, session } = await this.createSession(user.id, { scope: 'FULL', ...meta });

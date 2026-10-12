@@ -347,7 +347,7 @@ function Pricing() {
         <div className={s.priceGrid}>
           <motion.article className={s.price} {...reveal}>
             <div className={s.priceTop}>
-              <p className="eyebrow">Profissional · pessoa física</p>
+              <p className="eyebrow">Cadastro Pessoa Física · login pelo CPF</p>
               <p className={s.priceValue}>
                 <span className={s.priceCurrency}>R$</span>0<span className={s.pricePer}> para sempre</span>
               </p>
@@ -366,7 +366,7 @@ function Pricing() {
           </motion.article>
           <motion.article className={`${s.price} ${s.priceMain}`} {...reveal} transition={{ ...reveal.transition, delay: 0.08 }}>
             <div className={s.priceTop}>
-              <p className="eyebrow">Empresa · CNPJ</p>
+              <p className="eyebrow">Cadastro Empresas · CNPJ ou MEI</p>
               <p className={s.priceValue}>
                 <span className={s.priceCurrency}>R$</span>0<span className={s.pricePer}>/mês</span>
               </p>

@@ -69,6 +69,39 @@ export function isValidCnpj(value) {
   return cnpj.endsWith(`${d1}${d2}`);
 }
 
+/** Validate a CPF (digits + check digits). */
+export function isValidCpf(value) {
+  const cpf = onlyDigits(value);
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  const calc = (len) => {
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += Number(cpf[i]) * (len + 1 - i);
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  return calc(9) === Number(cpf[9]) && calc(10) === Number(cpf[10]);
+}
+
+export function formatCpf(value) {
+  const d = onlyDigits(value).slice(0, 11);
+  return d
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1-$2');
+}
+
+/** CPF (up to 11 digits) or CNPJ (12–14), masked while typing. */
+export function formatDocument(value) {
+  const d = onlyDigits(value).slice(0, 14);
+  return d.length <= 11 ? formatCpf(d) : formatCnpj(d);
+}
+
+/** Show only the middle of a CPF: ***.456.789-** */
+export function maskCpf(value) {
+  const d = onlyDigits(value);
+  return d.length === 11 ? `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**` : '';
+}
+
 export function formatCnpj(value) {
   const d = onlyDigits(value).slice(0, 14);
   return d
