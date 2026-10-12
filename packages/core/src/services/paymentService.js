@@ -5,6 +5,7 @@ import { getConfig } from '../config.js';
 import { generateToken } from '../security/tokens.js';
 import { badRequest, conflict, forbidden, notFound, unavailable } from '../errors.js';
 import { FinancialError } from '../payments/errors.js';
+import { PAYMENTS_UNAVAILABLE_MESSAGE } from '../payments/DisabledPaymentProvider.js';
 import { getPaymentProvider, isWebhookProviderAllowed } from '../payments/index.js';
 import { WebhookSignatureError } from '../payments/PaymentProvider.js';
 import { AuthService } from './authService.js';
@@ -135,6 +136,7 @@ export class PaymentService {
 
   async createPixCharge({ user, company }) {
     const provider = this.provider();
+    if (provider.name === 'none') throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE); // nothing is recorded
     let subscription = await this.prisma.subscription.findUnique({ where: { companyId: company.id } });
     if (!subscription) {
       subscription = await this.prisma.subscription.create({
@@ -205,6 +207,7 @@ export class PaymentService {
    */
   async createCharge({ user, company, amountCents, description, payer = {}, transactionId = null, relatedType = null, relatedId = null }) {
     const provider = this.provider();
+    if (provider.name === 'none') throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE); // nothing is recorded
     if (!provider.has('pix')) throw new FinancialError('PROVIDER_CAPABILITY_NOT_AVAILABLE', { capability: 'pix' });
     if (!Number.isInteger(amountCents) || amountCents < 100) throw badRequest('Valor mínimo: R$ 1,00.');
     const payerDocument = payer.document || null;

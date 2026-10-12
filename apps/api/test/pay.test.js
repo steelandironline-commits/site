@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
-import { disconnectPrisma, getPaymentProvider, buildPlatform } from '@autopix/core';
-import { setupApp, resetDb, createActiveUser, hasDb, STRONG_PASSWORD } from './helpers.js';
+import { disconnectPrisma, getPaymentProvider, buildPlatform, PAYMENTS_UNAVAILABLE_MESSAGE } from '@autopix/core';
+import { setupApp, resetDb, createActiveUser, client, hasDb, STRONG_PASSWORD } from './helpers.js';
 import { createApp } from '../src/app.js';
 
 const WA_FROM = '5511977776666';
@@ -411,5 +411,33 @@ describe.skipIf(!hasDb)('AutoPix Pay — Banco do Brasil provider boundary', () 
     const ok = await request(ctx.app).post('/api/webhooks/payment/banco-do-brasil/pix?token=bb-webhook-secret-0123456789abcdef01234567').set('Content-Type', 'application/json').send('{}');
     expect(ok.status).toBe(400); // authenticated but malformed
     expect(await ctx.prisma.payment.count()).toBe(0);
+  });
+});
+
+// =====================================================================
+describe.skipIf(!hasDb)('AutoPix Pay — gateway disabled (PAYMENT_PROVIDER=none)', () => {
+  let ctx;
+  beforeAll(async () => {
+    ctx = await setupApp({ PAYMENT_PROVIDER: 'none' });
+  });
+  beforeEach(async () => {
+    await resetDb(ctx.prisma);
+  });
+  afterAll(async () => {
+    await disconnectPrisma();
+  });
+
+  it('the app runs, but no Pix charge is created and nothing is recorded', async () => {
+    const c = client(ctx.app);
+    const start = await c.post('/api/onboarding/start', { name: 'Ana', email: `sem-gateway-${Date.now()}@empresa.example`, companyName: 'Sem Gateway' });
+    expect(start.status).toBe(201);
+    const pix = await c.post('/api/payments/pix', {});
+    expect(pix.status).toBe(503);
+    expect(pix.body.error.message).toBe(PAYMENTS_UNAVAILABLE_MESSAGE);
+    expect(await ctx.prisma.payment.count()).toBe(0);
+    expect((await c.get('/api/pay/capabilities')).status).toBe(401); // onboarding session has no AutoPix Pay access
+    const config = await request(ctx.app).get('/api/config');
+    expect(config.body.paymentProvider).toBe('none');
+    expect(config.body.simulationAvailable).toBe(false);
   });
 });

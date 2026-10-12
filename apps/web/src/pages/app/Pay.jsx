@@ -37,12 +37,14 @@ const parseMoney = (v) => Math.round(Number(String(v).replace(/\./g, '').replace
 
 /** Partner/sandbox strip shown on every AutoPix Pay screen. */
 export function PartnerNote({ caps, sandbox }) {
+  const disabled = caps?.provider === 'none';
   return (
     <p className={s.payNote}>
       <ShieldCheck size={14} aria-hidden="true" />
       <span>
-        Pagamentos processados por instituições financeiras parceiras.
-        {caps?.label ? ` Processado pelo parceiro financeiro: ${caps.label}.` : ''}
+        {disabled
+          ? 'Pagamentos temporariamente indisponíveis. Nenhuma cobrança será criada até o gateway ser reativado.'
+          : `Pagamentos processados por instituições financeiras parceiras.${caps?.label ? ` Processado pelo parceiro financeiro: ${caps.label}.` : ''}`}
       </span>
       {sandbox && <DemoBadge label="SANDBOX" />}
     </p>

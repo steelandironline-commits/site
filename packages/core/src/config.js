@@ -43,7 +43,8 @@ const schema = z.object({
     .string()
     .optional()
     .transform((v) => (v || 'mock').toLowerCase().replace(/-/g, '_'))
-    .pipe(z.enum(['mock', 'mercadopago', 'asaas', 'banco_do_brasil'])),
+    // none: no payment gateway — the app runs, every charge fails closed with a clear message.
+    .pipe(z.enum(['mock', 'mercadopago', 'asaas', 'banco_do_brasil', 'none'])),
   MOCK_PAYMENT_CAPABILITIES: optional,
   BB_ENVIRONMENT: z
     .string()
@@ -255,7 +256,7 @@ export function loadConfig(env = process.env) {
       // except an explicit DEMO deployment where every payment is labelled SANDBOX.
       if (looksSandbox && !e.DEMO_MODE) errors.push('Banco do Brasil sandbox configuration refused in production (set BB_ENVIRONMENT=production, or DEMO_MODE=true for a labelled demo)');
       if (!looksSandbox && bb.environment === 'production' && /sandbox|\.hm\./i.test(bb.apiBaseUrl)) errors.push('BB_API_BASE_URL points to a sandbox host');
-    } else {
+    } else if (cfg.payment.provider !== 'none') {
       if (!cfg.payment.accessToken) errors.push('PAYMENT_ACCESS_TOKEN is required in production');
       if (!cfg.payment.webhookSecret && e.PROCESS_ROLE !== 'worker') errors.push('PAYMENT_WEBHOOK_SECRET is required in production');
     }

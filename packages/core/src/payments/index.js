@@ -3,10 +3,12 @@ import { MockPaymentProvider } from './MockPaymentProvider.js';
 import { MercadoPagoPaymentProvider } from './MercadoPagoPaymentProvider.js';
 import { AsaasPaymentProvider } from './AsaasPaymentProvider.js';
 import { BancoDoBrasilPaymentProvider } from './providers/banco-do-brasil.provider.js';
+import { DisabledPaymentProvider } from './DisabledPaymentProvider.js';
 
 export { PaymentProvider, WebhookSignatureError, PaymentProviderError } from './PaymentProvider.js';
-export { MockPaymentProvider, MercadoPagoPaymentProvider, AsaasPaymentProvider, BancoDoBrasilPaymentProvider };
+export { MockPaymentProvider, MercadoPagoPaymentProvider, AsaasPaymentProvider, BancoDoBrasilPaymentProvider, DisabledPaymentProvider };
 export { NO_CAPABILITIES } from './PaymentProvider.js';
+export { PAYMENTS_UNAVAILABLE_MESSAGE } from './DisabledPaymentProvider.js';
 export { FinancialError, FINANCIAL_ERRORS, withRetry, capabilityError } from './errors.js';
 export { BancoDoBrasilAuthService } from './providers/banco-do-brasil.auth.js';
 export { txidFor, refundIdFor } from './providers/banco-do-brasil.provider.js';
@@ -40,6 +42,9 @@ export function getPaymentProvider(name, config = getConfig()) {
       break;
     case 'banco_do_brasil':
       provider = new BancoDoBrasilPaymentProvider({ bb: config.bb });
+      break;
+    case 'none':
+      provider = new DisabledPaymentProvider();
       break;
     default:
       throw new Error(`Unknown payment provider: ${key}`);
