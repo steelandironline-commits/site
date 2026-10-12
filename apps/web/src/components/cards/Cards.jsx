@@ -350,7 +350,7 @@ export function CompanyCard({ company, footer }) {
         </div>
       </dl>
       {company.services?.length > 0 && (
-        <ul className={s.chips} aria-label="Serviços">
+        <ul className={s.chips} aria-label="Serviços cadastrados">
           {company.services.slice(0, 6).map((x) => (
             <li key={x}>{x}</li>
           ))}

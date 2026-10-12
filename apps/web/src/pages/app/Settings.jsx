@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import { LogOut, Monitor } from 'lucide-react';
 import { del, put } from '../../lib/api.js';
 import { useApi } from '../../lib/hooks.js';
-import { useSession } from '../../lib/session.jsx';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
 import { Badge, Button, DemoBadge, ErrorState, Field, SkeletonCard } from '../../components/ui/ui.jsx';
@@ -13,9 +12,7 @@ import s from './app.module.css';
 
 export default function Settings() {
   const toast = useToast();
-  const navigate = useNavigate();
-  const { logout } = useSession();
-  const { me, demoMode } = useOutletContext();
+  const { me, demoMode, onLogout } = useOutletContext();
   const sessions = useApi('/api/me/sessions');
   const [pw, setPw] = useState({ currentPassword: '', newPassword: '', confirm: '' });
   const [errors, setErrors] = useState({});
@@ -70,10 +67,7 @@ export default function Settings() {
         <Button
           variant="secondary"
           icon={LogOut}
-          onClick={async () => {
-            await logout();
-            navigate('/login', { replace: true });
-          }}
+          onClick={onLogout}
         >
           Sair
         </Button>

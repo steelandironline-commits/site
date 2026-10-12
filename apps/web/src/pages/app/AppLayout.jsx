@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useState } from 'react';
-import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity as ActivityIcon,
@@ -60,8 +60,8 @@ function PageFallback() {
 export default function AppLayout() {
   const { loading, me, isAuthenticated, demoMode, logout } = useSession();
   const location = useLocation();
-  const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
+  const loggingOut = useRef(false);
   const stream = useActivityStream({ enabled: isAuthenticated, initialLimit: 40 });
 
   useEffect(() => setMoreOpen(false), [location.pathname]);
@@ -69,13 +69,14 @@ export default function AppLayout() {
   if (loading) return <PageLoader />;
   if (!isAuthenticated) {
     if (me?.scope === 'ONBOARDING') return <Navigate to={me.user.status === 'PENDING_PAYMENT' ? '/checkout' : '/onboarding'} replace />;
+    if (loggingOut.current) return <Navigate to="/login" replace />;
     const next = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?next=${next}`} replace />;
   }
 
   const onLogout = async () => {
+    loggingOut.current = true;
     await logout();
-    navigate('/login', { replace: true });
   };
 
   return (
@@ -135,7 +136,7 @@ export default function AppLayout() {
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             >
               <Suspense fallback={<PageFallback />}>
-                <Outlet context={{ stream, me, demoMode }} />
+                <Outlet context={{ stream, me, demoMode, onLogout }} />
               </Suspense>
             </motion.div>
           </AnimatePresence>
