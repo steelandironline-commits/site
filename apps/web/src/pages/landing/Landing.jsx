@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
   Check,
-  ChevronDown,
   Gauge,
   Menu,
   MessageSquareText,
@@ -15,14 +14,11 @@ import {
 import { PLAN, formatCents } from '@autopix/shared';
 import { Logo } from '../../components/brand/Logo.jsx';
 import { Button, DemoBadge, ScoreRing } from '../../components/ui/ui.jsx';
-import LazyRadar from '../../components/radar/LazyRadar.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import { PipelineFlow } from '../../components/activity/Flow.jsx';
-import { DEMO_RADAR_NODES, useDemoFeed } from '../../lib/demoFeed.js';
-import { useIsMobile } from '../../lib/hooks.js';
+import { useDemoFeed } from '../../lib/demoFeed.js';
 import { useSession } from '../../lib/session.jsx';
-import Cinematic from './Cinematic.jsx';
-import LogicFilm from './LogicFilm.jsx';
+import Descent from './descent/Descent.jsx';
 import s from './landing.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -37,9 +33,14 @@ const reveal = {
 function Nav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [immersive, setImmersive] = useState(true);
   const { isAuthenticated } = useSession();
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 12);
+      const stage = document.querySelector('[data-immersive]');
+      setImmersive(Boolean(stage) && stage.getBoundingClientRect().bottom > 64);
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -57,7 +58,7 @@ function Nav() {
     ['#preco', 'Preço'],
   ];
   return (
-    <header className={`${s.nav} ${scrolled ? s.navScrolled : ''}`}>
+    <header className={`${s.nav} ${scrolled ? (immersive ? s.navGlass : s.navScrolled) : ''}`}>
       <div className={`container ${s.navInner}`}>
         <Link to="/" aria-label="AutoPix — início">
           <Logo />
@@ -123,72 +124,6 @@ function Nav() {
         )}
       </AnimatePresence>
     </header>
-  );
-}
-
-/* ----------------------------------------------------------------- hero */
-function Hero() {
-  const mobile = useIsMobile();
-  return (
-    <section id="hero" className={s.hero} aria-labelledby="hero-title">
-      <div className={s.heroGrid} aria-hidden="true" />
-      <div className={`container ${s.heroInner}`}>
-        <motion.div className={s.heroCopy} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
-          <p className={s.kicker}>
-            <span className={s.kickerDot} aria-hidden="true" /> Sua empresa trabalha. O AutoPix procura oportunidades.
-          </p>
-          <h2 id="hero-title" className={s.heroTitle}>
-            Procuramos vendas e serviços <span>pra você.</span>
-          </h2>
-          <p className={s.heroLead}>
-            Enquanto você trabalha, o AutoPix procura empresas, sinais de demanda e oportunidades comerciais compatíveis com o seu negócio.
-          </p>
-          <div className={s.heroCtas}>
-            <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
-              ATIVAR POR R$597/MÊS
-            </Button>
-            <Button href="#como-funciona" size="lg" variant="outline">
-              VER COMO FUNCIONA
-            </Button>
-          </div>
-          <ul className={s.trust}>
-            <li>
-              <Check size={14} aria-hidden="true" /> Sem fidelidade.
-            </li>
-            <li>
-              <Check size={14} aria-hidden="true" /> Cancele quando quiser.
-            </li>
-            <li>
-              <Check size={14} aria-hidden="true" /> Pagamento via Pix.
-            </li>
-          </ul>
-        </motion.div>
-
-        <motion.div className={s.heroRadar} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2, delay: 0.2 }}>
-          <div className={s.radarFrame}>
-            <div className={s.radarHud}>
-              <span className="eyebrow">Opportunity radar</span>
-              <DemoBadge label="DEMO · ilustrativo" />
-            </div>
-            <LazyRadar nodes={DEMO_RADAR_NODES} height={mobile ? 340 : 560} demo />
-            <div className={s.radarLegend} aria-hidden="true">
-              <span>
-                <i className={s.lgPrimary} /> Match ≥ 85%
-              </span>
-              <span>
-                <i className={s.lgRevenue} /> 70–84%
-              </span>
-              <span>
-                <i className={s.lgAmber} /> &lt; 70%
-              </span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-      <a href="#produto" className={s.scrollHint} aria-label="Rolar para o produto">
-        <ChevronDown size={18} />
-      </a>
-    </section>
   );
 }
 
@@ -416,10 +351,8 @@ export default function Landing() {
       </a>
       <Nav />
       <main id="main">
-        <Cinematic />
-        <Hero />
+        <Descent />
         <Product />
-        <LogicFilm />
         <LiveDemo />
         <Pricing />
         <FinalCta />

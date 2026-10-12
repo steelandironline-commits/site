@@ -1,0 +1,453 @@
+/* ---------------- Descent: immersive opening ---------------- */
+.descent {
+  position: relative;
+  height: calc(var(--n) * 125vh);
+  height: calc(var(--n) * 125svh);
+  margin-top: -64px;
+  background: #0a0b0d;
+}
+
+.anchor {
+  position: absolute;
+  left: 0;
+  top: calc((100% - 100svh) * var(--at));
+  width: 1px;
+  height: 1px;
+}
+
+.stage {
+  --d-top: #4a6fb5;
+  --d-bottom: #0e1830;
+  --d-accent: #8fb2ff;
+  --d-fill: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(110% 75% at 68% 12%, color-mix(in srgb, var(--d-top) 78%, #ffffff 22%) 0%, transparent 62%),
+    linear-gradient(180deg, var(--d-top) 0%, var(--d-bottom) 80%);
+}
+
+/* Faint orbit lines behind the island: depth without noise. */
+.horizon {
+  position: absolute;
+  inset: 0;
+  background: repeating-radial-gradient(circle at 66% 50%, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 72px);
+  mask-image: radial-gradient(55% 60% at 66% 50%, #000 0%, transparent 100%);
+  -webkit-mask-image: radial-gradient(55% 60% at 66% 50%, #000 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.4s var(--ease);
+}
+
+.canvasOn {
+  opacity: 1;
+}
+
+.canvas canvas {
+  touch-action: pan-y;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(55% 65% at 16% 56%, rgba(0, 0, 0, 0.3), transparent 72%),
+    radial-gradient(140% 110% at 62% 42%, transparent 58%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+.badge {
+  position: absolute;
+  z-index: 3;
+  top: 80px;
+  right: calc(var(--gutter) + 4px);
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(6px);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.82);
+  pointer-events: none;
+}
+
+/* ---------------- caption ---------------- */
+.copyBox {
+  position: absolute;
+  z-index: 3;
+  left: max(var(--gutter), calc((100vw - var(--container)) / 2 + var(--gutter)));
+  top: 52%;
+  transform: translateY(-50%);
+  width: min(460px, 38vw);
+}
+
+.copyBox {
+  display: grid;
+  align-items: center;
+}
+
+/* Outgoing and incoming captions share one cell, so fast scrolling never stacks them. */
+.copy {
+  grid-area: 1 / 1;
+}
+
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--d-accent) 65%, #ffffff 35%);
+}
+
+.kickerBar {
+  display: block;
+  width: 28px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: left center;
+}
+
+.title {
+  margin: 16px 0 0;
+  font-size: clamp(2.3rem, 1.2rem + 3.4vw, 4.3rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  color: #fff;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.22);
+}
+
+.mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+}
+
+.word {
+  display: inline-block;
+  transform-origin: 0 100%;
+}
+
+.body {
+  margin: 18px 0 0;
+  max-width: 44ch;
+  font-size: clamp(0.98rem, 0.92rem + 0.3vw, 1.1rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+/* ---------------- chapter rail ---------------- */
+.rail {
+  position: absolute;
+  z-index: 3;
+  right: calc(var(--gutter) + 4px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.rail ol {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rail button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: color 0.25s;
+}
+
+.rail button:hover,
+.rail button:focus-visible {
+  color: #fff;
+}
+
+/* Only the current chapter is named; the rest show on hover so the island stays clear. */
+.railLabel {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translateX(6px);
+  transition:
+    opacity 0.25s,
+    transform 0.25s var(--ease);
+}
+
+.rail button:hover .railLabel,
+.rail button:focus-visible .railLabel,
+.railOn .railLabel {
+  opacity: 1;
+  transform: none;
+}
+
+.rail button:focus-visible {
+  outline: none;
+}
+
+.rail button:focus-visible .railDot {
+  box-shadow: var(--focus);
+}
+
+.railDot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    transform 0.25s var(--ease);
+}
+
+.railOn {
+  color: #fff !important;
+}
+
+.railOn .railDot {
+  border-color: #fff;
+  background: var(--d-accent);
+  transform: scale(1.35);
+  box-shadow: 0 0 12px var(--d-accent);
+}
+
+.railTrack {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  right: 4px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.railFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(var(--d-fill) * 100%);
+  background: var(--d-accent);
+}
+
+/* ---------------- scroll cue: dot rises inside the mouse ---------------- */
+.cue {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 22px;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-left: -28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cue:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.mouse {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  border-radius: 14px;
+  transition: border-color 0.2s;
+}
+
+.cue:hover .mouse {
+  border-color: #fff;
+}
+
+.wheel {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px var(--d-accent);
+  animation: wheel 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes wheel {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-16px);
+  }
+  85% {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+.fallback {
+  position: absolute;
+  top: 50%;
+  right: 16%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.78);
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.35));
+}
+
+/* ---------------- phones ---------------- */
+@media (max-width: 767px) {
+  .descent {
+    height: calc(var(--n) * 112vh);
+    height: calc(var(--n) * 112svh);
+  }
+
+  .horizon {
+    background: repeating-radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 56px);
+    mask-image: radial-gradient(70% 40% at 50% 30%, #000 0%, transparent 100%);
+    -webkit-mask-image: radial-gradient(70% 40% at 50% 30%, #000 0%, transparent 100%);
+  }
+
+  .vignette {
+    background: radial-gradient(140% 100% at 50% 30%, transparent 55%, rgba(0, 0, 0, 0.4) 100%);
+  }
+
+  .badge {
+    top: 74px;
+    right: auto;
+    left: var(--gutter);
+  }
+
+  .copyBox {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: auto;
+    padding: 64px var(--gutter) calc(20px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--d-bottom) 82%, transparent) 34%, var(--d-bottom) 100%);
+    align-items: end;
+  }
+
+  .title {
+    margin-top: 12px;
+    font-size: clamp(1.9rem, 1.2rem + 3.6vw, 2.5rem);
+  }
+
+  .body {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .ctas {
+    margin-top: 18px;
+    gap: 10px;
+  }
+
+  .ctas > * {
+    width: 100%;
+  }
+
+  .rail {
+    top: 76px;
+    right: 12px;
+    transform: none;
+  }
+
+  .rail ol {
+    gap: 6px;
+  }
+
+  .railLabel {
+    display: none;
+  }
+
+  .cue {
+    bottom: calc(var(--copy-h, 360px) - 60px);
+  }
+
+  .fallback {
+    top: 26%;
+    right: 50%;
+    transform: translate(50%, -50%);
+  }
+
+  .fallback svg {
+    width: 110px;
+    height: 110px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel {
+    animation: none;
+    transform: translateY(-8px);
+  }
+
+  .canvas {
+    transition: none;
+  }
+}
