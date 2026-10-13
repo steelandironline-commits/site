@@ -30,4 +30,3 @@ ALTER TABLE "WorkforceMatch"
     ADD COLUMN "interviewCanceledAt" TIMESTAMP(3),
     ADD COLUMN "agreedSalaryCents" INTEGER,
     ADD COLUMN "hiringFeePaidAt" TIMESTAMP(3);
-
