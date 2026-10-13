@@ -2,6 +2,7 @@
 import { Component, Fragment, Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
 import { ArrowRight, Building2, Container, Landmark, LayoutDashboard, Radar, Route, UserCheck } from 'lucide-react';
+import { WhatsAppIcon } from '../../../components/brand/WhatsAppIcon.jsx';
 import { Button } from '../../../components/ui/ui.jsx';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../../lib/hooks.js';
 import { useSession } from '../../../lib/session.jsx';
@@ -141,7 +142,7 @@ function Copy({ index, reduced }) {
               <Button to="/login" size="lg" variant="outline">
                 FAZER LOGIN
               </Button>
-              <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
+              <Button to="/onboarding" size="lg" icon={WhatsAppIcon} iconRight={ArrowRight}>
                 CADASTRE-SE AGORA
               </Button>
             </>

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { PRICING, formatCents } from '@autopix/shared';
 import { Logo } from '../../components/brand/Logo.jsx';
+import { WhatsAppIcon } from '../../components/brand/WhatsAppIcon.jsx';
 import { Button, Dialog, ScoreRing } from '../../components/ui/ui.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import ProductStage from './ProductStage.jsx';
@@ -174,7 +175,7 @@ function Nav() {
                 {isAuthenticated ? 'Painel' : 'Entrar'}
               </Link>
             </nav>
-            <Button to="/onboarding" size="lg" block iconRight={ArrowRight}>
+            <Button to="/onboarding" size="lg" block icon={WhatsAppIcon} iconRight={ArrowRight}>
               CADASTRE-SE AGORA
             </Button>
             <DownloadButton block />
@@ -399,7 +400,7 @@ function Pricing() {
             <Button to="/login" size="lg" variant="outline">
               FAZER LOGIN
             </Button>
-            <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
+            <Button to="/onboarding" size="lg" icon={WhatsAppIcon} iconRight={ArrowRight}>
               CADASTRE-SE AGORA
             </Button>
           </div>
@@ -422,7 +423,7 @@ function FinalCta() {
             <Button to="/login" size="lg" variant="outline">
               FAZER LOGIN
             </Button>
-            <Button to="/onboarding" size="lg" iconRight={ArrowRight}>
+            <Button to="/onboarding" size="lg" icon={WhatsAppIcon} iconRight={ArrowRight}>
               CADASTRE-SE AGORA
             </Button>
           </div>

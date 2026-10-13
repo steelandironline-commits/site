@@ -9,7 +9,7 @@ export const CHAPTERS = [
     rail: 'Início',
     kicker: 'Transporte · Pessoas · Serviços · Pix',
     title: 'Tem emprego, tem rota, tem serviço. TemPix.',
-    body: 'Clientes, cargas, vagas e serviços com pagamento assegurado até a conclusão. Profissional entra grátis; empresa paga só o cadastro, uma vez, e nunca mensalidade.',
+    body: 'Clientes, cargas, vagas e serviços chegam no seu WhatsApp, com pagamento assegurado até a conclusão. Sem mensalidade, com taxas pequenas e transparentes.',
     palette: { top: '#1150d8', bottom: '#00237a', sky: '#d6e4ff', ground: '#0b2a6b', accent: '#ffdf00' },
   },
   {

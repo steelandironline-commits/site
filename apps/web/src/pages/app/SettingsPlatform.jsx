@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell, Download, ExternalLink, KeyRound, MessageCircle, Share, Smartphone, Unlink } from 'lucide-react';
 import { NOTIFICATION_CATEGORIES, NOTIFICATION_CATEGORY_LABELS, NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_LABELS } from '@autopix/shared';
 import { del, post, put } from '../../lib/api.js';
@@ -17,6 +17,13 @@ export function WhatsAppCard() {
   const [verification, setVerification] = useState(null);
   const [busy, setBusy] = useState(false);
   const conn = data?.connection;
+  const box = useRef(null);
+  const linking = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('vincular') === 'whatsapp';
+
+  // Coming from signup: bring the card into view so the number is linked right away.
+  useEffect(() => {
+    if (linking && data) box.current?.scrollIntoView({ block: 'center' });
+  }, [linking, data]);
 
   // While waiting for the user's WhatsApp message, refresh the status.
   useEffect(() => {
@@ -45,13 +52,17 @@ export function WhatsAppCard() {
   };
 
   return (
-    <section className={`${s.panel} ${s.panelPad}`} aria-labelledby="wa-title">
+    <section ref={box} id="whatsapp" className={`${s.panel} ${s.panelPad}`} aria-labelledby="wa-title">
       <div className={s.sectionHead}>
         <h2 id="wa-title" className={s.panelTitle}>
           <MessageCircle size={15} style={{ verticalAlign: -2 }} aria-hidden="true" /> WhatsApp
         </h2>
         {conn && <Badge tone={conn.status === 'VERIFIED' ? 'primary' : 'amber'}>{conn.status === 'VERIFIED' ? 'Conectado' : 'Aguardando verificação'}</Badge>}
       </div>
+      <p className={s.muted} style={{ fontSize: 13, margin: '0 0 12px' }}>
+        {linking && !conn ? 'Último passo do cadastro: vincule seu WhatsApp. ' : ''}Um único número por conta, confirmado por você; ele não pode ser
+        usado em outra conta.
+      </p>
       {!data ? (
         <SkeletonCard lines={1} />
       ) : !data.available ? (

@@ -22,6 +22,7 @@ commercial approach to a realtime dashboard.
 - [Database](#database)
 - [Scripts](#scripts)
 - [Demo mode](#demo-mode)
+- [Fees (taxas)](#fees-taxas)
 - [Payments (Pix)](#payments-pix)
 - [TemPix Pay](#autopix-pay)
 - [Banco do Brasil Integration](#banco-do-brasil-integration)
@@ -205,6 +206,27 @@ npm run db:studio
 
 The landing page showcase (radar and activity) is marketing content generated in the browser,
 never persisted, and always labelled DEMO.
+
+---
+
+## Fees (taxas)
+
+TemPix has no subscription. What each side pays:
+
+| Who | Fee | When |
+| --- | --- | --- |
+| Professional (pessoa física, CPF) | Free signup | — |
+| Company (CNPJ or MEI) | One-time signup fee, R$ 200,00 (`COMPANY_SIGNUP_FEE_CENTS`) | Once, before activation |
+| Contracts (obras, serviços, rotas, transportes) | 2% of the contract value, deducted from what is released to whoever did the work (`CommissionRule`) | When the payment is released |
+| **Interviewee (candidate)** | **R$ 1,00 to attend the interview** (mandatory) | When confirming attendance |
+| **Hiring company** | **3% of the offered salary, on the agreed value** | When the hire is agreed |
+
+Hiring example: agreed salary of R$ 3.000,00 → the company pays R$ 90,00 (3%) to TemPix;
+the candidate paid R$ 1,00 to confirm the interview.
+
+Status: the interview (R$ 1,00) and hiring (3%) fees are business rules defined here; the app
+does not charge them yet. When they are implemented they must follow the payment rules below
+(provider confirmation, idempotency, audit log, no simulated payments in production).
 
 ---
 

@@ -39,7 +39,8 @@ export default function Activate() {
     try {
       await post('/api/auth/activate', { token, password });
       await refresh();
-      navigate('/app', { replace: true });
+      const wa = await get('/api/whatsapp').catch(() => null);
+      navigate(wa?.available && !wa.connection ? '/app/settings?vincular=whatsapp' : '/app', { replace: true });
     } catch (err) {
       setErrors(err.fields || {});
       setError(err.message);
