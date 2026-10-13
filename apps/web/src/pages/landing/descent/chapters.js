@@ -57,7 +57,7 @@ export const CHAPTERS = [
     rail: 'Painel',
     kicker: 'Tem tudo · seu painel',
     title: 'Tudo isso numa tela só.',
-    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Sem mensalidade: o TemPix só fica com 2% quando o contrato fecha.',
+    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Sem mensalidade: 2% nos contratos e 3% do salário nas contratações, só quando o negócio fecha.',
     palette: { top: '#24365e', bottom: '#0a0b0d', sky: '#c7d6ff', ground: '#10141f', accent: '#2ad1b8' },
   },
 ];

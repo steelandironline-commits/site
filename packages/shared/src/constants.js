@@ -11,7 +11,7 @@ export const PRICING = Object.freeze({
   /** One-time signup fee for companies (CNPJ). Professionals sign up free. */
   companySignupFeeCents: 20000,
   person: [
-    'Cadastro grátis, sem taxa nenhuma',
+    'Cadastro grátis; para ir à entrevista, só R$ 1,00',
     'Receba vagas, serviços e fretes da sua região',
     'Pagamento assegurado até a conclusão',
     'Receba por Pix direto na sua conta',
