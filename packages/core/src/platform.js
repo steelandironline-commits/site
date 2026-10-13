@@ -36,6 +36,7 @@ import { DisputeService } from './finance/DisputeService.js';
 import { TripService } from './finance/TripService.js';
 import { ReconciliationService } from './finance/ReconciliationService.js';
 import { AdminService } from './finance/AdminService.js';
+import { SocialService } from './services/socialService.js';
 
 /**
  * Composition root: ONE business logic layer shared by every client
@@ -72,6 +73,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
 
   // TemPix Pay — provider-independent financial layer.
   s.transactions = new MarketplaceTransactionService({ prisma, config, events, commissions: s.commissions, audit, payments: s.payments });
+  s.social = new SocialService({ prisma, transactions: s.transactions });
   s.refunds = new RefundService({ prisma, config, events, audit, transactions: s.transactions });
   s.workforce.payments = s.payments;
   s.workforce.refunds = s.refunds;
@@ -115,3 +117,4 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
   );
   return s;
 }
+

@@ -14,6 +14,7 @@ const Overview = lazy(() => import('./pages/app/Overview.jsx'));
 const RadarPage = lazy(() => import('./pages/app/RadarPage.jsx'));
 const Opportunities = lazy(() => import('./pages/app/Opportunities.jsx'));
 const OpportunityDetail = lazy(() => import('./pages/app/OpportunityDetail.jsx'));
+const Social = lazy(() => import('./pages/app/Social.jsx'));
 const Activity = lazy(() => import('./pages/app/Activity.jsx'));
 const Agents = lazy(() => import('./pages/app/Agents.jsx'));
 const Company = lazy(() => import('./pages/app/Company.jsx'));
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="radar" element={<RadarPage />} />
             <Route path="opportunities" element={<Opportunities />} />
             <Route path="opportunities/:id" element={<OpportunityDetail />} />
+            <Route path="social" element={<Social />} />
             <Route path="activity" element={<Activity />} />
             <Route path="agents" element={<Agents />} />
             <Route path="company" element={<Company />} />
@@ -79,3 +81,4 @@ export default function App() {
     </>
   );
 }
+

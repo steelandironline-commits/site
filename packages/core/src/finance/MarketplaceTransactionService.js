@@ -410,7 +410,7 @@ export class MarketplaceTransactionService {
       receivable: { sellerCompanyId: companyId, status: { in: ['AWAITING_PAYMENT', 'PAID', 'PROTECTED', 'READY_TO_RELEASE'] } },
       toRelease: { ...mine, status: { in: ['PROTECTED', 'READY_TO_RELEASE'] } },
       history: { ...mine, status: { in: ['RELEASED', 'REFUNDED', 'CANCELLED', 'PAID'] } },
-      commissions: { sellerCompanyId: companyId, status: { in: ['PAID', 'PROTECTED', 'READY_TO_RELEASE', 'RELEASED'] } },
+      commissions: { sellerCompanyId: companyId, buyerConfirmedAt: { not: null }, status: { in: ['PAID', 'READY_TO_RELEASE', 'RELEASED'] }, payment: { status: 'CONFIRMED', refundedCents: 0 } },
     };
     const items = await this.prisma.marketplaceTransaction.findMany({
       where: views[view] || mine,
@@ -429,7 +429,7 @@ export class MarketplaceTransactionService {
       sum({ ...seller, status: { in: ['PAID', 'PROTECTED', 'READY_TO_RELEASE', 'RELEASED'] } }, 'grossAmount'),
       sum({ ...seller, status: { in: ['PROTECTED', 'READY_TO_RELEASE'] } }, 'sellerNetAmount'),
       sum({ ...seller, status: 'AWAITING_PAYMENT' }, 'grossAmount'),
-      sum({ ...seller, status: { in: ['PAID', 'PROTECTED', 'READY_TO_RELEASE', 'RELEASED'] } }, 'commissionAmount'),
+      sum({ ...seller, buyerConfirmedAt: { not: null }, status: { in: ['PAID', 'READY_TO_RELEASE', 'RELEASED'] }, payment: { status: 'CONFIRMED', refundedCents: 0 } }, 'commissionAmount'),
       this.prisma.refund.aggregate({ where: { status: { in: ['REQUESTED', 'PROCESSING'] }, payment: { companyId } }, _sum: { amountCents: true } }),
     ]);
     return {
@@ -440,3 +440,4 @@ export class MarketplaceTransactionService {
     };
   }
 }
+

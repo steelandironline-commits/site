@@ -342,7 +342,7 @@ function Pricing() {
           <h2 id="preco-title">Sem mensalidade. Nunca.</h2>
           <p>
             Profissional entra grátis. Empresa paga só um cadastro, uma única vez. Depois, o TemPix só ganha quando você ganha: {fee} dos
-            contratos fechados.
+            valores intermediados com sucesso.
           </p>
         </motion.header>
         <div className={s.priceGrid}>
@@ -389,7 +389,7 @@ function Pricing() {
         </div>
         <motion.div className={s.priceFoot} {...reveal}>
           <p>
-            <strong>Em todo contrato fechado: {fee} fixos.</strong> Exemplo: contrato de R$ 10.000,00 → R$ 200,00 para o TemPix e R$ 9.800,00
+            <strong>Em todo valor intermediado com sucesso: {fee} fixos.</strong> Exemplo: contrato de R$ 10.000,00 → R$ 200,00 para o TemPix e R$ 9.800,00
             para quem executou.
           </p>
           <p className={s.priceSafe}>
@@ -473,3 +473,4 @@ export default function Landing() {
     </>
   );
 }
+

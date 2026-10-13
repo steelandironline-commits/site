@@ -265,7 +265,7 @@ export default function Pay() {
       ({
         payments: 'Nenhuma cobrança recebida de fornecedores.',
         toRelease: 'Nada aguardando liberação.',
-        commissions: 'As comissões aparecem após o pagamento confirmado.',
+        commissions: 'As taxas aparecem após pagamento e conclusão confirmados pelo cliente.',
         history: 'Sem histórico ainda.',
       })[tab] || 'Crie uma cobrança aqui ou pelo WhatsApp: “gere um Pix de 1400”.',
     [tab],
@@ -328,3 +328,4 @@ export default function Pay() {
     </>
   );
 }
+

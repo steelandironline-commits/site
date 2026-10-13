@@ -14,6 +14,19 @@ const money = z.coerce.number().int().min(100).max(100_000_000); // cents
 export function registerCoreActions(engine) {
   const s = () => engine.services;
 
+  // Social is explicit, authenticated and available only through the app/API.
+  engine.register({ name: 'PUBLISH_SOCIAL_POST', channels: ['WEB', 'API'],
+    schema: z.object({ transactionId: id, body: z.string().trim().min(1).max(2000), photo: z.string().max(614450).optional().nullable() }),
+    handler: (ctx, input) => s().social.publish({ user: ctx.user, company: ctx.company, ...input }) });
+  engine.register({ name: 'COMMENT_SOCIAL_POST', channels: ['WEB', 'API'],
+    schema: z.object({ postId: id, body: z.string().trim().min(1).max(1000), parentId: id.optional().nullable() }),
+    handler: (ctx, input) => s().social.comment({ user: ctx.user, ...input }) });
+  engine.register({ name: 'REPOST_SOCIAL_POST', channels: ['WEB', 'API'],
+    schema: z.object({ postId: id, body: z.string().trim().max(2000).default('') }),
+    handler: (ctx, input) => s().social.repost({ user: ctx.user, ...input }) });
+  engine.register({ name: 'DELETE_SOCIAL_POST', channels: ['WEB', 'API'], schema: byId,
+    handler: (ctx, input) => s().social.remove({ user: ctx.user, ...input }) });
+
   // ------------------------------------------------------- opportunities
   const oppStatus = (name, status, description) =>
     engine.register({
@@ -186,11 +199,11 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'AGREE_HIRE',
-    description: 'Registra o salário acordado e gera a cobrança Pix de 3% calculada pelo TemPix.',
+    description: 'Registra o valor acordado. A taxa de 2% é aplicada à intermediação concluída no TemPix Pay.',
     schema: z.object({ id, agreedSalaryCents: z.coerce.number().int().min(100).max(100_000_000) }),
     requiresActiveSubscription: true,
     sensitive: true,
-    summarize: (i) => `Registrar contratação por ${formatCents(i.agreedSalaryCents)} e cobrar 3%`,
+    summarize: (i) => `Registrar contratação por ${formatCents(i.agreedSalaryCents)} com intermediação de 2% após conclusão confirmada`,
     handler: async (ctx, i) => s().workforce.agreeHire({ company: ctx.company, user: ctx.user, ...i }),
   });
 
@@ -618,3 +631,4 @@ export function describeResult(action, result) {
 }
 
 export { conflict };
+

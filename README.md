@@ -217,14 +217,14 @@ TemPix has no subscription. What each side pays:
 | --- | --- | --- |
 | Professional (pessoa física, CPF) | Free signup | — |
 | Company (CNPJ or MEI) | Free in production while `COMPANY_SIGNUP_FEE_CENTS=0` (default is R$ 200,00) | Before activation |
-| Contracts (obras, serviços, rotas, transportes) | 2% of the contract value, deducted from what is released to whoever did the work (`CommissionRule`) | When the payment is released |
+| Contracts (obras, serviços, rotas, transportes) | 2% of the successfully intermediated contract value, deducted from what is released to whoever did the work (`CommissionRule`) | When the payment is released |
 | **Hiring company** | **R$ 1,00 interview scheduling fee** | When the interview is scheduled |
-| **Hiring company** | **3% of the offered salary, on the agreed value** | When the hire is agreed |
+| **Hiring company** | **2% of the successfully intermediated value through TemPix Pay; no additional hiring charge** | After confirmed completion |
 
-Hiring example: agreed salary of R$ 3.000,00 → the company pays R$ 90,00 (3%) to TemPix;
+Hiring example: agreed salary of R$ 3.000,00 → the estimated success fee is R$ 60,00 (2%), applied only to a completed intermediation;
 the company also pays R$ 1,00 when scheduling the interview. Candidates never pay to interview.
 
-Interview and hiring fees are charged through Pix by the configured payment provider. They use
+Interview fees are charged through Pix by the configured payment provider. Hiring agreements do not generate a separate charge. Marketplace payments use
 provider confirmation, idempotency, server-calculated amounts, and audit logs. Production has
 `PAYMENT_PROVIDER=none` until Banco do Brasil or another supported provider is configured, so
 these charges remain unavailable there. Production company signup is free while
@@ -605,3 +605,16 @@ and `mock` in development/test.
   templates. iOS Web Push requires the PWA to be installed (iOS 16.4+).
 - Step-up uses the account password; PIN/passkey/OTP mechanisms are modelled
   (`SensitiveActionChallenge.mechanism`) but not implemented.
+
+
+## Social
+
+`/app/social` is the feed of completed services. After the buyer confirms delivery,
+either participant can opt in to publish an opinion and one photo, including later
+from the contract history. Comments, replies and reposts are authenticated. The
+backend verifies payment and delivery, ownership and disputes. One publication
+per person/contract; one repost per person/original. Feed payloads never include
+contract amounts, email, documents, locations or private descriptions. Demo and
+sandbox posts are separated from real deliveries and explicitly labeled.
+Photos are resized/re-encoded by the browser to JPEG (no EXIF), capped at 450 KB,
+stored durably in Postgres and served from authenticated image routes.

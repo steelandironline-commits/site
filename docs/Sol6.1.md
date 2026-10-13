@@ -12,10 +12,14 @@ Lista do que ficou para a próxima rodada (Sol6.1), em ordem de prioridade.
 - Já existe: um único número por conta, confirmado pela pessoa, bloqueado para outras contas; após criar a senha a pessoa é levada a vincular.
 - Implementado para contas com número verificado usando template Meta de autenticação para OTP. Ainda depende das credenciais da Meta, de aprovar/configurar `WHATSAPP_TEMPLATE_AUTH` e de vincular um número em produção.
 
-## 3. Cobrar as taxas de contratação (regras no README, seção "Fees")
-- Entrevista: taxa Pix de R$ 1,00 paga pela empresa ao agendar; o candidato não paga para participar. Implementado com confirmação do provedor, idempotência, auditoria e devolução à empresa se ela cancelar.
-- Empresa: 3% do salário oferecido, sobre o valor acordado, cobrado quando a contratação for acordada (via ActionEngine, com auditoria).
-- A regra de cobrar o candidato foi alterada porque o MPT publicou decisão contra cobrança de trabalhadores para encaminhamento a entrevistas e vagas: <https://www.prt4.mpt.mp.br/procuradorias/prt-porto-alegre/12608-mpt-obtem-decisao-judicial-contra-empresa-de-recursos-humanos-por-cobranca-de-taxa-de-inscricao>.
+## 3. Taxa de intermediação e Social
+- Taxa fixa de **2% sobre o valor intermediado com sucesso**, em todos os contratos do TemPix Pay.
+- O acordo de contratação não gera mais a cobrança separada de 3%. Valores existentes já cobrados permanecem no histórico.
+- Orçamentos exibem taxa prevista; comissões concluídas exigem confirmação do cliente e pagamento confirmado, sem reembolso.
+- Social: opinião e foto opcionais após entrega confirmada; comentários, respostas e repostagens.
+- Botão “Compartilhar no Social” no contrato e seleção pelo histórico no Social.
+- Sem exposição automática de valores, dados pessoais do cliente ou descrição privada do contrato.
+- Pix continua dependente da ativação do provedor em produção.
 
 ## 4. Ajustes de site
 - Celulares pequenos (360px): o botão "Continuar rolando" fica em cima da ilha na primeira tela.
@@ -27,3 +31,4 @@ Lista do que ficou para a próxima rodada (Sol6.1), em ordem de prioridade.
 - Verificação de e-mail no cadastro grátis.
 - Implementada: link de verificação enviado antes de criar a senha e ativar a conta.
 - Domínio e remetente verificado seguem pendentes de DNS e credenciais do provedor de e-mail.
+

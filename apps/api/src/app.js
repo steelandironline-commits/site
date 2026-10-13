@@ -26,6 +26,7 @@ import { whatsappRoutes, whatsappWebhookRoutes } from './routes/whatsapp.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { freightRoutes, workforceRoutes, eventRoutes } from './routes/domains.js';
 import { payRoutes, adminRoutes } from './routes/pay.js';
+import { socialRoutes } from './routes/social.js';
 
 /** All business services come from the shared platform composition root. */
 export function buildServices(opts = {}) {
@@ -76,6 +77,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/webhooks', whatsappWebhookRoutes(ctx));
   app.use('/api/webhooks', webhookRoutes(ctx));
 
+  app.use('/api/actions/PUBLISH_SOCIAL_POST', express.json({ limit: '750kb' }));
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
   app.use('/api', limiters.api);
@@ -105,6 +107,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/workforce', workforceRoutes(ctx));
   app.use('/api/events', eventRoutes(ctx));
   app.use('/api/pay', payRoutes(ctx));
+  app.use('/api/social', socialRoutes(ctx));
   app.use('/api/admin', adminRoutes(ctx));
   app.use('/api', notFoundApi);
 
@@ -138,3 +141,4 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use(errorHandler);
   return app;
 }
+

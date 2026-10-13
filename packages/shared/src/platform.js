@@ -11,6 +11,7 @@ export const DOMAIN_EVENTS = {
   DRIVER_ARRIVED: { category: 'FREIGHT', title: 'Motorista chegou' },
   WORKFORCE_DEMAND_CREATED: { category: 'WORKFORCE', title: 'Demanda de equipe criada', silent: true },
   WORKFORCE_MATCH_CREATED: { category: 'WORKFORCE', title: 'Profissional compatível' },
+  WORKFORCE_HIRE_AGREED: { category: 'WORKFORCE', title: 'Contratação registrada', silent: true },
   WORKFORCE_MATCH_UPDATED: { category: 'WORKFORCE', title: 'Profissional atualizado', silent: true },
   SERVICE_STARTED: { category: 'PAYMENTS', title: 'Serviço iniciado', silent: true },
   SERVICE_COMPLETED: { category: 'PAYMENTS', title: 'Prestador informou conclusão' },
@@ -150,3 +151,4 @@ export function checkoutState(payment) {
       return 'ERROR';
   }
 }
+

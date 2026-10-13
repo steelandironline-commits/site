@@ -180,10 +180,10 @@ function Ready({ companyName, accountType }) {
   let text = emailSent
     ? 'Enviamos um link seguro para criar sua senha. Abra a mensagem para confirmar que este e-mail pertence a você.'
     : `Seu cadastro está pronto. Enviaremos um link para confirmar o e-mail e criar sua senha; depois, os agentes de ${companyName || 'sua empresa'} começam a trabalhar.`;
-  let foot = `Sem mensalidade · ${commission} só sobre contratos fechados`;
+  let foot = `Sem mensalidade · ${commission} só sobre valores intermediados com sucesso`;
   if (accountType === 'PERSON') {
     if (!emailSent) text = 'Seu cadastro está pronto. Enviaremos um link para confirmar o e-mail e criar sua senha; depois, vagas, serviços e fretes da sua região começam a chegar.';
-    foot = `Grátis para profissionais · ${commission} só sobre contratos fechados`;
+    foot = `Grátis para profissionais · ${commission} só sobre valores intermediados com sucesso`;
   }
   if (subscription) {
     title = 'Seu TemPix está pronto para ser ativado.';
@@ -191,7 +191,7 @@ function Ready({ companyName, accountType }) {
     foot = 'R$ 597,00/mês · Sem fidelidade · Cancele quando quiser';
   } else if (feeCents > 0) {
     title = 'Falta só a taxa única de cadastro.';
-    text = `${formatCents(feeCents)}, uma vez só. Sem mensalidade e sem renovação: depois disso, o TemPix só fica com ${commission} dos contratos que a ${companyName || 'sua empresa'} fechar.`;
+    text = `${formatCents(feeCents)}, uma vez só. Sem mensalidade e sem renovação: depois disso, o TemPix só fica com ${commission} dos contratos concluídos e confirmados que a ${companyName || 'sua empresa'} fechar.`;
     foot = `Menos de R$ ${(feeCents / 100 / 365).toFixed(2).replace('.', ',')} por dia no primeiro ano · nada de mensalidade depois`;
   }
 
@@ -581,3 +581,4 @@ export default function Onboarding() {
     </div>
   );
 }
+

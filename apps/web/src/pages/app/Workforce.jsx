@@ -157,7 +157,7 @@ export function WorkforceMatchDetail() {
     const out = await run('CANCEL_WORKFORCE_INTERVIEW', { id }, { success: 'Entrevista cancelada.' });
     if (out?.result?.match) setData({ match: { ...m, ...out.result.match } });
   };
-  const hiringFeeCents = m.agreedSalaryCents ? Math.max(1, Math.round((m.agreedSalaryCents * 300) / 10_000)) : null;
+  const hiringFeeCents = m.agreedSalaryCents ? Math.max(1, Math.round((m.agreedSalaryCents * 200) / 10_000)) : null;
   return (
     <>
       <Link to="/app/workforce" className={s.backLink}>
@@ -251,15 +251,15 @@ export function WorkforceMatchDetail() {
             {m.agreedSalaryCents ? (
               <>
                 <p className={s.muted} style={{ marginTop: 8 }}>
-                  Salário acordado: R$ {(m.agreedSalaryCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Taxa de 3%: R$ {(hiringFeeCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.
-                  {!m.hiringFeePaidAt && <> Pix aguardando pagamento.</>}
+                  Salário acordado: R$ {(m.agreedSalaryCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Intermediação de 2% após conclusão: R$ {(hiringFeeCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.
+                  {!m.hiringFeePaidAt && <> A taxa é aplicada no TemPix Pay após a conclusão confirmada.</>}
                 </p>
                 {!m.hiringFeePaidAt && m.hiringPayment?.id && <Button variant="ghost" to={`/app/payments/${m.hiringPayment.id}`} style={{ marginTop: 12 }}>Ver Pix da contratação</Button>}
               </>
             ) : (
               <form onSubmit={hire} noValidate>
                 <p className={s.muted} style={{ margin: '8px 0 14px', fontSize: 13 }}>
-                  Informe o salário mensal acordado. A taxa de contratação de 3% será calculada no servidor.
+                  Informe o salário mensal acordado. A taxa de 2% será aplicada ao valor intermediado com sucesso pelo TemPix Pay. Registrar o acordo não gera cobrança.
                 </p>
                 <div className={s.formGrid}>
                   <Field label="Salário acordado (R$)" hint="De R$ 1,00 a R$ 1.000.000,00">
@@ -268,7 +268,7 @@ export function WorkforceMatchDetail() {
                 </div>
                 <div style={{ marginTop: 14 }}>
                   <Button type="submit" loading={busy === 'AGREE_HIRE'} disabled={!Number.isFinite(moneyToCents(salary)) || moneyToCents(salary) < 100}>
-                    Registrar contratação e gerar Pix
+                    Registrar contratação
                   </Button>
                 </div>
               </form>
@@ -279,3 +279,4 @@ export function WorkforceMatchDetail() {
     </>
   );
 }
+

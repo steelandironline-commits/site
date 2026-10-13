@@ -226,7 +226,7 @@ export default function Checkout() {
             </div>
             <div>
               <dt>{oneTime ? 'Depois' : 'Fidelidade'}</dt>
-              <dd>{oneTime ? `${PRICING.commissionLabel} só sobre contratos fechados` : 'Nenhuma'}</dd>
+              <dd>{oneTime ? `${PRICING.commissionLabel} só sobre valores intermediados com sucesso` : 'Nenhuma'}</dd>
             </div>
             <div className={s.total}>
               <dt>Total hoje</dt>
@@ -377,3 +377,4 @@ export default function Checkout() {
     </div>
   );
 }
+

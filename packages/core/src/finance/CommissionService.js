@@ -51,7 +51,8 @@ export class CommissionService {
     await this.ensureDefaults();
     const rule = await this.ruleFor({ transactionType, companyId });
     if (!rule) throw badRequest('Nenhuma regra de comissão ativa.');
-    return { ...CommissionService.compute(grossCents, rule), ruleId: rule.id, ruleName: rule.name, currency: rule.currency };
+    const applied = transactionType === 'SUBSCRIPTION' ? rule : { ...rule, rateBps: 200, fixedAmountCents: 0, minimumCents: null, maximumCents: null };
+    return { ...CommissionService.compute(grossCents, applied), ruleId: rule.id, ruleName: transactionType === 'SUBSCRIPTION' ? rule.name : 'TemPix 2% por intermediação concluída', currency: rule.currency };
   }
 
   /**
@@ -59,6 +60,7 @@ export class CommissionService {
    * apply to NEW transactions; existing ones keep their snapshot.
    */
   async upsert({ id, ...data }, { user, audit, ip }) {
+    if (data.transactionType !== 'SUBSCRIPTION' && (data.rateBps !== 200 || data.fixedAmountCents || data.minimumCents != null || data.maximumCents != null)) throw badRequest('A taxa de intermediação é fixa em 2%, sem acréscimos.');
     if (data.minimumCents != null && data.maximumCents != null && data.minimumCents > data.maximumCents) throw badRequest('Mínimo maior que o máximo.');
     return this.prisma.$transaction(async (tx) => {
       const before = id ? await tx.commissionRule.findUnique({ where: { id } }) : null;
@@ -73,3 +75,4 @@ export class CommissionService {
     return this.prisma.commissionRule.findMany({ orderBy: [{ active: 'desc' }, { priority: 'desc' }, { createdAt: 'asc' }] });
   }
 }
+

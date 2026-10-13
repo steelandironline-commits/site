@@ -364,6 +364,9 @@ model User {
   activityEvents      ActivityEvent[]
 
   @@index([companyId])
+  socialPosts SocialPost[]
+  socialComments SocialComment[]
+
 }
 
 model Session {
@@ -1038,6 +1041,7 @@ model MarketplaceTransaction {
   timeline TransactionEvent[]
   disputes TransactionDispute[]
   payouts  Payout[]
+  socialPosts SocialPost[]
 
   @@index([sellerCompanyId, createdAt])
   @@index([buyerCompanyId, createdAt])
@@ -1195,4 +1199,41 @@ model TripEvent {
   createdAt        DateTime      @default(now())
 
   @@index([freightMatchId, createdAt])
+}
+
+
+// Social publications contain only the opinion and photo explicitly shared.
+model SocialPost {
+  id               String @id @default(cuid())
+  transactionId    String?
+  transaction      MarketplaceTransaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  authorUserId     String
+  author           User @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  body             String
+  photo            String?
+  repostOfId       String?
+  repostOf         SocialPost? @relation("SocialReposts", fields: [repostOfId], references: [id], onDelete: Cascade)
+  reposts          SocialPost[] @relation("SocialReposts")
+  comments         SocialComment[]
+  deletedAt        DateTime?
+  createdAt        DateTime @default(now())
+
+  @@unique([transactionId, authorUserId])
+  @@unique([repostOfId, authorUserId])
+  @@index([createdAt, id])
+}
+
+model SocialComment {
+  id           String @id @default(cuid())
+  postId       String
+  post         SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorUserId String
+  author       User @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  body         String
+  parentId     String?
+  parent       SocialComment? @relation("SocialReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      SocialComment[] @relation("SocialReplies")
+  createdAt    DateTime @default(now())
+
+  @@index([postId, createdAt])
 }

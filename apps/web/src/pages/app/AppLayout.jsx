@@ -3,6 +3,7 @@ import { Link, NavLink, Navigate, useLocation, useOutlet } from 'react-router-do
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity as ActivityIcon,
+  MessageCircle,
   ArrowLeft,
   Building2,
   Download,
@@ -35,6 +36,7 @@ const NAV = [
   { to: '/app', label: 'Visão Geral', icon: LayoutDashboard, end: true },
   { to: '/app/radar', label: 'Radar', icon: Radar },
   { to: '/app/opportunities', label: 'Oportunidades', icon: Target },
+  { to: '/app/social', label: 'Social', icon: MessageCircle },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
   { to: '/app/pay', label: 'TemPix Pay', icon: Wallet },
   { to: '/app/freight', label: 'Cargas', icon: Truck },
@@ -44,7 +46,7 @@ const NAV = [
   { to: '/app/subscription', label: 'Plano', icon: CreditCard },
   { to: '/app/settings', label: 'Configurações', icon: Settings },
 ];
-const MOBILE_TABS = [NAV[0], NAV[2], NAV[3], NAV[4]];
+const MOBILE_TABS = NAV.filter((n) => ['/app', '/app/opportunities', '/app/social', '/app/pay'].includes(n.to));
 const MORE = NAV.filter((n) => !MOBILE_TABS.includes(n));
 const ADMIN_NAV = { to: '/app/admin', label: 'Admin financeiro', icon: ShieldAlert };
 /** Professionals (pessoa física) see their profile where companies see "Empresa". */
@@ -289,3 +291,4 @@ export default function AppLayout() {
     </div>
   );
 }
+

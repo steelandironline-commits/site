@@ -223,6 +223,13 @@ export default function TransactionDetail() {
 
       <div className={s.subGrid}>
         <div className={s.stack}>
+          {t.buyerConfirmedAt && ['PAID', 'READY_TO_RELEASE', 'RELEASED'].includes(t.status) && !openDispute && !t.payment?.refundedCents && (
+            <section className={`${s.panel} ${s.panelPad}`}>
+              <h2 className={s.panelTitle}>Serviço entregue e confirmado</h2>
+              <p className={s.pageSub}>Compartilhe sua opinião e uma foto no Social. A publicação é opcional.</p>
+              <Button to={`/app/social?transaction=${t.id}`} variant="secondary">Compartilhar no Social</Button>
+            </section>
+          )}
           <PixPanel payment={t.payment} />
           <section className={`${s.panel} ${s.panelPad}`} aria-labelledby="values-title">
             <h2 id="values-title" className={s.panelTitle} style={{ marginBottom: 12 }}>
@@ -236,7 +243,7 @@ export default function TransactionDetail() {
               {data.role !== 'BUYER' && (
                 <>
                   <div>
-                    <dt>Comissão TemPix ({(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)</dt>
+                    <dt>Taxa TemPix prevista ({(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)</dt>
                     <dd>− {formatCents(t.commissionAmount)}</dd>
                   </div>
                   <div>
@@ -412,3 +419,4 @@ export default function TransactionDetail() {
     </>
   );
 }
+

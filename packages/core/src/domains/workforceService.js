@@ -191,41 +191,17 @@ export class WorkforceService {
     if (match.agreedSalaryCents !== null && match.agreedSalaryCents !== agreedSalaryCents) {
       throw conflict('O salário acordado já foi registrado e não pode ser alterado após a cobrança.');
     }
-    if (!this.payments) throw unavailable('Cobranças Pix indisponíveis no momento.');
-    const feeCents = Math.max(1, Math.round((agreedSalaryCents * 300) / 10_000));
-    const payment = await this.payments.createWorkforceFeeCharge({
-      kind: 'HIRING_FEE',
-      user,
-      company,
-      matchId: match.id,
-      amountCents: feeCents,
-      payer: { name: user.name, email: user.email, cnpj: company.cnpj },
-      description: `Taxa TemPix de contratação · ${match.role} · salário acordado ${formatCents(agreedSalaryCents)}`,
-    });
-    const updated = await this.prisma.workforceMatch.update({
-      where: { id: match.id },
-      data: {
-        agreedSalaryCents,
-        ...(payment.status === 'CONFIRMED' && !match.hiringFeePaidAt ? { hiringFeePaidAt: payment.paidAt || new Date() } : {}),
-      },
-    });
+    const updated = await this.prisma.workforceMatch.update({ where: { id: match.id }, data: { agreedSalaryCents } });
+    const feeCents = Math.round(agreedSalaryCents * 200 / 10_000);
     await this.events.publish({
-      type: 'WORKFORCE_HIRE_AGREED',
-      companyId: company.id,
-      userId: user.id,
-      aggregateType: 'workforceMatch',
-      aggregateId: match.id,
-      isDemo: false,
-      payload: { salaryCents: agreedSalaryCents, feeCents, paymentId: payment.id },
-      activity: {
-        type: 'PAYMENT',
-        title: 'Contratação registrada',
-        description: `${match.professionalName} · ${formatCents(agreedSalaryCents)} · taxa de 3%: ${formatCents(feeCents)}.`,
-        source: 'Workforce',
-      },
+      type: 'WORKFORCE_HIRE_AGREED', companyId: company.id, userId: user.id,
+      aggregateType: 'workforceMatch', aggregateId: match.id, isDemo: false,
+      payload: { salaryCents: agreedSalaryCents, feeCents },
+      activity: { type: 'OPPORTUNITY', title: 'Contratação registrada',
+        description: `${match.professionalName} · valor acordado ${formatCents(agreedSalaryCents)}. Intermediação de 2% somente após conclusão confirmada pelo TemPix Pay.`, source: 'Workforce' },
     });
-    await this.audit?.log({ action: 'WORKFORCE_HIRE_AGREED', source: 'WEB', userId: user.id, companyId: company.id, paymentId: payment.id, metadata: { matchId: match.id, salaryCents: agreedSalaryCents, feeCents } });
-    return { match: updated, payment, salaryCents: agreedSalaryCents, feeCents };
+    await this.audit?.log({ action: 'WORKFORCE_HIRE_AGREED', source: 'WEB', userId: user.id, companyId: company.id, metadata: { matchId: match.id, salaryCents: agreedSalaryCents, estimatedFeeCents: feeCents } });
+    return { match: updated, payment: null, salaryCents: agreedSalaryCents, feeCents };
   }
 
   async cancelInterview({ company, user, id }) {
@@ -264,3 +240,4 @@ export class WorkforceService {
     return { match: updated, refund };
   }
 }
+

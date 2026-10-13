@@ -223,11 +223,12 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect((await ctx.prisma.company.findUnique({ where: { id: user.companyId } })).payoutPixKey).toBeNull();
     const bad = await user.c.post(`/api/challenges/${bank.body.challenge.id}/confirm`, { password: 'senha-errada-123' });
     expect(bad.status).toBe(400);
-    const ok = await user.c.post(`/api/challenges/${bank.body.challenge.id}/confirm`, { password: STRONG_PASSWORD });
+    const code = ctx.services.whatsappProvider.sent.findLast(m => m.template?.name === 'mock_authentication_code').template.components.find(c => c.type === 'body').parameters[0].text;
+    const ok = await user.c.post(`/api/challenges/${bank.body.challenge.id}/confirm-whatsapp`, { code });
     expect(ok.status).toBe(200);
     expect(ok.body.status).toBe('SUCCEEDED');
     expect((await ctx.prisma.company.findUnique({ where: { id: user.companyId } })).payoutPixKey).toBe('financeiro@empresa.example');
-    expect((await user.c.post(`/api/challenges/${bank.body.challenge.id}/confirm`, { password: STRONG_PASSWORD })).status).toBe(409);
+    expect((await user.c.post(`/api/challenges/${bank.body.challenge.id}/confirm-whatsapp`, { code })).status).toBe(409);
 
     // From the web: challenge first; another user's session can never confirm it.
     const rel = await user.c.post('/api/actions/RELEASE_PAYMENT', { input: { id: payment.transactionId } });
@@ -236,7 +237,8 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     const intruder = await createActiveUser(ctx.app);
     expect((await intruder.c.post(`/api/challenges/${rel.body.challenge.id}/confirm`, { password: STRONG_PASSWORD })).status).toBe(404);
     // Even confirmed, a provider without protected flow refuses: nothing is faked.
-    const done = await user.c.post(`/api/challenges/${rel.body.challenge.id}/confirm`, { password: STRONG_PASSWORD });
+    const releaseCode = ctx.services.whatsappProvider.sent.findLast(m => m.template?.name === 'mock_authentication_code').template.components.find(c => c.type === 'body').parameters[0].text;
+    const done = await user.c.post(`/api/challenges/${rel.body.challenge.id}/confirm-whatsapp`, { code: releaseCode });
     expect(done.status).toBe(409);
     expect(done.body.error.code).toBe('PROTECTED_FLOW_NOT_SUPPORTED');
     expect(await ctx.prisma.payout.count()).toBe(0);
@@ -339,3 +341,4 @@ describe.skipIf(!hasDb)('platform: ActionEngine, EventEngine, WhatsApp, step-up'
     expect(client).toBeTruthy();
   });
 });
+

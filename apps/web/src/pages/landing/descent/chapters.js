@@ -57,7 +57,7 @@ export const CHAPTERS = [
     rail: 'Painel',
     kicker: 'Tem tudo · seu painel',
     title: 'Tudo isso numa tela só.',
-    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Sem mensalidade: 2% nos contratos e 3% do salário nas contratações, só quando o negócio fecha.',
+    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Sem mensalidade: 2% sobre todo valor intermediado com sucesso, após a conclusão confirmada.',
     palette: { top: '#24365e', bottom: '#0a0b0d', sky: '#c7d6ff', ground: '#10141f', accent: '#2ad1b8' },
   },
 ];
@@ -82,3 +82,4 @@ export function levelFromProgress(p) {
 
 /** Scroll progress where chapter k is fully in view (used by the rail and the buttons). */
 export const progressForChapter = (k) => (k <= 0 ? 0 : Math.min((k + 0.08) / N, 1));
+

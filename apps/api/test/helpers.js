@@ -36,11 +36,14 @@ export async function setupApp(overrides = {}) {
   const services = buildServices({ config, prisma, email });
   const hub = { mode: 'test', subscribe: () => () => {} };
   const app = createApp({ services, hub, serveWeb: false });
+  app.locals.testEmail = email;
   return { app, config, prisma, services, email };
 }
 
 const TABLES = [
   // TemPix Pay (FinancialAuditLog blocks UPDATE/DELETE, not TRUNCATE — test-only reset)
+  'SocialComment',
+  'SocialPost',
   'FinancialAuditLog',
   'ReconciliationIssue',
   'TripEvent',
@@ -167,9 +170,10 @@ export async function createActiveUser(app) {
   if (sim.status !== 200) throw new Error(`simulate failed ${JSON.stringify(sim.body)}`);
   const claim = await ctx.c.post(`/api/payments/${ctx.payment.id}/activation`);
   if (!claim.body.emailSent) throw new Error(`claim failed ${JSON.stringify(claim.body)}`);
-  const token = activationTokenFromEmail(ctx.email);
+  const token = activationTokenFromEmail(app.locals.testEmail);
   if (!token) throw new Error('activation email did not contain a link');
   const act = await ctx.c.post('/api/auth/activate', { token, password: STRONG_PASSWORD });
   if (act.status !== 200) throw new Error(`activate failed ${JSON.stringify(act.body)}`);
   return { ...ctx, activationToken: token };
 }
+

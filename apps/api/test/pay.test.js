@@ -101,7 +101,7 @@ describe.skipIf(!hasDb)('TemPix Pay — standard Pix (no protected capability)',
       expect(feed.body.items.some((e) => e.title === 'Pix recebido · R$ 1.400,00')).toBe(true);
     }
     const sum = await seller.c.get('/api/pay/summary');
-    expect(sum.body.summary).toMatchObject({ receivedCents: 140000, commissionsCents: 2800, toReleaseCents: 0 });
+    expect(sum.body.summary).toMatchObject({ receivedCents: 140000, commissionsCents: 0, toReleaseCents: 0 });
     expect(sum.body.sandbox).toBe(true);
 
     // WhatsApp: text + deep link, never a money button.
@@ -116,7 +116,11 @@ describe.skipIf(!hasDb)('TemPix Pay — standard Pix (no protected capability)',
     // Restart: a brand-new platform instance reads the same persisted state.
     const restarted = createApp({ services: buildPlatform({ prisma: ctx.prisma, config: ctx.config, email: ctx.email }), hub: { mode: 'test', subscribe: () => () => {} }, serveWeb: false });
     const login = await request(restarted).post('/api/auth/native/login').set('X-Requested-With', 'autopix').send({ email: seller.email, password: STRONG_PASSWORD });
-    const again = await request(restarted).get(`/api/pay/transactions/${t.id}`).set('Authorization', `Bearer ${login.body.token}`);
+    expect(login.body.mfaRequired).toBe(true);
+    const code = ctx.services.whatsappProvider.sent.findLast(m => m.template?.name === 'mock_authentication_code').template.components.find(c => c.type === 'body').parameters[0].text;
+    const verified = await request(restarted).post('/api/auth/native/verify-whatsapp').set('X-Requested-With', 'autopix').send({ challengeId: login.body.challengeId, code });
+    expect(verified.status).toBe(200);
+    const again = await request(restarted).get(`/api/pay/transactions/${t.id}`).set('Authorization', `Bearer ${verified.body.token}`);
     expect(again.status).toBe(200);
     expect(again.body.transaction.status).toBe('PAID');
     expect(again.body.transaction.timeline.map((e) => e.type)).toEqual(expect.arrayContaining(['CREATED', 'COMMISSION', 'PIX_CREATED', 'PAYMENT_RECEIVED', 'SETTLEMENT_PENDING']));
@@ -441,3 +445,4 @@ describe.skipIf(!hasDb)('TemPix Pay — gateway disabled (PAYMENT_PROVIDER=none)
     expect(config.body.simulationAvailable).toBe(false);
   });
 });
+
