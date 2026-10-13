@@ -81,13 +81,23 @@ export class WhatsAppProvider {
     });
   }
 
-  async sendTemplate(to, { name, language = this.templates.language || 'pt_BR', bodyParams = [], quickReplies = [] }) {
+  async sendTemplate(to, { name, language = this.templates.language || 'pt_BR', bodyParams = [], quickReplies = [], urlButtons = [] }) {
     const components = [];
     if (bodyParams.length) components.push({ type: 'body', parameters: bodyParams.map((t) => ({ type: 'text', text: String(t) })) });
     quickReplies.forEach((payload, index) =>
       components.push({ type: 'button', sub_type: 'quick_reply', index: String(index), parameters: [{ type: 'payload', payload }] }),
     );
+    urlButtons.forEach((value, index) =>
+      components.push({ type: 'button', sub_type: 'url', index: String(index), parameters: [{ type: 'text', text: String(value) }] }),
+    );
     return this.transport({ ...this.base(to), type: 'template', template: { name, language: { code: language }, components } });
+  }
+
+  /** Authentication template: the same OTP fills the body and copy-code button. */
+  async sendAuthenticationCode(to, { code }) {
+    const name = this.templates.authentication || (this.name === 'mock' ? 'mock_authentication_code' : null);
+    if (!name) throw new Error('WHATSAPP_TEMPLATE_AUTH is required for OTP delivery');
+    return this.sendTemplate(to, { name, bodyParams: [code], urlButtons: [code] });
   }
 
   link(path) {

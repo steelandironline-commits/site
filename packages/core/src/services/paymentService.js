@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { PLAN, checkoutState, deepLinks, formatCents, PRICING, COMMISSION_PLAN_CODE } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
-import { generateToken } from '../security/tokens.js';
+import { generateToken, hashToken } from '../security/tokens.js';
 import { badRequest, conflict, forbidden, notFound, unavailable } from '../errors.js';
 import { FinancialError } from '../payments/errors.js';
 import { PAYMENTS_UNAVAILABLE_MESSAGE } from '../payments/DisabledPaymentProvider.js';
@@ -130,6 +130,76 @@ export class PaymentService {
       if (err instanceof FinancialError && err.status < 500) throw err;
       throw unavailable('Não foi possível gerar o Pix agora. Tente novamente em instantes.');
     }
+  }
+
+  /** Create one idempotent Pix fee for a real workforce match. */
+  async createWorkforceFeeCharge({ kind, user, company, matchId, amountCents, payer, description }) {
+    if (!['INTERVIEW_FEE', 'HIRING_FEE'].includes(kind)) throw badRequest('Tipo de taxa inválido.');
+    if (!Number.isInteger(amountCents) || amountCents < 1) throw badRequest('Valor da taxa inválido.');
+    if (company.accountType !== 'COMPANY') throw forbidden('Somente empresas podem iniciar esta cobrança.');
+    const provider = this.provider();
+    if (provider.name === 'none') throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE);
+
+    const prefix = kind === 'INTERVIEW_FEE' ? 'WORKFORCE_INTERVIEW' : 'WORKFORCE_HIRE';
+    const previous = await this.prisma.payment.findMany({
+      where: { companyId: company.id, kind, relatedId: matchId, relatedType: { startsWith: prefix } },
+      orderBy: { createdAt: 'desc' },
+      select: PUBLIC_PAYMENT_SELECT,
+      take: 1,
+    });
+    const last = previous[0];
+    if (last?.status === 'CONFIRMED') {
+      if (last.amountCents !== amountCents) throw conflict('Esta taxa já foi paga com outro valor.');
+      return last;
+    }
+    if (last?.status === 'PENDING' && last.expiresAt > new Date()) {
+      if (last.amountCents !== amountCents) throw conflict('Já existe um Pix pendente para esta taxa. Aguarde a confirmação ou o vencimento.');
+      return last;
+    }
+
+    const expiresAt = new Date(Date.now() + PIX_TTL_MS);
+    const previousAttempt = Number(last?.relatedType?.slice(prefix.length + 1)) || 0;
+    const relatedType = `${prefix}_${previousAttempt + 1}`;
+    let payment;
+    try {
+      payment = await this.prisma.payment.create({
+        data: {
+          kind,
+          relatedType,
+          relatedId: matchId,
+          companyId: company.id,
+          provider: provider.name,
+          amountCents,
+          description,
+          payerName: payer.name || null,
+          payerEmail: payer.email || null,
+          createdByUserId: user.id,
+          idempotencyKey: crypto.createHash('sha256').update(`${company.id}:${kind}:${matchId}:${relatedType}`).digest('hex'),
+          expiresAt,
+        },
+      });
+    } catch (err) {
+      if (err.code !== 'P2002') throw err;
+      const raced = await this.prisma.payment.findFirst({
+        where: { companyId: company.id, kind, relatedId: matchId, relatedType },
+        select: PUBLIC_PAYMENT_SELECT,
+      });
+      if (raced) return raced;
+      throw err;
+    }
+
+    const issued = await this.#issueCharge(payment, { payer, description, expiresAt, idempotencyKey: payment.idempotencyKey });
+    await this.events.activity.record({
+      companyId: company.id,
+      userId: user.id,
+      type: 'PAYMENT',
+      title: 'Cobrança Pix de contratação gerada',
+      description: `${description} · ${formatCents(amountCents)}.`,
+      source: provider.name,
+      metadata: { paymentId: payment.id, kind, matchId },
+    });
+    await this.audit?.log({ action: 'WORKFORCE_FEE_CHARGE_CREATED', source: 'WEB', userId: user.id, companyId: company.id, paymentId: payment.id, metadata: { kind, amountCents, matchId } });
+    return issued;
   }
 
   // ----------------------------------------------- company signup fee (one-time)
@@ -517,6 +587,38 @@ export class PaymentService {
           } else {
             await this.events.publish({ ...base, ...event }, tx);
           }
+        } else if (payment.kind === 'INTERVIEW_FEE' || payment.kind === 'HIRING_FEE') {
+          await tx.payment.update({ where: { id: payment.id }, data: { status: 'CONFIRMED', paidAt: paidAt || now } });
+          const matchData = payment.kind === 'INTERVIEW_FEE'
+            ? { interviewFeePaidAt: paidAt || now }
+            : { hiringFeePaidAt: paidAt || now };
+          const updatedMatch = await tx.workforceMatch.updateMany({
+            where: {
+              id: payment.relatedId || '',
+              companyId: payment.companyId,
+              isDemo: false,
+              ...(payment.kind === 'INTERVIEW_FEE' ? { interviewCanceledAt: null } : {}),
+            },
+            data: matchData,
+          });
+          if (updatedMatch.count === 1) {
+            await this.events.publish({
+              companyId: payment.companyId,
+              userId: payment.createdByUserId,
+              type: 'WORKFORCE_FEE_PAID',
+              aggregateType: 'workforceMatch',
+              aggregateId: payment.relatedId,
+              payload: { kind: payment.kind, amountCents: payment.amountCents, paymentId: payment.id },
+              activity: {
+                type: 'PAYMENT',
+                title: payment.kind === 'INTERVIEW_FEE' ? 'Taxa de agendamento paga' : 'Taxa de contratação confirmada',
+                description: `Pix de ${formatCents(payment.amountCents)} confirmado pelo provedor.`,
+                source: provider,
+                severity: 'SUCCESS',
+                metadata: { paymentId: payment.id },
+              },
+            }, tx);
+          }
         } else {
           await tx.payment.update({ where: { id: payment.id }, data: { status: 'CONFIRMED', paidAt: paidAt || now } });
           const sub = payment.subscription;
@@ -608,9 +710,18 @@ export class PaymentService {
 
     if (outcome.activation && this.email) {
       const { token, user } = outcome.activation;
-      await this.email
+      const sent = await this.email
         .activationEmail({ to: user.email, name: user.name, link: `${this.config.appUrl}/activate/${token}` })
-        .catch((err) => logger.error('activation email failed', { err }));
+        .catch((err) => {
+          logger.error('activation email failed', { err });
+          return false;
+        });
+      if (sent) {
+        await this.prisma.activationToken.updateMany({
+          where: { tokenHash: hashToken(token, this.config.secrets.activation) },
+          data: { emailSentAt: new Date() },
+        });
+      }
     }
     this.events.kick?.();
     const { activation, ...safe } = outcome;
@@ -628,8 +739,20 @@ export class PaymentService {
     const fresh = await this.prisma.user.findUnique({ where: { id: user.id } });
     if (fresh.status === 'ACTIVE') return { alreadyActive: true };
     if (fresh.status !== 'PENDING_ACTIVATION') throw conflict('Conta não está aguardando ativação.');
+    const sentToken = await this.prisma.activationToken.findFirst({
+      where: { userId: fresh.id, usedAt: null, expiresAt: { gt: new Date() }, emailSentAt: { not: null } },
+      select: { id: true },
+    });
+    if (sentToken) return { emailVerificationRequired: true, emailSent: true };
+    await this.prisma.activationToken.updateMany({ where: { userId: fresh.id, usedAt: null }, data: { usedAt: new Date() } });
     const token = await this.auth.issueActivationToken(fresh.id);
-    return { token };
+    const sent = await this.email?.activationEmail({ to: fresh.email, name: fresh.name, link: `${this.config.appUrl}/activate/${token}` });
+    if (!sent) {
+      await this.prisma.activationToken.updateMany({ where: { userId: fresh.id, usedAt: null }, data: { usedAt: new Date() } });
+      throw unavailable('Não foi possível enviar o link de verificação. Configure o e-mail de ativação para continuar.');
+    }
+    await this.prisma.activationToken.updateMany({ where: { tokenHash: hashToken(token, this.config.secrets.activation) }, data: { emailSentAt: new Date() } });
+    return { emailVerificationRequired: true, emailSent: true };
   }
 
   /** Development only: confirm a mock charge through the real webhook path. */

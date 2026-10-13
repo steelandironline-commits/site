@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { hashPassword, verifyPassword, hashToken, disconnectPrisma } from '@autopix/core';
-import { setupApp, resetDb, client, createActiveUser, onboardToCheckout, hasDb, STRONG_PASSWORD } from './helpers.js';
+import { setupApp, resetDb, client, createActiveUser, onboardToCheckout, hasDb, STRONG_PASSWORD, activationTokenFromEmail } from './helpers.js';
 
 describe('password hashing', () => {
   it('uses Argon2id and never stores plaintext', async () => {
@@ -85,7 +85,8 @@ describe.skipIf(!hasDb)('auth flows', () => {
       const flow = await onboardToCheckout(ctx.app);
       await flow.c.post(`/api/payments/${flow.payment.id}/simulate`);
       const claim = await flow.c.post(`/api/payments/${flow.payment.id}/activation`);
-      return { ...flow, token: claim.body.token };
+      expect(claim.body.emailVerificationRequired).toBe(true);
+      return { ...flow, token: activationTokenFromEmail(ctx.email) };
     }
 
     it('is stored hashed and can be inspected', async () => {
@@ -108,12 +109,13 @@ describe.skipIf(!hasDb)('auth flows', () => {
       expect(second.status).toBe(410);
     });
 
-    it('invalidates sibling tokens after activation', async () => {
+    it('keeps activation links out of the API response and reuses the emailed link', async () => {
       const flow = await paidAndClaimed();
       const other = await flow.c.post(`/api/payments/${flow.payment.id}/activation`);
-      await client(ctx.app).post('/api/auth/activate', { token: flow.token, password: STRONG_PASSWORD });
-      const res = await client(ctx.app).post('/api/auth/activate', { token: other.body.token, password: STRONG_PASSWORD });
-      expect([404, 410]).toContain(res.status);
+      expect(other.body.emailVerificationRequired).toBe(true);
+      expect(other.body.token).toBeUndefined();
+      expect(await ctx.prisma.activationToken.count({ where: { user: { email: flow.email }, usedAt: null } })).toBe(1);
+      expect((await client(ctx.app).post('/api/auth/activate', { token: flow.token, password: STRONG_PASSWORD })).status).toBe(200);
     });
 
     it('rejects expired tokens', async () => {

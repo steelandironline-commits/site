@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import { disconnectPrisma, getPaymentProvider, crc16Check } from './paymentHelpers.js';
-import { setupApp, resetDb, onboardToCheckout, client, hasDb } from './helpers.js';
+import { setupApp, resetDb, onboardToCheckout, client, hasDb, activationTokenFromEmail } from './helpers.js';
 
 describe.skipIf(!hasDb)('payments', () => {
   let ctx;
@@ -109,7 +109,7 @@ describe.skipIf(!hasDb)('payments', () => {
     expect(await ctx.prisma.activityEvent.count({ where: { companyId, title: 'Pagamento confirmado' } })).toBe(1);
   });
 
-  it('exposes the confirmed state and hands an activation token only to the payer session', async () => {
+  it('exposes the confirmed state and sends the activation link by e-mail, never in the API body', async () => {
     const { c, payment } = await onboardToCheckout(ctx.app);
     const early = await c.post(`/api/payments/${payment.id}/activation`);
     expect(early.status).toBe(409);
@@ -118,7 +118,9 @@ describe.skipIf(!hasDb)('payments', () => {
     expect(status.body.payment.status).toBe('CONFIRMED');
     const claim = await c.post(`/api/payments/${payment.id}/activation`);
     expect(claim.status).toBe(200);
-    expect(claim.body.token.length).toBeGreaterThan(30);
+    expect(claim.body).toMatchObject({ emailVerificationRequired: true, emailSent: true });
+    expect(claim.body.token).toBeUndefined();
+    expect(activationTokenFromEmail(ctx.email)).toBeTruthy();
 
     const stranger = await onboardToCheckout(ctx.app);
     expect((await stranger.c.post(`/api/payments/${payment.id}/activation`)).status).toBe(404);

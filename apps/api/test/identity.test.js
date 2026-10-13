@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { disconnectPrisma } from '@autopix/core';
 import { formatCnpj, formatCpf } from '@autopix/shared';
-import { setupApp, resetDb, client, hasDb, PROFILE, STRONG_PASSWORD, testCnpj, testCpf } from './helpers.js';
+import { setupApp, resetDb, client, hasDb, PROFILE, STRONG_PASSWORD, testCnpj, testCpf, activationTokenFromEmail } from './helpers.js';
 
 const login = (app, identifier, password = STRONG_PASSWORD) => client(app).post('/api/auth/login', { identifier, password });
 
@@ -26,7 +26,10 @@ describe.skipIf(!hasDb)('login by CPF / CNPJ and collaborators', () => {
     const data = accountType === 'PERSON' ? { services: ['Eletricista'], city: 'Joinville', state: 'SC' } : PROFILE;
     await c.put('/api/onboarding/step', { step: 9, data, complete: true });
     const fin = await c.post('/api/onboarding/finish');
-    await c.post('/api/auth/activate', { token: fin.body.token, password: STRONG_PASSWORD });
+    expect(fin.body.emailVerificationRequired).toBe(true);
+    expect(fin.body.token).toBeUndefined();
+    const token = activationTokenFromEmail(ctx.email);
+    await c.post('/api/auth/activate', { token, password: STRONG_PASSWORD });
     return { c, start, email };
   }
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { activateSchema, forgotPasswordSchema, loginSchema, resetPasswordSchema } from '@autopix/shared';
 import { parse } from '../middleware/validate.js';
 import { clearSessionCookie, setSessionCookie } from '../middleware/session.js';
@@ -9,7 +10,16 @@ export function authRoutes({ auth, config, limiters }) {
 
   r.post('/login', limiters.login, async (req, res) => {
     const { identifier, password } = parse(loginSchema, req.body);
-    const { token, session, user } = await auth.login(identifier, password, meta(req));
+    const result = await auth.login(identifier, password, meta(req));
+    if (result.mfaRequired) return res.json(result);
+    const { token, session, user } = result;
+    setSessionCookie(res, config, token, session.expiresAt);
+    res.json({ user: { id: user.id, name: user.name, email: user.email } });
+  });
+
+  r.post('/login/verify-whatsapp', limiters.login, async (req, res) => {
+    const { challengeId, code } = parse(z.object({ challengeId: z.string().trim().min(1).max(64), code: z.string().regex(/^[0-9]{6}$/) }), req.body);
+    const { token, session, user } = await auth.verifyLoginCode(challengeId, code, meta(req));
     setSessionCookie(res, config, token, session.expiresAt);
     res.json({ user: { id: user.id, name: user.name, email: user.email } });
   });
@@ -17,7 +27,15 @@ export function authRoutes({ auth, config, limiters }) {
   /** Native/non-browser clients: returns a bearer token instead of a cookie. */
   r.post('/native/login', limiters.login, async (req, res) => {
     const { identifier, password } = parse(loginSchema, req.body);
-    const { token, session, user } = await auth.login(identifier, password, meta(req));
+    const result = await auth.login(identifier, password, meta(req));
+    if (result.mfaRequired) return res.json(result);
+    const { token, session, user } = result;
+    res.json({ token, tokenType: 'Bearer', expiresAt: session.expiresAt, user: { id: user.id, name: user.name, email: user.email } });
+  });
+
+  r.post('/native/verify-whatsapp', limiters.login, async (req, res) => {
+    const { challengeId, code } = parse(z.object({ challengeId: z.string().trim().min(1).max(64), code: z.string().regex(/^[0-9]{6}$/) }), req.body);
+    const { token, session, user } = await auth.verifyLoginCode(challengeId, code, meta(req));
     res.json({ token, tokenType: 'Bearer', expiresAt: session.expiresAt, user: { id: user.id, name: user.name, email: user.email } });
   });
 

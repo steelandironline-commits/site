@@ -5,7 +5,7 @@ import { post } from '../../lib/api.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
-import { Badge, Button, ErrorState, Field, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Badge, Button, ErrorState, Field, Input, SkeletonCard } from '../../components/ui/ui.jsx';
 import { PasswordInput } from '../auth/PasswordInput.jsx';
 import s from './app.module.css';
 
@@ -22,6 +22,7 @@ export default function ConfirmChallenge() {
   const toast = useToast();
   const { data, error, reload } = useApi(`/api/challenges/${id}`);
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [fieldError, setFieldError] = useState(null);
   const [busy, setBusy] = useState(false);
   const c = data?.challenge;
@@ -35,7 +36,8 @@ export default function ConfirmChallenge() {
     setBusy(true);
     setFieldError(null);
     try {
-      const out = await post(`/api/challenges/${id}/confirm`, { password });
+      const viaWhatsApp = c.mechanism === 'WHATSAPP_OTP';
+      const out = await post(`/api/challenges/${id}/${viaWhatsApp ? 'confirm-whatsapp' : 'confirm'}`, viaWhatsApp ? { code } : { password });
       toast.success('Ação confirmada e executada.');
       const paymentId = out.result?.payment?.id;
       navigate(paymentId ? `/app/payments/${paymentId}` : '/app', { replace: true });
@@ -46,6 +48,7 @@ export default function ConfirmChallenge() {
     } finally {
       setBusy(false);
       setPassword('');
+      setCode('');
     }
   };
 
@@ -91,13 +94,31 @@ export default function ConfirmChallenge() {
         {c.status === 'PENDING' ? (
           <form onSubmit={confirm} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 14 }} noValidate>
             <p className={s.muted} style={{ fontSize: 13 }}>
-              Ações financeiras nunca são executadas só por mensagem. Digite sua senha para confirmar neste dispositivo.
+              {c.mechanism === 'WHATSAPP_OTP'
+                ? 'Enviamos um código ao WhatsApp vinculado. Digite-o aqui para confirmar neste dispositivo.'
+                : 'Ações financeiras nunca são executadas só por mensagem. Digite sua senha para confirmar neste dispositivo.'}
             </p>
-            <Field label="Senha da conta" error={fieldError}>
-              {(a) => <PasswordInput {...a} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
-            </Field>
+            {c.mechanism === 'WHATSAPP_OTP' ? (
+              <Field label="Código do WhatsApp" hint="O código expira em 5 minutos." error={fieldError}>
+                {(a) => (
+                  <Input
+                    {...a}
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                  />
+                )}
+              </Field>
+            ) : (
+              <Field label="Senha da conta" error={fieldError}>
+                {(a) => <PasswordInput {...a} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
+              </Field>
+            )}
             <div className={s.pageActions}>
-              <Button type="submit" icon={ShieldCheck} loading={busy} disabled={!password}>
+              <Button type="submit" icon={ShieldCheck} loading={busy} disabled={c.mechanism === 'WHATSAPP_OTP' ? code.length !== 6 : !password}>
                 Confirmar
               </Button>
               <Button variant="ghost" icon={X} onClick={cancel} disabled={busy}>

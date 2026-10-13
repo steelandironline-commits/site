@@ -47,8 +47,17 @@ export class RefundService {
       if (t.status === 'DISPUTED' && !viaDispute) throw conflict('Há uma disputa aberta; o reembolso será decidido nela.');
       payment = t.payment;
     } else {
-      if (!isPlatformAdmin) throw forbidden();
-      payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+      if (isPlatformAdmin) {
+        payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+      } else {
+        payment = await this.prisma.payment.findFirst({
+          where: { id: paymentId, companyId: company?.id, kind: 'INTERVIEW_FEE', relatedType: { startsWith: 'WORKFORCE_INTERVIEW' } },
+        });
+        if (payment) {
+          const match = await this.prisma.workforceMatch.findFirst({ where: { id: payment.relatedId, companyId: company.id }, select: { id: true } });
+          if (!match) throw forbidden();
+        }
+      }
     }
     if (!payment) throw notFound('Pagamento não encontrado.');
     if (payment.status !== 'CONFIRMED') throw conflict('Só é possível reembolsar pagamentos confirmados.');

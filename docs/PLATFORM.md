@@ -34,9 +34,10 @@ native app call the same `ActionEngine` through the same API.
 4. **Business rules** — global (active subscription where required) and in
    the domain services.
 5. **Step-up** — `sensitive` actions return `CONFIRMATION_REQUIRED` with a
-   `SensitiveActionChallenge`; they execute only after the challenge is
-   confirmed in an authenticated web session with the account password
-   (`/app/confirm/:id`). WhatsApp can never complete them.
+   `SensitiveActionChallenge`; when the user has a verified WhatsApp connection,
+   a one-time code is sent there and must be entered in the authenticated web
+   session (`/app/confirm/:id`). Without a verified connection, the session
+   requires the account password. WhatsApp can never execute the action itself.
 6. **Audit** — every attempt is written to `ActionLog` (redacted input,
    status `SUCCEEDED | FAILED | REJECTED | CONFIRMATION_REQUIRED`, channel,
    duration).
@@ -50,6 +51,7 @@ Registered actions: `ANALYZE_OPPORTUNITY`, `CONTACT_OPPORTUNITY`,
 `REJECT_FREIGHT_MATCH`, `MARK_DRIVER_ARRIVED`, `COMPLETE_FREIGHT`,
 `CREATE_WORKFORCE_DEMAND`, `INVITE_PROFESSIONAL`, `REJECT_PROFESSIONAL`,
 `COMPLETE_WORKFORCE_SERVICE`, `CREATE_SUBSCRIPTION_PIX`, `CREATE_PIX`,
+`SCHEDULE_WORKFORCE_INTERVIEW`, `AGREE_HIRE`, `CANCEL_WORKFORCE_INTERVIEW`,
 `CREATE_TRANSACTION`, `CREATE_TRANSACTION_PIX`, `START_SERVICE`,
 `REPORT_COMPLETION`, `REQUEST_RELEASE`, `CONFIRM_COMPLETION`,
 `RELEASE_PAYMENT`*, `REFUND_PAYMENT`*, `OPEN_DISPUTE`, `RESPOND_DISPUTE`,
@@ -92,6 +94,13 @@ Event types: `OPPORTUNITY_CREATED`, `OPPORTUNITY_HIGH_PRIORITY`,
   code (hashed at rest, 15 min, 5 attempts). Ownership is proven when a
   message containing the code arrives **from that number** via the signed
   webhook. Brazilian numbers match with or without the extra 9.
+- **Login verification** — accounts with a verified WhatsApp number receive a
+  single-use six-digit login code with a five-minute expiry and attempt limit.
+  Accounts without a verified number continue with password login until they
+  link one.
+- OTP delivery uses a Meta-approved Authentication template configured through
+  `WHATSAPP_TEMPLATE_AUTH`; it includes the OTP in the body and copy-code button,
+  so it works outside the 24-hour service window.
 - **Decisions** — interactive buttons carry `ap1:<DECISION>:<kind>:<id>`;
   the inbound service maps them (`WHATSAPP_DECISIONS`) to ActionEngine actions:
   ANALISAR, ABORDAR, DESCARTAR, TENHO INTERESSE, CONVIDAR, RECUSAR; VER ROTA

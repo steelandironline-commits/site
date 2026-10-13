@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { disconnectPrisma } from '@autopix/core';
 import { COMMISSION_PLAN_CODE } from '@autopix/shared';
-import { setupApp, resetDb, client, hasDb, PROFILE, STRONG_PASSWORD, testCnpj, testCpf } from './helpers.js';
+import { setupApp, resetDb, client, hasDb, PROFILE, STRONG_PASSWORD, testCnpj, testCpf, activationTokenFromEmail } from './helpers.js';
 
 const WORKER_PROFILE = { services: ['Eletricista'], city: 'Joinville', state: 'SC', serviceLocations: ['Joinville - SC'] };
 
@@ -42,7 +42,9 @@ describe.skipIf(!hasDb)('commission model: free professionals, one-time company 
 
     const fin = await c.post('/api/onboarding/finish');
     expect(fin.status).toBe(200);
-    expect(typeof fin.body.token).toBe('string');
+    expect(fin.body).toMatchObject({ emailVerificationRequired: true, emailSent: true });
+    expect(fin.body.token).toBeUndefined();
+    const token = activationTokenFromEmail(ctx.email);
     const user = await ctx.prisma.user.findUnique({ where: { email } });
     expect(user.status).toBe('PENDING_ACTIVATION');
     expect(user.passwordHash).toBeNull();
@@ -50,9 +52,10 @@ describe.skipIf(!hasDb)('commission model: free professionals, one-time company 
     expect(access).toMatchObject({ status: 'ACTIVE', plan: COMMISSION_PLAN_CODE, priceCents: 0, currentPeriodEnd: null });
     expect(await ctx.prisma.payment.count()).toBe(0);
 
-    const act = await c.post('/api/auth/activate', { token: fin.body.token, password: STRONG_PASSWORD });
+    const act = await c.post('/api/auth/activate', { token, password: STRONG_PASSWORD });
     expect(act.status).toBe(200);
     expect((await ctx.prisma.user.findUnique({ where: { email } })).status).toBe('ACTIVE');
+    expect((await ctx.prisma.user.findUnique({ where: { email } })).emailVerifiedAt).toBeTruthy();
     expect((await c.get('/api/me')).status).toBe(200);
   });
 
@@ -91,8 +94,9 @@ describe.skipIf(!hasDb)('commission model: free professionals, one-time company 
     expect(access).toMatchObject({ status: 'ACTIVE', plan: COMMISSION_PLAN_CODE, currentPeriodEnd: null });
 
     const claim = await c.post(`/api/payments/${pix.body.payment.id}/activation`);
-    expect(typeof claim.body.token).toBe('string');
-    expect((await c.post('/api/auth/activate', { token: claim.body.token, password: STRONG_PASSWORD })).status).toBe(200);
+    expect(claim.body.emailVerificationRequired).toBe(true);
+    const token = activationTokenFromEmail(ctx.email);
+    expect((await c.post('/api/auth/activate', { token, password: STRONG_PASSWORD })).status).toBe(200);
 
     // Paid once: nothing expires and nothing more to pay.
     expect(await ctx.services.subscriptions.sweepExpired()).toBe(0);
@@ -142,7 +146,9 @@ describe.skipIf(!hasDb)('commission model with the company fee waived', () => {
     await c.put('/api/onboarding/step', { step: 9, data: PROFILE, complete: true });
     const fin = await c.post('/api/onboarding/finish');
     expect(fin.status).toBe(200);
-    expect(typeof fin.body.token).toBe('string');
+    expect(fin.body).toMatchObject({ emailVerificationRequired: true, emailSent: true });
+    expect(fin.body.token).toBeUndefined();
+    expect(activationTokenFromEmail(ctx.email)).toBeTruthy();
     expect(await ctx.prisma.payment.count()).toBe(0);
   });
 });

@@ -1,10 +1,11 @@
 import { ZodError } from 'zod';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
-import { AppError, badRequest, conflict, forbidden, notFound, unauthorized } from '../errors.js';
+import { AppError, badRequest, conflict, forbidden, notFound, unauthorized, unavailable } from '../errors.js';
 import { logger } from '../logger.js';
+import { createOtp, hashOtp } from '../security/otp.js';
 
-const CHALLENGE_TTL_MS = 10 * 60 * 1000;
+const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const SECRET_KEYS = /password|token|secret|code|pixKey|cpf|document|link/i;
 
 function sanitize(value, depth = 0) {
@@ -194,6 +195,13 @@ export class ActionEngine {
 
   async #createChallenge(def, user, input, channel) {
     const summary = def.summarize ? def.summarize(input) : def.description;
+    const connection = await this.prisma.whatsAppConnection.findUnique({ where: { userId: user.id } });
+    const messenger = this.services.whatsappMessenger;
+    const provider = messenger?.provider;
+    if (connection?.status === 'VERIFIED' && (!provider?.enabled || (provider.name !== 'mock' && !provider.templates?.authentication))) {
+      throw unavailable('A confirmação por WhatsApp requer o provedor da Meta e um template de autenticação aprovado.');
+    }
+    const code = connection?.status === 'VERIFIED' ? createOtp() : null;
     const challenge = await this.prisma.sensitiveActionChallenge.create({
       data: {
         userId: user.id,
@@ -202,16 +210,29 @@ export class ActionEngine {
         input,
         summary,
         requestedVia: channel,
+        mechanism: code ? 'WHATSAPP_OTP' : 'WEB_PASSWORD',
+        verificationCodeHash: code ? 'pending' : null,
         expiresAt: new Date(Date.now() + CHALLENGE_TTL_MS),
       },
     });
+    if (code) {
+      await this.prisma.sensitiveActionChallenge.update({
+        where: { id: challenge.id },
+        data: { verificationCodeHash: hashOtp(code, challenge.id, this.config.secrets.session) },
+      });
+      const sent = await messenger.send(connection, 'sendAuthenticationCode', [{ code }]);
+      if (sent.status !== 'SENT') {
+        await this.prisma.sensitiveActionChallenge.update({ where: { id: challenge.id }, data: { status: 'FAILED' } });
+        throw unavailable('Não foi possível enviar o código de confirmação pelo WhatsApp. Tente novamente mais tarde.');
+      }
+    }
     await this.services.events?.publish({
       type: 'SENSITIVE_ACTION_REQUESTED',
       companyId: user.companyId,
       userId: user.id,
       aggregateType: 'challenge',
       aggregateId: challenge.id,
-      payload: { action: def.name, summary, requestedVia: channel },
+      payload: { action: def.name, summary, requestedVia: channel, mechanism: challenge.mechanism },
       activity: {
         type: 'SYSTEM',
         title: 'Confirmação de segurança necessária',
@@ -223,11 +244,7 @@ export class ActionEngine {
     return challenge;
   }
 
-  /**
-   * A sensitive action executes only with a challenge CONFIRMED in an
-   * authenticated web session (password step-up). Possession of a WhatsApp
-   * number is never enough.
-   */
+  /** A confirmed step-up challenge must be bound to this authenticated session. */
   async #consumeChallenge(def, user, challengeId, channel, actor) {
     if (channel !== 'WEB' && channel !== 'API') throw forbidden('Confirme esta ação no app TemPix.');
     const consumed = await this.prisma.sensitiveActionChallenge.updateMany({

@@ -46,8 +46,17 @@ export class EmailService {
   activationEmail({ to, name, link }) {
     return this.send({
       to,
-      subject: 'Seu TemPix foi ativado — crie sua senha',
-      text: `Olá, ${name}.\n\nSeu pagamento foi confirmado e sua assinatura TemPix está ativa.\nCrie sua senha de acesso (link válido por 48 horas, uso único):\n\n${link}\n\nSe você não reconhece esta compra, ignore este e-mail.`,
+      subject: 'Confirme seu e-mail e crie sua senha — TemPix',
+      text: `Olá, ${name}.\n\nConfirme que este e-mail pertence a você e crie sua senha de acesso ao TemPix. O link é válido por 48 horas e só pode ser usado uma vez:\n\n${link}\n\nSe você não iniciou este cadastro, ignore este e-mail.`,
+    });
+  }
+
+  workforceInterviewEmail({ to, name, role, interviewAt }) {
+    const when = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }).format(interviewAt);
+    return this.send({
+      to,
+      subject: 'Confirme sua entrevista no TemPix',
+      text: `Olá, ${name}.\n\nSua entrevista para ${role} foi marcada para ${when}. A taxa de agendamento de R$ 1,00 é responsabilidade da empresa. Você não precisa pagar nenhuma taxa para participar.\n\nSe a empresa cancelar a entrevista, a taxa de agendamento será devolvida à empresa.`,
     });
   }
 

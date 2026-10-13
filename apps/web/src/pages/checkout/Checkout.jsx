@@ -52,7 +52,7 @@ export default function Checkout() {
   const [error, setError] = useState(null);
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [phase, setPhase] = useState('pending'); // pending | confirmed | activating
+  const [phase, setPhase] = useState('pending'); // pending | confirmed | activating | email-sent
   const [simulating, setSimulating] = useState(false);
   const activating = useRef(false);
   const countdown = useCountdown(payment?.expiresAt);
@@ -141,7 +141,11 @@ export default function Checkout() {
           navigate(isRenewal ? '/app/subscription' : '/login', { replace: true });
           return;
         }
-        navigate(`/activate/${res.token}`, { replace: true });
+        if (res.emailVerificationRequired) {
+          setPhase('email-sent');
+          return;
+        }
+        if (res.token) navigate(`/activate/${res.token}`, { replace: true });
       } catch (err) {
         activating.current = false;
         setError(err);
@@ -335,6 +339,16 @@ export default function Checkout() {
                 )}
               </motion.div>
             ) : (
+              phase === 'email-sent' ? (
+                <motion.div key="email-sent" className={s.confirmed} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, ease }}>
+                  <motion.span className={s.check} initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 22 }}>
+                    <Check size={30} />
+                  </motion.span>
+                  <h2 className={s.confirmedTitle}>LINK DE ATIVAÇÃO ENVIADO</h2>
+                  <p>Confira sua caixa de entrada e spam. O link confirma seu e-mail e permite criar a senha.</p>
+                  <Button to="/login" style={{ marginTop: 18 }}>IR PARA ENTRAR</Button>
+                </motion.div>
+              ) : (
               <motion.div key="confirmed" className={s.confirmed} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, ease }}>
                 <motion.span
                   className={s.check}
@@ -356,7 +370,7 @@ export default function Checkout() {
                 </AnimatePresence>
                 {error && <ErrorState compact title="Não foi possível continuar" message={error.message} onRetry={() => setPhase('confirmed')} />}
               </motion.div>
-            )}
+            ))}
           </AnimatePresence>
         </section>
       </main>

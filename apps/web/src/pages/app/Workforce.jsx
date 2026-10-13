@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useOutletContext, useParams } from 'react-router-dom';
-import { ArrowLeft, Send, Star, UserPlus, Users, X } from 'lucide-react';
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { ArrowLeft, CalendarClock, Check, Send, Star, UserPlus, Users, X } from 'lucide-react';
 import { useApi } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { fmtDate } from '../../lib/time.js';
@@ -8,6 +8,12 @@ import { Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, Skeleto
 import s from './app.module.css';
 
 const STATUS = { SUGGESTED: ['primary', 'Sugerido'], INVITED: ['amber', 'Convidado'], ACCEPTED: ['revenue', 'Aceitou'], DECLINED: ['neutral', 'Recusado'], COMPLETED: ['revenue', 'Concluído'] };
+const moneyToCents = (value) => {
+  let normalized = String(value || '').trim().replace(/\s/g, '');
+  if (normalized.includes(',')) normalized = normalized.replace(/\./g, '').replace(',', '.');
+  const number = Number(normalized);
+  return Number.isSafeInteger(Math.round(number * 100)) ? Math.round(number * 100) : NaN;
+};
 
 export default function Workforce() {
   const { data, error, reload } = useApi('/api/workforce');
@@ -113,16 +119,45 @@ export default function Workforce() {
 
 export function WorkforceMatchDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { data, error, setData } = useApi(`/api/workforce/matches/${id}`);
   const { run, busy } = useAction();
+  const [interview, setInterview] = useState({ at: '', email: '' });
+  const [salary, setSalary] = useState('');
   const m = data?.match;
   const act = async (action, success) => {
     const out = await run(action, { id }, { success });
-    if (out?.result?.match) setData({ match: { ...m, ...out.result.match } });
+    if (out?.result?.match) setData({ match: { ...m, ...out.result.match, interviewPayment: out.result.payment } });
   };
   if (error) return <ErrorState title="Profissional não encontrado." message={error.message} />;
   if (!m) return <SkeletonCard lines={4} />;
   const [tone, label] = STATUS[m.status];
+  const canCharge = !m.isDemo && ['INVITED', 'ACCEPTED'].includes(m.status);
+  const schedule = async (e) => {
+    e.preventDefault();
+    const out = await run('SCHEDULE_WORKFORCE_INTERVIEW', {
+      id,
+      interviewAt: new Date(interview.at).toISOString(),
+      candidateEmail: interview.email.trim(),
+    });
+    const paymentId = out?.result?.payment?.id;
+    if (paymentId) navigate(`/app/payments/${paymentId}`);
+    if (out?.result?.match) setData({ match: { ...m, ...out.result.match, interviewPayment: out.result.payment } });
+  };
+  const hire = async (e) => {
+    e.preventDefault();
+    const cents = moneyToCents(salary);
+    if (!Number.isSafeInteger(cents) || cents < 100) return;
+    const out = await run('AGREE_HIRE', { id, agreedSalaryCents: cents });
+    const paymentId = out?.result?.payment?.id;
+    if (paymentId) navigate(`/app/payments/${paymentId}`);
+    if (out?.result?.match) setData({ match: { ...m, ...out.result.match, hiringPayment: out.result.payment } });
+  };
+  const cancelInterview = async () => {
+    const out = await run('CANCEL_WORKFORCE_INTERVIEW', { id }, { success: 'Entrevista cancelada.' });
+    if (out?.result?.match) setData({ match: { ...m, ...out.result.match } });
+  };
+  const hiringFeeCents = m.agreedSalaryCents ? Math.max(1, Math.round((m.agreedSalaryCents * 300) / 10_000)) : null;
   return (
     <>
       <Link to="/app/workforce" className={s.backLink}>
@@ -170,6 +205,77 @@ export function WorkforceMatchDetail() {
           Cobrar com Pix
         </Button>
       </div>
+      {canCharge && (
+        <div className={s.stack} style={{ marginTop: 18 }}>
+          <section className={`${s.panel} ${s.panelPad}`}>
+            <div className={s.sectionHead}>
+              <h2 className={s.panelTitle}><CalendarClock size={15} style={{ verticalAlign: -2 }} aria-hidden="true" /> Entrevista</h2>
+              {m.interviewFeePaidAt && <Badge tone="revenue">Taxa paga</Badge>}
+            </div>
+            {m.interviewCanceledAt ? (
+              <p className={s.muted}>Entrevista cancelada.</p>
+            ) : m.interviewScheduledAt ? (
+              <>
+                <p className={s.muted} style={{ margin: '8px 0 14px' }}>
+                  Marcada para {fmtDate(m.interviewScheduledAt)}. A taxa de agendamento de R$ 1,00 é paga pela empresa; o candidato não paga para participar.
+                </p>
+                <div className={s.pageActions}>
+                  {!m.interviewFeePaidAt && m.interviewPayment?.id && <Button variant="ghost" to={`/app/payments/${m.interviewPayment.id}`}>Ver Pix</Button>}
+                  <Button variant="secondary" icon={X} loading={busy === 'CANCEL_WORKFORCE_INTERVIEW'} onClick={cancelInterview}>
+                    Cancelar entrevista
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={schedule} noValidate>
+                <p className={s.muted} style={{ margin: '8px 0 14px', fontSize: 13 }}>
+                  A empresa paga a taxa de agendamento de R$ 1,00. O candidato não paga para participar.
+                </p>
+                <div className={s.formGrid}>
+                  <Field label="Data e hora">{(a) => <Input {...a} required type="datetime-local" value={interview.at} onChange={(e) => setInterview({ ...interview, at: e.target.value })} />}</Field>
+                  <Field label="E-mail do candidato">{(a) => <Input {...a} required type="email" autoComplete="email" value={interview.email} onChange={(e) => setInterview({ ...interview, email: e.target.value })} />}</Field>
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <Button type="submit" icon={CalendarClock} loading={busy === 'SCHEDULE_WORKFORCE_INTERVIEW'} disabled={!interview.at || !interview.email.includes('@')}>
+                    Marcar e gerar Pix
+                  </Button>
+                </div>
+              </form>
+            )}
+          </section>
+          <section className={`${s.panel} ${s.panelPad}`}>
+            <div className={s.sectionHead}>
+              <h2 className={s.panelTitle}><Check size={15} style={{ verticalAlign: -2 }} aria-hidden="true" /> Contratação</h2>
+              {m.hiringFeePaidAt && <Badge tone="revenue">Taxa paga</Badge>}
+            </div>
+            {m.agreedSalaryCents ? (
+              <>
+                <p className={s.muted} style={{ marginTop: 8 }}>
+                  Salário acordado: R$ {(m.agreedSalaryCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Taxa de 3%: R$ {(hiringFeeCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.
+                  {!m.hiringFeePaidAt && <> Pix aguardando pagamento.</>}
+                </p>
+                {!m.hiringFeePaidAt && m.hiringPayment?.id && <Button variant="ghost" to={`/app/payments/${m.hiringPayment.id}`} style={{ marginTop: 12 }}>Ver Pix da contratação</Button>}
+              </>
+            ) : (
+              <form onSubmit={hire} noValidate>
+                <p className={s.muted} style={{ margin: '8px 0 14px', fontSize: 13 }}>
+                  Informe o salário mensal acordado. A taxa de contratação de 3% será calculada no servidor.
+                </p>
+                <div className={s.formGrid}>
+                  <Field label="Salário acordado (R$)" hint="De R$ 1,00 a R$ 1.000.000,00">
+                    {(a) => <Input {...a} required type="text" inputMode="decimal" placeholder="3.500,00" value={salary} onChange={(e) => setSalary(e.target.value.replace(/[^0-9.,]/g, ''))} />}
+                  </Field>
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <Button type="submit" loading={busy === 'AGREE_HIRE'} disabled={!Number.isFinite(moneyToCents(salary)) || moneyToCents(salary) < 100}>
+                    Registrar contratação e gerar Pix
+                  </Button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
     </>
   );
 }

@@ -1,7 +1,8 @@
 import { COMMISSION_PLAN_CODE, formatCents } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
-import { badRequest, conflict } from '../errors.js';
+import { hashToken } from '../security/tokens.js';
+import { badRequest, conflict, unavailable } from '../errors.js';
 import { AuthService } from './authService.js';
 import { pickCompanyFields } from './companyService.js';
 
@@ -11,10 +12,11 @@ import { pickCompanyFields } from './companyService.js';
  * following step is persisted server-side and can be resumed.
  */
 export class OnboardingService {
-  constructor({ prisma = getPrisma(), config = getConfig() } = {}) {
+  constructor({ prisma = getPrisma(), config = getConfig(), email } = {}) {
     this.prisma = prisma;
     this.config = config;
-    this.auth = new AuthService({ prisma, config });
+    this.email = email;
+    this.auth = new AuthService({ prisma, config, email });
   }
 
   async start({ name, email, companyName, accountType = 'COMPANY', document }, meta = {}) {
@@ -161,8 +163,15 @@ export class OnboardingService {
     const token = await this.prisma.$transaction(async (tx) => {
       await tx.subscription.upsert({ where: { companyId: company.id }, update: access, create: { companyId: company.id, ...access } });
       await tx.user.update({ where: { id: fresh.id }, data: { status: 'PENDING_ACTIVATION' } });
+      await tx.activationToken.updateMany({ where: { userId: fresh.id, usedAt: null }, data: { usedAt: now } });
       return this.auth.issueActivationToken(fresh.id, tx);
     });
-    return { token };
+    const sent = await this.email?.activationEmail({ to: fresh.email, name: fresh.name, link: `${this.config.appUrl}/activate/${token}` });
+    if (!sent) {
+      await this.prisma.activationToken.updateMany({ where: { userId: fresh.id, usedAt: null }, data: { usedAt: new Date() } });
+      throw unavailable('Não foi possível enviar o link de verificação. O cadastro está gratuito, mas o e-mail de ativação precisa estar configurado para liberar o acesso.');
+    }
+    await this.prisma.activationToken.updateMany({ where: { tokenHash: hashToken(token, this.config.secrets.activation) }, data: { emailSentAt: new Date() } });
+    return { emailVerificationRequired: true, emailSent: true };
   }
 }

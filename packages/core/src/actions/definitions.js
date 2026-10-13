@@ -174,6 +174,36 @@ export function registerCoreActions(engine) {
   workforceMove('REJECT_PROFESSIONAL', 'DECLINED', ['SUGGESTED', 'INVITED'], 'Profissional recusado', 'Recusa o profissional.');
   workforceMove('COMPLETE_WORKFORCE_SERVICE', 'COMPLETED', ['INVITED', 'ACCEPTED'], 'Serviço concluído', 'Conclui o serviço do profissional.');
 
+  engine.register({
+    name: 'SCHEDULE_WORKFORCE_INTERVIEW',
+    description: 'Marca a entrevista e gera o Pix de R$ 1,00 para a empresa pagar a taxa de agendamento.',
+    schema: z.object({ id, interviewAt: z.string().datetime(), candidateEmail: z.string().trim().email().max(254) }),
+    requiresActiveSubscription: true,
+    sensitive: true,
+    summarize: (i) => `Marcar entrevista e cobrar taxa de agendamento de R$ 1,00 da empresa para ${i.candidateEmail}`,
+    handler: async (ctx, i) => s().workforce.scheduleInterview({ company: ctx.company, user: ctx.user, ...i }),
+  });
+
+  engine.register({
+    name: 'AGREE_HIRE',
+    description: 'Registra o salário acordado e gera a cobrança Pix de 3% calculada pelo TemPix.',
+    schema: z.object({ id, agreedSalaryCents: z.coerce.number().int().min(100).max(100_000_000) }),
+    requiresActiveSubscription: true,
+    sensitive: true,
+    summarize: (i) => `Registrar contratação por ${formatCents(i.agreedSalaryCents)} e cobrar 3%`,
+    handler: async (ctx, i) => s().workforce.agreeHire({ company: ctx.company, user: ctx.user, ...i }),
+  });
+
+  engine.register({
+    name: 'CANCEL_WORKFORCE_INTERVIEW',
+    description: 'Cancela uma entrevista e solicita a devolução do R$ 1,00 se o candidato já pagou.',
+    schema: byId,
+    requiresActiveSubscription: true,
+    sensitive: true,
+    summarize: () => 'Cancelar entrevista e devolver a taxa de presença quando aplicável',
+    handler: async (ctx, { id: matchId }) => s().workforce.cancelInterview({ company: ctx.company, user: ctx.user, id: matchId }),
+  });
+
   // ------------------------------------------------------------- payments
   engine.register({
     name: 'CREATE_SUBSCRIPTION_PIX',

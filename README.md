@@ -216,17 +216,23 @@ TemPix has no subscription. What each side pays:
 | Who | Fee | When |
 | --- | --- | --- |
 | Professional (pessoa física, CPF) | Free signup | — |
-| Company (CNPJ or MEI) | One-time signup fee, R$ 200,00 (`COMPANY_SIGNUP_FEE_CENTS`) | Once, before activation |
+| Company (CNPJ or MEI) | Free in production while `COMPANY_SIGNUP_FEE_CENTS=0` (default is R$ 200,00) | Before activation |
 | Contracts (obras, serviços, rotas, transportes) | 2% of the contract value, deducted from what is released to whoever did the work (`CommissionRule`) | When the payment is released |
-| **Interviewee (candidate)** | **R$ 1,00 to attend the interview** (mandatory) | When confirming attendance |
+| **Hiring company** | **R$ 1,00 interview scheduling fee** | When the interview is scheduled |
 | **Hiring company** | **3% of the offered salary, on the agreed value** | When the hire is agreed |
 
 Hiring example: agreed salary of R$ 3.000,00 → the company pays R$ 90,00 (3%) to TemPix;
-the candidate paid R$ 1,00 to confirm the interview.
+the company also pays R$ 1,00 when scheduling the interview. Candidates never pay to interview.
 
-Status: the interview (R$ 1,00) and hiring (3%) fees are business rules defined here; the app
-does not charge them yet. When they are implemented they must follow the payment rules below
-(provider confirmation, idempotency, audit log, no simulated payments in production).
+Interview and hiring fees are charged through Pix by the configured payment provider. They use
+provider confirmation, idempotency, server-calculated amounts, and audit logs. Production has
+`PAYMENT_PROVIDER=none` until Banco do Brasil or another supported provider is configured, so
+these charges remain unavailable there. Production company signup is free while
+`COMPANY_SIGNUP_FEE_CENTS=0` is set.
+
+The interview scheduling fee is billed to the hiring company. This keeps the cost of recruitment
+off the candidate, consistent with the Ministry of Public Labour's enforcement action against
+charging workers to be referred to interviews and jobs: <https://www.prt4.mpt.mp.br/procuradorias/prt-porto-alegre/12608-mpt-obtem-decisao-judicial-contra-empresa-de-recursos-humanos-por-cobranca-de-taxa-de-inscricao>.
 
 ---
 
@@ -555,7 +561,10 @@ Full description: [`docs/PLATFORM.md`](docs/PLATFORM.md); endpoints:
    `WHATSAPP_VERIFY_TOKEN` (any random string), `WHATSAPP_BUSINESS_NUMBER`.
 3. Webhook URL: `https://<domain>/api/webhooks/whatsapp`, verify token =
    `WHATSAPP_VERIFY_TOKEN`, subscribe to `messages`.
-4. (Recommended) Approve templates for business-initiated notifications and set
+4. Approve an **Authentication** template with a copy-code OTP button and five-minute
+   expiry, then set `WHATSAPP_TEMPLATE_AUTH` to its name. Login and sensitive-action
+   codes always use this template, including outside Meta's customer-service window.
+5. (Recommended) Approve templates for business-initiated notifications and set
    `WHATSAPP_TEMPLATE_OPPORTUNITY|PAYMENT|FREIGHT|WORKFORCE` (quick-reply buttons
    in the order shown above).
 

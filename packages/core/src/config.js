@@ -112,6 +112,7 @@ const schema = z.object({
   WHATSAPP_TEMPLATE_PAYMENT: optional,
   WHATSAPP_TEMPLATE_FREIGHT: optional,
   WHATSAPP_TEMPLATE_WORKFORCE: optional,
+  WHATSAPP_TEMPLATE_AUTH: optional,
   WHATSAPP_TEMPLATE_LANGUAGE: optional,
   WEB_PUSH_PUBLIC_KEY: optional,
   WEB_PUSH_PRIVATE_KEY: optional,
@@ -226,6 +227,7 @@ export function loadConfig(env = process.env) {
           payment: e.WHATSAPP_TEMPLATE_PAYMENT,
           freight: e.WHATSAPP_TEMPLATE_FREIGHT,
           workforce: e.WHATSAPP_TEMPLATE_WORKFORCE,
+          authentication: e.WHATSAPP_TEMPLATE_AUTH,
           language: e.WHATSAPP_TEMPLATE_LANGUAGE || 'pt_BR',
         },
       };

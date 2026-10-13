@@ -3,7 +3,11 @@ import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { generateToken, hashToken } from '../security/tokens.js';
 import { hashPassword, verifyPassword, burnPasswordCheck } from '../security/password.js';
-import { AppError, badRequest, conflict, gone, notFound, unauthorized } from '../errors.js';
+import { AppError, badRequest, conflict, gone, notFound, unauthorized, unavailable } from '../errors.js';
+import { createOtp, hashOtp, verifyOtp } from '../security/otp.js';
+
+const LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
 
 const SESSION_INCLUDE = {
   user: {
@@ -21,10 +25,11 @@ const SESSION_INCLUDE = {
 };
 
 export class AuthService {
-  constructor({ prisma = getPrisma(), config = getConfig(), email } = {}) {
+  constructor({ prisma = getPrisma(), config = getConfig(), email, whatsappMessenger } = {}) {
     this.prisma = prisma;
     this.config = config;
     this.email = email;
+    this.whatsappMessenger = whatsappMessenger;
   }
 
   // ---------------------------------------------------------------- sessions
@@ -112,9 +117,65 @@ export class AuthService {
     if (!ok) throw unauthorized('CPF/CNPJ ou senha incorretos.');
     if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_INACTIVE', 'Sua conta ainda não foi ativada.');
 
+    const connection = await this.prisma.whatsAppConnection.findUnique({ where: { userId: user.id } });
+    if (connection?.status === 'VERIFIED') {
+      const provider = this.whatsappMessenger?.provider;
+      if (!provider?.enabled || (provider.name !== 'mock' && !provider.templates?.authentication)) {
+        throw unavailable('A verificação por WhatsApp requer o provedor da Meta e um template de autenticação aprovado.');
+      }
+      return this.#startLoginChallenge(user, connection, meta);
+    }
+
     const { token, session } = await this.createSession(user.id, { scope: 'FULL', ...meta });
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-    return { token, session, user };
+    return { token, session, user, mfaRequired: false };
+  }
+
+  async #startLoginChallenge(user, connection, meta = {}) {
+    const code = createOtp();
+    const expiresAt = new Date(Date.now() + LOGIN_CHALLENGE_TTL_MS);
+    await this.prisma.loginChallenge.updateMany({ where: { userId: user.id, consumedAt: null }, data: { consumedAt: new Date() } });
+    const challenge = await this.prisma.loginChallenge.create({
+      data: {
+        userId: user.id,
+        codeHash: 'pending',
+        expiresAt,
+        ipAddress: meta.ip ? String(meta.ip).slice(0, 64) : null,
+        userAgent: meta.userAgent ? String(meta.userAgent).slice(0, 300) : null,
+      },
+    });
+    await this.prisma.loginChallenge.update({ where: { id: challenge.id }, data: { codeHash: hashOtp(code, challenge.id, this.config.secrets.session) } });
+    const sent = await this.whatsappMessenger.send(connection, 'sendAuthenticationCode', [{ code }]);
+    if (sent.status !== 'SENT') {
+      await this.prisma.loginChallenge.update({ where: { id: challenge.id }, data: { consumedAt: new Date() } });
+      throw unavailable('Não foi possível enviar o código pelo WhatsApp. Tente novamente mais tarde.');
+    }
+    return { mfaRequired: true, challengeId: challenge.id, expiresAt };
+  }
+
+  async verifyLoginCode(challengeId, code, meta = {}) {
+    const challenge = await this.prisma.loginChallenge.findUnique({ where: { id: challengeId }, include: { user: true } });
+    if (!challenge || challenge.consumedAt) throw unauthorized('Código inválido ou expirado. Entre novamente.');
+    if (challenge.expiresAt <= new Date()) {
+      await this.prisma.loginChallenge.updateMany({ where: { id: challenge.id, consumedAt: null }, data: { consumedAt: new Date() } });
+      throw gone('Este código expirou. Entre novamente para receber outro.');
+    }
+    if (challenge.attempts >= OTP_MAX_ATTEMPTS) throw unauthorized('Muitas tentativas. Entre novamente para receber outro código.');
+    if (!verifyOtp(code, challenge.id, this.config.secrets.session, challenge.codeHash)) {
+      await this.prisma.loginChallenge.updateMany({ where: { id: challenge.id, consumedAt: null, attempts: { lt: OTP_MAX_ATTEMPTS } }, data: { attempts: { increment: 1 } } });
+      throw badRequest('Código incorreto.');
+    }
+    if (challenge.user.status !== 'ACTIVE') throw unauthorized('Código inválido ou expirado. Entre novamente.');
+    return this.prisma.$transaction(async (tx) => {
+      const used = await tx.loginChallenge.updateMany({
+        where: { id: challenge.id, consumedAt: null, expiresAt: { gt: new Date() }, attempts: { lt: OTP_MAX_ATTEMPTS } },
+        data: { consumedAt: new Date() },
+      });
+      if (used.count !== 1) throw unauthorized('Código inválido ou expirado. Entre novamente.');
+      const { token, session } = await this.createSession(challenge.userId, { scope: 'FULL', ...meta }, tx);
+      const user = await tx.user.update({ where: { id: challenge.userId }, data: { lastLoginAt: new Date() } });
+      return { token, session, user };
+    });
   }
 
   // -------------------------------------------------------------- activation
@@ -177,7 +238,7 @@ export class AuthService {
       });
       const user = await tx.user.update({
         where: { id: record.userId },
-        data: { passwordHash, status: 'ACTIVE', passwordChangedAt: new Date(), lastLoginAt: new Date() },
+        data: { passwordHash, status: 'ACTIVE', passwordChangedAt: new Date(), lastLoginAt: new Date(), emailVerifiedAt: new Date() },
       });
       await tx.session.deleteMany({ where: { userId: user.id, scope: 'ONBOARDING' } });
       const { token: sessionToken, session } = await this.createSession(user.id, { scope: 'FULL', ...meta }, tx);

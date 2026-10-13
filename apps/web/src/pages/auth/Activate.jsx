@@ -61,15 +61,14 @@ export default function Activate() {
         }
       >
         <p className={s.subtitle}>
-          Links de ativação são de uso único e expiram em 48 horas. Se o pagamento foi confirmado, use “Esqueci minha senha” ou volte ao checkout
-          no mesmo navegador para gerar um novo link.
+          Links de verificação são de uso único e expiram em 48 horas. Se você esperava esta mensagem, volte ao cadastro ou ao checkout para reenviar o link.
         </p>
       </AuthShell>
     );
   }
 
   return (
-    <AuthShell title="Crie sua senha" subtitle="Pagamento confirmado. Defina a senha de acesso ao seu painel.">
+    <AuthShell title="Crie sua senha" subtitle="E-mail confirmado. Defina a senha de acesso ao seu painel.">
       <form onSubmit={submit} noValidate>
         <div className={s.identity}>
           <span>Conta</span>

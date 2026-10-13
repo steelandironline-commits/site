@@ -487,6 +487,32 @@
   }
 }
 
+@media (max-width: 390px) {
+  .cue {
+    top: calc(72px + env(safe-area-inset-top));
+    bottom: auto;
+    left: var(--gutter);
+    justify-content: flex-start;
+    width: max-content;
+    height: 44px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(5, 13, 35, 0.32);
+    backdrop-filter: blur(8px);
+    transform: none;
+  }
+
+  .cueText {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .mouse {
+    width: 22px;
+    height: 34px;
+  }
+}
+
 /* Tall wide screens (a phone in "desktop site" mode, portrait monitors):
    caption sits at the bottom like on phones and the island is framed above it. */
 @media (min-width: 768px) and (max-aspect-ratio: 4/5) {

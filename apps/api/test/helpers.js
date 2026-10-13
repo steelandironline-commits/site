@@ -99,6 +99,11 @@ export function client(app) {
   };
 }
 
+export function activationTokenFromEmail(email) {
+  const text = email.outbox.at(-1)?.text || '';
+  return /\/activate\/([A-Za-z0-9_-]+)/.exec(text)?.[1] ?? null;
+}
+
 let seq = 0;
 
 /** Valid, unique CNPJ / CPF for tests (check digits computed). */
@@ -161,8 +166,10 @@ export async function createActiveUser(app) {
   const sim = await ctx.c.post(`/api/payments/${ctx.payment.id}/simulate`);
   if (sim.status !== 200) throw new Error(`simulate failed ${JSON.stringify(sim.body)}`);
   const claim = await ctx.c.post(`/api/payments/${ctx.payment.id}/activation`);
-  if (!claim.body.token) throw new Error(`claim failed ${JSON.stringify(claim.body)}`);
-  const act = await ctx.c.post('/api/auth/activate', { token: claim.body.token, password: STRONG_PASSWORD });
+  if (!claim.body.emailSent) throw new Error(`claim failed ${JSON.stringify(claim.body)}`);
+  const token = activationTokenFromEmail(ctx.email);
+  if (!token) throw new Error('activation email did not contain a link');
+  const act = await ctx.c.post('/api/auth/activate', { token, password: STRONG_PASSWORD });
   if (act.status !== 200) throw new Error(`activate failed ${JSON.stringify(act.body)}`);
-  return { ...ctx, activationToken: claim.body.token };
+  return { ...ctx, activationToken: token };
 }

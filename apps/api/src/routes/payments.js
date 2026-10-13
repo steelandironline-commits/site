@@ -22,7 +22,7 @@ export function paymentRoutes({ payments, actions, limiters }) {
   });
 
   r.get('/', requireAuth, async (req, res) => {
-    const { kind } = parse(z.object({ kind: z.enum(['SUBSCRIPTION', 'CHARGE', 'SIGNUP_FEE']).optional() }), req.query);
+    const { kind } = parse(z.object({ kind: z.enum(['SUBSCRIPTION', 'CHARGE', 'SIGNUP_FEE', 'INTERVIEW_FEE', 'HIRING_FEE']).optional() }), req.query);
     res.json({ items: await payments.listPayments(req.user.companyId, { kind }) });
   });
 

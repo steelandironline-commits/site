@@ -119,6 +119,17 @@ describe('WhatsApp Cloud API boundary', () => {
     ]);
   });
 
+  it('sends OTPs through the configured authentication template body and copy-code button', async () => {
+    const p = new MockWhatsAppProvider({ secret: 's', templates: { authentication: 'tempix_auth_code', language: 'pt_BR' } });
+    await p.sendAuthenticationCode('5511988887777', { code: '004217' });
+    const template = p.sent[0].template;
+    expect(template.name).toBe('tempix_auth_code');
+    expect(template.components).toEqual([
+      { type: 'body', parameters: [{ type: 'text', text: '004217' }] },
+      { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: '004217' }] },
+    ]);
+  });
+
   it('round-trips payloads and normalizes Brazilian numbers', () => {
     expect(parseDecisionPayload(decisionPayload('TENHO INTERESSE', 'f', 'abc'))).toEqual({ decision: 'TENHO INTERESSE', kind: 'freight', id: 'abc' });
     expect(parseDecisionPayload('ap1:X:z:1')).toBeNull();

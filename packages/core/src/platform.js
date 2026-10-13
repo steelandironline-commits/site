@@ -55,7 +55,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
     activity: new ActivityService({ prisma }),
     auth: new AuthService({ prisma, config, email }),
     companies: new CompanyService({ prisma, config }),
-    onboarding: new OnboardingService({ prisma, config }),
+    onboarding: new OnboardingService({ prisma, config, email }),
     team: new TeamService({ prisma, config, email }),
     opportunities: new OpportunityService({ prisma, events }),
     payments: new PaymentService({ prisma, config, email, events, audit }),
@@ -73,6 +73,10 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
   // TemPix Pay — provider-independent financial layer.
   s.transactions = new MarketplaceTransactionService({ prisma, config, events, commissions: s.commissions, audit, payments: s.payments });
   s.refunds = new RefundService({ prisma, config, events, audit, transactions: s.transactions });
+  s.workforce.payments = s.payments;
+  s.workforce.refunds = s.refunds;
+  s.workforce.email = email;
+  s.workforce.audit = audit;
   s.payments.transactions = s.transactions;
   s.payments.refunds = s.refunds;
   s.protectedPayments = new ProtectedPaymentService({ prisma, config, events, audit, transactions: s.transactions });
@@ -86,6 +90,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
 
   s.whatsappProvider = whatsappProvider ?? getWhatsAppProvider(config);
   s.whatsappMessenger = new WhatsAppMessenger({ prisma, provider: s.whatsappProvider });
+  s.auth.whatsappMessenger = s.whatsappMessenger;
   s.whatsappConnections = new WhatsAppConnectionService({ prisma, config, events, provider: s.whatsappProvider });
   const parser = config.intentParser === 'llm' && llmGenerate ? new LlmIntentParser({ generate: llmGenerate }) : new RuleBasedIntentParser();
   s.whatsappCommands = new WhatsAppCommandService({ prisma, parser, engine: s.actions, messenger: s.whatsappMessenger });

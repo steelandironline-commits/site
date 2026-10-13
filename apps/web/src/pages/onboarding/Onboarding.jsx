@@ -155,26 +155,34 @@ function Ready({ companyName, accountType }) {
   const pay = subscription || feeCents > 0;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [emailSent, setEmailSent] = useState(false);
 
-  // Professionals (and companies when the fee is waived): straight to creating the password.
+  // Free accounts receive a single-use activation link at their email address.
   const finish = async () => {
     setBusy(true);
     setError(null);
     try {
       const res = await post('/api/onboarding/finish');
       if (res.alreadyActive) return navigate('/login', { replace: true });
-      navigate(`/activate/${res.token}`, { replace: true });
+      if (res.emailVerificationRequired) {
+        setEmailSent(true);
+        setBusy(false);
+        return;
+      }
+      if (res.token) navigate(`/activate/${res.token}`, { replace: true });
     } catch (err) {
       setError(err.message || 'Não foi possível concluir agora. Tente novamente.');
       setBusy(false);
     }
   };
 
-  let title = 'Cadastro concluído. Falta só a sua senha.';
-  let text = `Os agentes de ${companyName || 'sua empresa'} começam a procurar clientes, cargas e profissionais assim que você criar a senha.`;
+  let title = emailSent ? 'Confira seu e-mail para continuar.' : 'Confirme seu e-mail para ativar sua conta.';
+  let text = emailSent
+    ? 'Enviamos um link seguro para criar sua senha. Abra a mensagem para confirmar que este e-mail pertence a você.'
+    : `Seu cadastro está pronto. Enviaremos um link para confirmar o e-mail e criar sua senha; depois, os agentes de ${companyName || 'sua empresa'} começam a trabalhar.`;
   let foot = `Sem mensalidade · ${commission} só sobre contratos fechados`;
   if (accountType === 'PERSON') {
-    text = 'Vagas, serviços e fretes da sua região começam a chegar assim que você criar a senha.';
+    if (!emailSent) text = 'Seu cadastro está pronto. Enviaremos um link para confirmar o e-mail e criar sua senha; depois, vagas, serviços e fretes da sua região começam a chegar.';
     foot = `Grátis para profissionais · ${commission} só sobre contratos fechados`;
   }
   if (subscription) {
@@ -200,7 +208,7 @@ function Ready({ companyName, accountType }) {
         </Button>
       ) : (
         <Button size="lg" iconRight={ArrowRight} onClick={finish} loading={busy}>
-          CRIAR MINHA SENHA
+          {emailSent ? 'REENVIAR LINK DE ATIVAÇÃO' : 'ENVIAR LINK DE ATIVAÇÃO'}
         </Button>
       )}
       {error && (

@@ -40,6 +40,12 @@ export function actionRoutes({ actions, challenges }) {
     res.json(out);
   });
 
+  r.post('/challenges/:id/confirm-whatsapp', requireAuth, async (req, res) => {
+    const { code } = parse(z.object({ code: z.string().regex(/^[0-9]{6}$/) }), req.body);
+    const out = await challenges.confirmWhatsApp(req.params.id, { user: req.user, session: req.session, code, ip: req.ip });
+    res.json(out);
+  });
+
   r.post('/challenges/:id/cancel', requireAuth, async (req, res) => {
     res.json(await challenges.cancel(req.params.id, req.user.id));
   });

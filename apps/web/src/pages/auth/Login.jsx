@@ -15,6 +15,8 @@ export default function Login() {
   const { refresh, isAuthenticated, loading: sessionLoading, expired } = useSession();
   const [form, setForm] = useState({ identifier: '', password: '' });
   const [errors, setErrors] = useState({});
+  const [mfaChallenge, setMfaChallenge] = useState(null);
+  const [code, setCode] = useState('');
   const [error, setError] = useState(params.get('expired') || expired ? 'Sua sessão expirou. Entre novamente.' : null);
   const [loading, setLoading] = useState(false);
   const next = params.get('next')?.startsWith('/app') ? params.get('next') : '/app';
@@ -32,11 +34,31 @@ export default function Login() {
     setError(null);
     setErrors({});
     try {
-      await post('/api/auth/login', form);
+      const result = await post('/api/auth/login', form);
+      if (result.mfaRequired) {
+        setMfaChallenge(result.challengeId);
+        setError('Enviamos um código de seis dígitos para o WhatsApp vinculado à sua conta.');
+        return;
+      }
       await refresh();
       navigate(next, { replace: true });
     } catch (err) {
       setErrors(err.fields || {});
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyCode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await post('/api/auth/login/verify-whatsapp', { challengeId: mfaChallenge, code });
+      await refresh();
+      navigate(next, { replace: true });
+    } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
@@ -53,6 +75,32 @@ export default function Login() {
         </>
       }
     >
+      {mfaChallenge ? (
+        <form onSubmit={verifyCode} noValidate>
+          <FormError error={error} />
+          <Field label="Código do WhatsApp" hint="O código expira em 5 minutos." error={errors.code}>
+            {(a) => (
+              <Input
+                {...a}
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                placeholder="000000"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                required
+              />
+            )}
+          </Field>
+          <Button type="submit" size="lg" block loading={loading} iconRight={ArrowRight} disabled={code.length !== 6}>
+            CONFIRMAR CÓDIGO
+          </Button>
+          <Button variant="ghost" block onClick={() => { setMfaChallenge(null); setCode(''); setError(null); }} disabled={loading}>
+            Voltar ao login
+          </Button>
+        </form>
+      ) : (
       <form onSubmit={submit} noValidate>
         <FormError error={error} />
         <Field label="CPF ou CNPJ" hint="Empresas e MEI entram com o CNPJ. Pessoa física e colaboradores, com o CPF." error={errors.identifier}>
@@ -91,6 +139,7 @@ export default function Login() {
           ENTRAR
         </Button>
       </form>
+      )}
     </AuthShell>
   );
 }
