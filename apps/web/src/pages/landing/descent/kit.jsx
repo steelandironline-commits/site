@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 6949)
-Total output lines: 747
-
 /* Low-poly kit for the descent: islands, roads, buildings, trucks, people, labels.
    Everything is built from a handful of shared geometries and cached materials. */
 import { createContext, forwardRef, useContext, useImperativeHandle, useMemo, useRef } from 'react';
@@ -347,7 +344,109 @@ export function ribbonGeometry(curve, width, segments = 160, { uvPeriod = 2, y =
 
 let roadMat;
 export function Road({ curve, width = 1.2, y = 0.012, segments = 200 }) {
-  const geo = useMemo(() => ribbon…949 tokens truncated…(c)) {
+  const geo = useMemo(() => ribbonGeometry(curve, width, segments, { uvPeriod: 2, y }), [curve, width, segments, y]);
+  roadMat ||= new THREE.MeshStandardMaterial({ map: roadTex(), roughness: 0.95 });
+  return <mesh geometry={geo} material={roadMat} receiveShadow />;
+}
+
+/** Place an object on a curve at t, facing the direction of travel. */
+const _p = new THREE.Vector3();
+const _t = new THREE.Vector3();
+export function placeOnCurve(obj, curve, t, lane = 0, reverse = false) {
+  const u = ((t % 1) + 1) % 1;
+  curve.getPointAt(u, _p);
+  curve.getTangentAt(u, _t);
+  if (reverse) _t.negate();
+  const l = Math.hypot(_t.x, _t.z) || 1;
+  obj.position.set(_p.x + (-_t.z / l) * lane, _p.y, _p.z + (_t.x / l) * lane);
+  obj.rotation.set(0, Math.atan2(_t.x, _t.z), 0);
+}
+
+/* ------------------------------------------------------------ buildings */
+const bCache = new Map();
+function sideMat(color, width, h, lit, glow) {
+  const cols = Math.max(1, Math.round(width / 0.55));
+  const rows = Math.max(1, Math.round(h / 0.62));
+  const key = `${color}|${cols}|${rows}|${lit}|${glow}`;
+  let m = bCache.get(key);
+  if (!m) {
+    const map = windowTex().clone();
+    map.repeat.set(cols / 4, rows / 4);
+    map.needsUpdate = true;
+    m = new THREE.MeshStandardMaterial({ color, map, roughness: 0.7, flatShading: true });
+    if (lit > 0) {
+      const em = litTex().clone();
+      em.repeat.set(cols / 4, rows / 4);
+      em.needsUpdate = true;
+      m.emissive = new THREE.Color(glow);
+      m.emissiveMap = em;
+      m.emissiveIntensity = lit;
+    }
+    bCache.set(key, m);
+  }
+  return m;
+}
+
+export function Building({ p = [0, 0, 0], w = 1.4, d = 1.4, h = 2, c = '#f1eee7', roof = '#d9d4ca', lit = 0, glow = '#ffcf8a', top = true, ry = 0 }) {
+  const mats = useMemo(() => {
+    const sx = sideMat(c, d, h, lit, glow);
+    const sz = sideMat(c, w, h, lit, glow);
+    const r = mat(roof);
+    return [sx, sx, r, r, sz, sz];
+  }, [c, w, d, h, lit, glow, roof]);
+  return (
+    <group position={p} rotation={[0, ry, 0]}>
+      <mesh geometry={GEO.box} material={mats} position={[0, h / 2, 0]} scale={[w, h, d]} castShadow receiveShadow />
+      <B p={[0, h, 0]} s={[w + 0.06, 0.08, d + 0.06]} c={roof} />
+      {top && w > 0.9 && (
+        <>
+          <B p={[w * 0.18, h + 0.08, -d * 0.15]} s={[0.32, 0.22, 0.28]} c="#c9c4ba" />
+          <B p={[-w * 0.2, h + 0.08, d * 0.12]} s={[0.22, 0.14, 0.22]} c="#bfbab0" />
+        </>
+      )}
+    </group>
+  );
+}
+
+export function Warehouse({ p = [0, 0, 0], w = 3, d = 2, h = 1.2, c = '#eceae4', roof = '#9aa4b5', door = '#4a5262', ry = 0, docks = 3 }) {
+  const teeth = Math.max(2, Math.round(w / 0.9));
+  return (
+    <group position={p} rotation={[0, ry, 0]}>
+      <B s={[w, h, d]} c={c} />
+      {Array.from({ length: teeth }, (_, i) => (
+        <mesh
+          key={i}
+          geometry={GEO.prism}
+          material={mat(roof)}
+          position={[-w / 2 + (w / teeth) * (i + 0.5), h + 0.115, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          scale={[(w / teeth) * 0.62, d, 0.46]}
+          castShadow
+        />
+      ))}
+      {Array.from({ length: docks }, (_, i) => (
+        <B key={i} p={[-w / 2 + (w / docks) * (i + 0.5), 0, d / 2 + 0.01]} s={[(w / docks) * 0.62, h * 0.62, 0.04]} c={door} />
+      ))}
+    </group>
+  );
+}
+
+export function Tree({ p = [0, 0, 0], s = 1, c = '#5f9a6a' }) {
+  return (
+    <group position={p} scale={s}>
+      <Cy s={[0.12, 0.35, 0.12]} c="#7b5b45" g={GEO.cyl8} />
+      <Ball p={[0, 0.62, 0]} s={[0.62, 0.72, 0.62]} c={c} g={GEO.ico} />
+    </group>
+  );
+}
+
+export function Container({ p = [0, 0, 0], c = '#c8553d', ry = 0, ...rest }) {
+  const m = useMemo(() => containerMat(c), [c]);
+  return <B p={p} s={[0.78, 0.78, 1.7]} m={m} r={[0, ry, 0]} {...rest} />;
+}
+const cMats = new Map();
+export function containerMat(c) {
+  if (!cMats.has(c)) {
     const map = ribTex().clone();
     map.repeat.set(2, 1);
     map.needsUpdate = true;
