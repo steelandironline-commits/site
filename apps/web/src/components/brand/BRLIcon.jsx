@@ -27,8 +27,9 @@ export function loadBRLIconImage() {
 /** Draw a currency string on an existing canvas while replacing R$ with the image. */
 export function drawBRLCanvasText(context, text, x, y) {
   const value = String(text ?? '');
-  const pattern = /R\$(\s*)/g;
+  const pattern = /R\$[ \t\u00a0]*/g;
   const fontSize = Number(context.font.match(/(?:^|\s)(\d+(?:\.\d+)?)px(?:\s|\/|$)/)?.[1]) || 16;
+  const symbolAspect = 44 / 28;
   let cursor = x;
   let last = 0;
   let match;
@@ -42,19 +43,14 @@ export function drawBRLCanvasText(context, text, x, y) {
 
     const symbolWidth = context.measureText('R$').width;
     if (iconImage?.complete && iconImage.naturalWidth > 0) {
-      const height = Math.min(fontSize * 0.74, (symbolWidth / 64) * 40);
-      const width = (height / 40) * 64;
+      const height = Math.min(fontSize * 0.78, symbolWidth / symbolAspect);
+      const width = height * symbolAspect;
       const centerY = context.textBaseline === 'middle' ? y : y - fontSize * 0.34;
       context.drawImage(iconImage, cursor, centerY - height / 2, width, height);
-      cursor += width;
+      cursor += width + Math.max(0.5, fontSize * 0.04);
     } else {
       context.fillText('R$', cursor, y);
-      cursor += symbolWidth;
-    }
-
-    if (match[1]) {
-      context.fillText(match[1], cursor, y);
-      cursor += context.measureText(match[1]).width;
+      cursor += symbolWidth + Math.max(0.5, fontSize * 0.04);
     }
     last = pattern.lastIndex;
   }
@@ -71,17 +67,17 @@ export function BRLSymbol({ className, style, ...props }) {
       alt="R$"
       title="Real brasileiro"
       className={className}
-      width="64"
-      height="40"
+      width="44"
+      height="28"
       draggable="false"
       {...props}
       style={{
         display: 'inline-block',
-        width: '1.1em',
-        height: '0.69em',
+        width: '1.24em',
+        height: '0.79em',
         objectFit: 'contain',
-        verticalAlign: '-0.04em',
-        marginRight: 0,
+        verticalAlign: '-0.02em',
+        marginRight: '0.04em',
         ...style,
       }}
     />
@@ -89,7 +85,7 @@ export function BRLSymbol({ className, style, ...props }) {
 }
 
 function textWithBRLImage(text, keyPrefix) {
-  const pattern = /R\$/g;
+  const pattern = /R\$[ \t\u00a0]*/g;
   const nodes = [];
   let last = 0;
   let match;

@@ -623,10 +623,10 @@
 }
 
 .priceCurrency {
-  font-size: 0.38em;
+  font-size: 0.82em;
   color: var(--muted);
-  margin-right: 6px;
-  vertical-align: 0.9em;
+  margin-right: 0.04em;
+  vertical-align: 0.14em;
   letter-spacing: 0;
 }
 
