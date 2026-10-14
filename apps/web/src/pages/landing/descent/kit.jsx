@@ -704,11 +704,11 @@ function labelTexture({ text, sub, accent, check, light }) {
   g.textBaseline = 'middle';
   g.fillStyle = light ? '#0b0d12' : '#f3f2ee';
   g.font = fMain;
-  drawBRLCanvasText(g, text, tx, sub ? h / 2 - 8 * S : h / 2 + 0.5 * S, { symbolOffsetY: -4 * S });
+  drawBRLCanvasText(g, text, tx, sub ? h / 2 - 8 * S : h / 2 + 0.5 * S, { symbolOffsetY: -2 * S });
   if (sub) {
     g.font = fSub;
     g.fillStyle = light ? 'rgba(11,13,18,.62)' : 'rgba(236,235,230,.66)';
-    drawBRLCanvasText(g, sub, tx, h / 2 + 10 * S, { symbolOffsetY: -4 * S });
+    drawBRLCanvasText(g, sub, tx, h / 2 + 10 * S, { symbolOffsetY: -2 * S });
   }
   const tex = toTexture(c);
   tex.generateMipmaps = true;
