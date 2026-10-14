@@ -351,7 +351,7 @@ function Pricing() {
             <div className={s.priceTop}>
               <p className="eyebrow">Cadastro Pessoa Física · login pelo CPF</p>
               <p className={s.priceValue}>
-                <BRLSymbol className={s.priceCurrency} style={{ verticalAlign: '0.14em', marginRight: '0.04em' }} />0<span className={s.pricePer}> para sempre</span>
+                <BRLSymbol className={s.priceCurrency} style={{ verticalAlign: '0.19em', marginRight: '0.04em' }} />0<span className={s.pricePer}> para sempre</span>
               </p>
               <p className={s.priceNote}>Para trabalhadores e autônomos se identificarem e receberem vagas, serviços e fretes.</p>
             </div>
@@ -370,7 +370,7 @@ function Pricing() {
             <div className={s.priceTop}>
               <p className="eyebrow">Cadastro Empresas · CNPJ ou MEI</p>
               <p className={s.priceValue}>
-                <BRLSymbol className={s.priceCurrency} style={{ verticalAlign: '0.14em', marginRight: '0.04em' }} />0<span className={s.pricePer}>/mês</span>
+                <BRLSymbol className={s.priceCurrency} style={{ verticalAlign: '0.19em', marginRight: '0.04em' }} />0<span className={s.pricePer}>/mês</span>
               </p>
               <p className={s.priceNote}>
                 <BRLText>Cadastro único de {formatCents(signup)}: menos de R$ {perDay(signup)} por dia no primeiro ano, e nada de mensalidade depois.</BRLText>
