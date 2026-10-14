@@ -25,7 +25,7 @@ export function loadBRLIconImage() {
 }
 
 /** Draw a currency string on an existing canvas while replacing R$ with the image. */
-export function drawBRLCanvasText(context, text, x, y) {
+export function drawBRLCanvasText(context, text, x, y, { symbolOffsetY = 0 } = {}) {
   const value = String(text ?? '');
   const pattern = /R\$[ \t\u00a0]*/g;
   const fontSize = Number(context.font.match(/(?:^|\s)(\d+(?:\.\d+)?)px(?:\s|\/|$)/)?.[1]) || 16;
@@ -45,7 +45,7 @@ export function drawBRLCanvasText(context, text, x, y) {
     if (iconImage?.complete && iconImage.naturalWidth > 0) {
       const height = Math.min(fontSize * 0.78, symbolWidth / symbolAspect);
       const width = height * symbolAspect;
-      const centerY = context.textBaseline === 'middle' ? y : y - fontSize * 0.34;
+      const centerY = (context.textBaseline === 'middle' ? y : y - fontSize * 0.34) + symbolOffsetY;
       context.drawImage(iconImage, cursor, centerY - height / 2, width, height);
       cursor += width + Math.max(0.5, fontSize * 0.04);
     } else {
