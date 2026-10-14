@@ -627,6 +627,7 @@
   color: var(--muted);
   margin-right: 0.04em;
   vertical-align: 0.19em;
+  transform: translateY(-4px);
   letter-spacing: 0;
 }
 
