@@ -5,6 +5,7 @@ import { formatBRL } from '@autopix/shared';
 import { useApi } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { fmtDate, relative } from '../../lib/time.js';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
 
@@ -22,7 +23,7 @@ function MatchRow({ m }) {
           {m.origin} → {m.destination}
         </strong>
         <span>
-          {m.cargo || 'Carga'} · {m.price ? formatBRL(m.price) : '—'} · {fmtDate(m.pickupDate)}
+          {m.cargo || 'Carga'} · {m.price ? <BRLText>{formatBRL(m.price)}</BRLText> : '—'} · {fmtDate(m.pickupDate)}
         </span>
       </span>
       <span className={s.rowBadges}>
@@ -172,7 +173,7 @@ export function FreightMatchDetail() {
         <div style={{ textAlign: 'right' }}>
           <p className="eyebrow">Frete</p>
           <p className={`${s.revenue} num`} style={{ fontSize: 24 }}>
-            {m.price ? formatBRL(m.price) : '—'}
+            {m.price ? <BRLText>{formatBRL(m.price)}</BRLText> : '—'}
           </p>
           <p className={s.muted} style={{ fontSize: 13 }}>
             Coleta {fmtDate(m.pickupDate)}

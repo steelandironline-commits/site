@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Navigate, useOutletContext, useParams } from 'react-router-dom';
 import { Copy } from 'lucide-react';
 import { PAYMENT_STATUS_LABELS, formatCents } from '@autopix/shared';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { useApi, useVisibleInterval } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
@@ -49,7 +50,7 @@ export default function PaymentDetail() {
         <div>
           <p className="eyebrow">{p.kind === 'SUBSCRIPTION' ? 'Assinatura' : `Cobrança ${p.reference || ''}`}</p>
           <h1 className={`${s.pageTitle} num`} style={{ marginTop: 6 }}>
-            {formatCents(p.amountCents)}
+            <BRLText>{formatCents(p.amountCents)}</BRLText>
           </h1>
           <p className={s.pageSub}>{p.description}</p>
         </div>
@@ -81,7 +82,7 @@ export default function PaymentDetail() {
             </div>
             <div>
               <dt>Reembolsado</dt>
-              <dd>{p.refundedCents ? formatCents(p.refundedCents) : '—'}</dd>
+              <dd>{p.refundedCents ? <BRLText>{formatCents(p.refundedCents)}</BRLText> : '—'}</dd>
             </div>
             <div>
               <dt>Criado em</dt>

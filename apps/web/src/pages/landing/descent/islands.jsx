@@ -3,6 +3,7 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { drawBRLCanvasText } from '../../../components/brand/BRLIcon.jsx';
 import {
   B,
   Ball,
@@ -1067,7 +1068,7 @@ function phoneTexture(paid) {
     g.fillText(paid ? 'Pagamento protegido' : 'Contrato · reforma', 26, 168);
     g.fillStyle = '#f3f2ee';
     g.font = '600 50px "IBM Plex Sans", system-ui, sans-serif';
-    g.fillText('R$ 10.000,00', 26, 228);
+    drawBRLCanvasText(g, 'R$ 10.000,00', 26, 228);
     if (!paid) {
       g.fillStyle = '#ffffff';
       roundRect(g, 60, 262, 240, 240, 18);
@@ -1375,7 +1376,7 @@ function dashboardTexture() {
       g.fillText(k, x + 24, y + 46);
       g.fillStyle = '#ecebe6';
       g.font = '600 44px "IBM Plex Sans", system-ui, sans-serif';
-      g.fillText(v, x + 24, y + 100);
+      drawBRLCanvasText(g, v, x + 24, y + 100);
       g.fillStyle = c;
       g.font = '500 18px "IBM Plex Mono", ui-monospace, monospace';
       g.textAlign = 'right';

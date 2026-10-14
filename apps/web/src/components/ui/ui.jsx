@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertTriangle, RotateCw, X } from 'lucide-react';
+import { BRLText, BRLSymbol } from '../brand/BRLIcon.jsx';
 import s from './ui.module.css';
 
 const cx = (...c) => c.filter(Boolean).join(' ');
@@ -14,7 +15,7 @@ export const Button = forwardRef(function Button(
   const content = (
     <>
       {loading ? <span className={s.spinner} aria-hidden="true" /> : Icon ? <Icon size={size === 'sm' ? 14 : 16} aria-hidden="true" /> : null}
-      <span className={s.btnLabel}>{children}</span>
+      <span className={s.btnLabel}><BRLText>{children}</BRLText></span>
       {IconRight && !loading ? (
         <span className={s.btnChip} aria-hidden="true">
           <IconRight size={size === 'sm' ? 12 : 14} strokeWidth={2.4} />
@@ -47,7 +48,7 @@ export function Badge({ tone = 'neutral', dot = false, pulse = false, children, 
   return (
     <span className={cx(s.badge, s[`badge-${tone}`], className)}>
       {dot && <span className={cx(s.dot, pulse && s.dotPulse)} aria-hidden="true" />}
-      {children}
+      <BRLText>{children}</BRLText>
     </span>
   );
 }
@@ -69,19 +70,19 @@ export function Field({ label, hint, error, children, id: idProp, optional }) {
     <div className={cx(s.field, error && s.fieldError)}>
       {label && (
         <label htmlFor={id} className={s.label}>
-          {label}
+          <BRLText>{label}</BRLText>
           {optional && <span className={s.optional}>opcional</span>}
         </label>
       )}
       {children({ id, 'aria-describedby': [hintId, errId].filter(Boolean).join(' ') || undefined, 'aria-invalid': error ? true : undefined })}
       {hint && !error && (
         <p id={hintId} className={s.hint}>
-          {hint}
+          <BRLText>{hint}</BRLText>
         </p>
       )}
       {error && (
         <p id={errId} className={s.error} role="alert">
-          {error}
+          <BRLText>{error}</BRLText>
         </p>
       )}
     </div>
@@ -92,7 +93,7 @@ export const Input = forwardRef(function Input({ className, prefix, ...props }, 
   if (prefix) {
     return (
       <div className={s.inputWrap}>
-        <span className={s.prefix}>{prefix}</span>
+        <span className={s.prefix}>{prefix === 'R$' ? <BRLSymbol /> : <BRLText>{prefix}</BRLText>}</span>
         <input ref={ref} className={cx(s.input, s.withPrefix, className)} {...props} />
       </div>
     );

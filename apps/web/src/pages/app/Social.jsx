@@ -7,6 +7,7 @@ import { get } from '../../lib/api.js';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Badge, Button, DemoBadge, ErrorState, Field, Select, SkeletonCard, Textarea } from '../../components/ui/ui.jsx';
 import s from './Social.module.css';
 import app from './app.module.css';
@@ -32,7 +33,7 @@ export async function preparePhoto(file) {
 function Author({ post }) {
   return <div className={s.identity}>
     <span className={s.avatar} aria-hidden="true">{post.authorName.slice(0, 1).toUpperCase()}</span>
-    <div className={s.meta}><strong>{post.authorName}</strong><time>{fmtDateTime(post.createdAt)}</time></div>
+    <div className={s.meta}><strong><BRLText>{post.authorName}</BRLText></strong><time>{fmtDateTime(post.createdAt)}</time></div>
   </div>;
 }
 function Delivery({ post }) {
@@ -41,7 +42,7 @@ function Delivery({ post }) {
       {post.verified ? <Badge tone="success"><ShieldCheck size={13} /> Contrato concluído e confirmado</Badge> : <DemoBadge label={post.isDemo ? 'DEMO · entrega simulada' : 'SANDBOX · entrega simulada'} />}
       <span className={s.note}>{TRANSACTION_TYPE_LABELS[post.type]}</span>
     </div>
-    <p className={s.body}>{post.body}</p>
+    <p className={s.body}><BRLText>{post.body}</BRLText></p>
     {post.photoUrl && <img className={s.photo} src={post.photoUrl} alt={`Foto do serviço compartilhada por ${post.authorName}`} loading="lazy" />}
   </>;
 }
@@ -62,9 +63,9 @@ function Comments({ postId, onChange }) {
     {!data && !error && <SkeletonCard lines={2} />}
     {data && rows.length === 0 && <p className={s.note}>Seja a primeira pessoa a comentar.</p>}
     {rows.map(c => <div key={c.id} className={`${s.comment} ${c.parentId ? s.reply : ''}`}>
-      <div className={s.meta}><strong>{c.authorName}</strong><time>{fmtDateTime(c.createdAt)}</time></div>
+      <div className={s.meta}><strong><BRLText>{c.authorName}</BRLText></strong><time>{fmtDateTime(c.createdAt)}</time></div>
       {c.parentId && <span className={s.note}>Resposta a {rows.find(p => p.id === c.parentId)?.authorName || 'um comentário'}</span>}
-      <p>{c.body}</p><Button size="sm" variant="ghost" onClick={() => setReply(c)}>Responder</Button>
+      <p><BRLText>{c.body}</BRLText></p><Button size="sm" variant="ghost" onClick={() => setReply(c)}>Responder</Button>
     </div>)}
     {next && <Button variant="ghost" loading={loadingMore} onClick={async () => {
       setLoadingMore(true); try { const page = await get(`/api/social/posts/${postId}/comments?cursor=${encodeURIComponent(next)}`); setMore(old => [...old, ...page.items]); setCursor(page.nextCursor); } catch(e) { toast.error(e.message); } finally { setLoadingMore(false); }
@@ -86,7 +87,7 @@ function Post({ post, onChange }) {
     <div className={s.heading}><Author post={post} />{post.own && <Button variant="ghost" size="sm" icon={Trash2} aria-label="Remover minha publicação" loading={busy === 'DELETE_SOCIAL_POST'} onClick={async () => {
       const out = await run('DELETE_SOCIAL_POST', { id: post.id }, { success: 'Publicação removida.' }); if (out?.status === 'SUCCEEDED') onChange();
     }}>Remover</Button>}</div>
-    {post.original ? <><p className={s.note}><Repeat2 size={12} /> Repostou uma entrega</p>{post.body && <p className={s.body}>{post.body}</p>}<div className={s.original}><Author post={original} /><Delivery post={original} /></div></> : <Delivery post={post} />}
+    {post.original ? <><p className={s.note}><Repeat2 size={12} /> Repostou uma entrega</p>{post.body && <p className={s.body}><BRLText>{post.body}</BRLText></p>}<div className={s.original}><Author post={original} /><Delivery post={original} /></div></> : <Delivery post={post} />}
     <div className={s.actions}>
       <Button size="sm" variant="ghost" icon={MessageCircle} aria-expanded={comments} onClick={() => setComments(v => !v)}>Comentários ({post.commentCount})</Button>
       {!original.own && <Button size="sm" variant="ghost" icon={Repeat2} aria-expanded={reposting} onClick={() => setReposting(v => !v)}>Repostar ({post.repostCount})</Button>}

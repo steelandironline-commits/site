@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarClock, Check, Send, Star, UserPlus, Users, X } from 
 import { useApi } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { fmtDate } from '../../lib/time.js';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
 
@@ -217,7 +218,7 @@ export function WorkforceMatchDetail() {
             ) : m.interviewScheduledAt ? (
               <>
                 <p className={s.muted} style={{ margin: '8px 0 14px' }}>
-                  Marcada para {fmtDate(m.interviewScheduledAt)}. A taxa de agendamento de R$ 1,00 é paga pela empresa; o candidato não paga para participar.
+                  <BRLText>Marcada para {fmtDate(m.interviewScheduledAt)}. A taxa de agendamento de R$ 1,00 é paga pela empresa; o candidato não paga para participar.</BRLText>
                 </p>
                 <div className={s.pageActions}>
                   {!m.interviewFeePaidAt && m.interviewPayment?.id && <Button variant="ghost" to={`/app/payments/${m.interviewPayment.id}`}>Ver Pix</Button>}
@@ -229,7 +230,7 @@ export function WorkforceMatchDetail() {
             ) : (
               <form onSubmit={schedule} noValidate>
                 <p className={s.muted} style={{ margin: '8px 0 14px', fontSize: 13 }}>
-                  A empresa paga a taxa de agendamento de R$ 1,00. O candidato não paga para participar.
+                  <BRLText>A empresa paga a taxa de agendamento de R$ 1,00. O candidato não paga para participar.</BRLText>
                 </p>
                 <div className={s.formGrid}>
                   <Field label="Data e hora">{(a) => <Input {...a} required type="datetime-local" value={interview.at} onChange={(e) => setInterview({ ...interview, at: e.target.value })} />}</Field>
@@ -251,7 +252,7 @@ export function WorkforceMatchDetail() {
             {m.agreedSalaryCents ? (
               <>
                 <p className={s.muted} style={{ marginTop: 8 }}>
-                  Salário acordado: R$ {(m.agreedSalaryCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Intermediação de 2% após conclusão: R$ {(hiringFeeCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.
+                  <BRLText>Salário acordado: R$ {(m.agreedSalaryCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Intermediação de 2% após conclusão: R$ {(hiringFeeCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.</BRLText>
                   {!m.hiringFeePaidAt && <> A taxa é aplicada no TemPix Pay após a conclusão confirmada.</>}
                 </p>
                 {!m.hiringFeePaidAt && m.hiringPayment?.id && <Button variant="ghost" to={`/app/payments/${m.hiringPayment.id}`} style={{ marginTop: 12 }}>Ver Pix da contratação</Button>}

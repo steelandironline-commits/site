@@ -8,10 +8,11 @@ import { api } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { fmtDateTime } from '../../lib/time.js';
 import { MetricCard } from '../../components/cards/Cards.jsx';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Badge, Button, Dialog, EmptyState, ErrorState, Field, Select, SkeletonCard, Textarea } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
 
-const money = (c) => (c == null ? '—' : formatCents(c));
+const money = (c) => (c == null ? '—' : <BRLText>{formatCents(c)}</BRLText>);
 const short = (id) => (id ? `…${String(id).slice(-8)}` : '—');
 
 /** Columns per back-office view. Read-only: no field edits financial state. */

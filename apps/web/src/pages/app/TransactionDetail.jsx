@@ -6,6 +6,7 @@ import { useApi, useVisibleInterval } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Badge, Button, DemoBadge, Dialog, ErrorState, Field, Input, SkeletonCard, Textarea } from '../../components/ui/ui.jsx';
 import { PartnerNote, TX_TONE } from './Pay.jsx';
 import s from './app.module.css';
@@ -210,7 +211,7 @@ export default function TransactionDetail() {
             {TRANSACTION_TYPE_LABELS[t.type]} · {data.role === 'BUYER' ? `fornecedor ${t.sellerName || ''}` : t.buyerCompanyName || t.buyerName || 'cliente'}
           </p>
           <h1 className={`${s.pageTitle} num`} style={{ marginTop: 6 }}>
-            {formatCents(t.grossAmount)}
+            <BRLText>{formatCents(t.grossAmount)}</BRLText>
           </h1>
           <p className={s.pageSub}>{t.description}</p>
         </div>
@@ -238,24 +239,24 @@ export default function TransactionDetail() {
             <dl className={s.money}>
               <div>
                 <dt>Valor bruto</dt>
-                <dd>{formatCents(t.grossAmount)}</dd>
+                <dd><BRLText>{formatCents(t.grossAmount)}</BRLText></dd>
               </div>
               {data.role !== 'BUYER' && (
                 <>
                   <div>
                     <dt>Taxa TemPix prevista ({(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)</dt>
-                    <dd>− {formatCents(t.commissionAmount)}</dd>
+                    <dd>− <BRLText>{formatCents(t.commissionAmount)}</BRLText></dd>
                   </div>
                   <div>
                     <dt>Líquido do prestador</dt>
-                    <dd className={s.revenue}>{formatCents(t.sellerNetAmount)}</dd>
+                    <dd className={s.revenue}><BRLText>{formatCents(t.sellerNetAmount)}</BRLText></dd>
                   </div>
                 </>
               )}
               {t.payment?.refundedCents > 0 && (
                 <div>
                   <dt>Reembolsado</dt>
-                  <dd>{formatCents(t.payment.refundedCents)}</dd>
+                  <dd><BRLText>{formatCents(t.payment.refundedCents)}</BRLText></dd>
                 </div>
               )}
               <div>
@@ -348,7 +349,7 @@ export default function TransactionDetail() {
                 <ul className={s.timeline}>
                   {t.refunds.map((r) => (
                     <li key={r.id}>
-                      {formatCents(r.amountCents)} · {{ REQUESTED: 'solicitado', PROCESSING: 'em processamento no parceiro', COMPLETED: 'concluído', FAILED: 'não realizado' }[r.status]} <time>{fmtDateTime(r.createdAt)}</time>
+                      <BRLText>{formatCents(r.amountCents)}</BRLText> · {{ REQUESTED: 'solicitado', PROCESSING: 'em processamento no parceiro', COMPLETED: 'concluído', FAILED: 'não realizado' }[r.status]} <time>{fmtDateTime(r.createdAt)}</time>
                     </li>
                   ))}
                 </ul>

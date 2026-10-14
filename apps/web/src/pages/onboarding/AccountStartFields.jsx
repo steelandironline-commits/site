@@ -1,5 +1,6 @@
 import { Building2, UserRound } from 'lucide-react';
 import { formatCnpj, formatCpf } from '@autopix/shared';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Field, Input } from '../../components/ui/ui.jsx';
 import s from './onboarding.module.css';
 
@@ -23,7 +24,7 @@ export function AccountStartFields({ account, setAccount, errors = {}, hasSessio
           >
             <Icon size={20} aria-hidden="true" />
             <strong>{title}</strong>
-            <span>{note}</span>
+            <span><BRLText>{note}</BRLText></span>
           </button>
         ))}
       </div>

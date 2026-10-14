@@ -7,6 +7,7 @@ import { useSession } from '../../lib/session.jsx';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDate } from '../../lib/time.js';
 import { PaymentCard } from '../../components/cards/Cards.jsx';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Badge, Button, Dialog, EmptyState, ErrorState, SkeletonCard } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
 
@@ -69,7 +70,7 @@ export default function Subscription() {
               )}
             </div>
             <p className={`${s.planPrice} num`}>
-              {formatCents(data?.priceCents ?? PLAN.priceCents)} <span>/mês</span>
+              <BRLText>{formatCents(data?.priceCents ?? PLAN.priceCents)}</BRLText> <span>/mês</span>
             </p>
             <dl className={s.kv} style={{ marginTop: 18 }}>
               <div>
@@ -222,7 +223,7 @@ function CommissionPlan() {
             quando a conclusão é confirmada. Chegada por GPS ou mensagem de WhatsApp sozinhas não liberam dinheiro.
           </p>
           <p className={s.pageSub}>
-            Exemplo: contrato de R$ 10.000,00 → taxa TemPix de R$ 200,00 ({fee}) e R$ 9.800,00 para quem executou.
+            <BRLText>Exemplo: contrato de R$ 10.000,00 → taxa TemPix de R$ 200,00 ({fee}) e R$ 9.800,00 para quem executou.</BRLText>
           </p>
         </section>
       </div>

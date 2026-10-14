@@ -8,6 +8,7 @@ import { useSession } from '../../lib/session.jsx';
 import { useVisibleInterval } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Button, DemoBadge, ErrorState, Skeleton } from '../../components/ui/ui.jsx';
 import s from './checkout.module.css';
 
@@ -205,13 +206,13 @@ export default function Checkout() {
             TEMPIX
           </h1>
           <p className={`${s.planPrice} num`}>
-            {formatCents(priceCents)}
+            <BRLText>{formatCents(priceCents)}</BRLText>
             <span>{oneTime ? ' uma vez só' : '/mês'}</span>
           </p>
           <ul className={s.features}>
             {(oneTime ? PRICING.company : PLAN.features.slice(0, 6)).map((f) => (
               <li key={f}>
-                <Check size={14} aria-hidden="true" /> {f}
+                <Check size={14} aria-hidden="true" /> <BRLText>{f}</BRLText>
               </li>
             ))}
           </ul>
@@ -230,7 +231,7 @@ export default function Checkout() {
             </div>
             <div className={s.total}>
               <dt>Total hoje</dt>
-              <dd className="num">{formatCents(priceCents)}</dd>
+              <dd className="num"><BRLText>{formatCents(priceCents)}</BRLText></dd>
             </div>
           </dl>
           {me?.user && (
@@ -269,7 +270,7 @@ export default function Checkout() {
                   <ErrorState title="Não foi possível gerar o Pix" message={error.message} onRetry={createCharge} />
                 ) : (
                   <>
-                    <p className={`${s.amount} num`}>{payment ? formatCents(payment.amountCents) : <Skeleton w={140} h={30} />}</p>
+                    <p className={`${s.amount} num`}>{payment ? <BRLText>{formatCents(payment.amountCents)}</BRLText> : <Skeleton w={140} h={30} />}</p>
 
                     <div className={s.qrWrap}>
                       {payment?.pixQrCodeBase64 && !expired ? (
@@ -359,7 +360,7 @@ export default function Checkout() {
                   <Check size={30} />
                 </motion.span>
                 <h2 className={s.confirmedTitle}>PAGAMENTO CONFIRMADO</h2>
-                <p className={`${s.amount} num`}>{formatCents(payment?.amountCents || priceCents)}</p>
+                <p className={`${s.amount} num`}><BRLText>{formatCents(payment?.amountCents || priceCents)}</BRLText></p>
                 <AnimatePresence>
                   {phase === 'activating' && (
                     <motion.div className={s.activating} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>

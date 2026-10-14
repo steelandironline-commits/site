@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../lib/hooks.js';
 import styles from './OpportunityRadar.module.css';
+import { BRLText } from '../brand/BRLIcon.jsx';
 
 const RADIUS = 4.4;
 const RINGS = [1.1, 2.2, 3.3, RADIUS];
@@ -379,7 +380,7 @@ export default function OpportunityRadar({ nodes = [], centerLabel = 'SUA EMPRES
         </div>
         {visibleNodes.map((n, i) => (
           <div key={n.id ?? i} ref={(el) => (labelRefs.current[i] = el)} className={`${styles.label} ${hovered === i ? styles.labelActive : ''}`}>
-            <span className={styles[toneFor(n.match ?? 0)]}>{n.value}</span>
+          <span className={styles[toneFor(n.match ?? 0)]}><BRLText>{n.value}</BRLText></span>
           </div>
         ))}
         {hoveredNode && (
@@ -391,11 +392,11 @@ export default function OpportunityRadar({ nodes = [], centerLabel = 'SUA EMPRES
             <div className={styles.cardMatch}>
               MATCH <b>{hoveredNode.match}%</b>
             </div>
-            {hoveredNode.signal && <p className={styles.cardSignal}>{hoveredNode.signal}</p>}
+            {hoveredNode.signal && <p className={styles.cardSignal}><BRLText>{hoveredNode.signal}</BRLText></p>}
             {hoveredNode.range && (
               <div className={styles.cardRange}>
                 <span>Potencial</span>
-                <b>{hoveredNode.range}</b>
+              <b><BRLText>{hoveredNode.range}</BRLText></b>
               </div>
             )}
           </div>

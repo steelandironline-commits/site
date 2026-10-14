@@ -3,6 +3,7 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { formatRange } from '@autopix/shared';
 import { useApi, useIsMobile } from '../../lib/hooks.js';
 import { compactBRL } from '../../lib/time.js';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import LazyRadar from '../../components/radar/LazyRadar.jsx';
 import { DemoBadge, EmptyState, ErrorState, MiniRadar, Skeleton } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
@@ -83,7 +84,7 @@ export default function RadarPage() {
                   <Link key={o.id} to={`/app/opportunities/${o.id}`} className={s.radarItem}>
                     <strong>{o.targetCompanyName}</strong>
                     <b>{o.score}%</b>
-                    <span>{formatRange(o.estimatedMinValue, o.estimatedMaxValue)}</span>
+                    <span><BRLText>{formatRange(o.estimatedMinValue, o.estimatedMaxValue)}</BRLText></span>
                   </Link>
                 ))}
           </div>

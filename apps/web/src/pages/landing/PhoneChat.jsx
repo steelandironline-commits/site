@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, BadgeCheck, BatteryFull, CheckCheck, Gauge, MessageCircle, Mic, Radar, Reply, ShieldCheck, Signal, Video, Phone, Wifi } from 'lucide-react';
 import { LogoMark } from '../../components/brand/Logo.jsx';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import s from './phone.module.css';
 
 const SCENES = [
@@ -199,7 +200,7 @@ export default function PhoneChat({ running = true, reduced = false }) {
                     <strong className={s.cardTitle}>🎉 {sc.title}</strong>
                     <ul>
                       {sc.lines.map((l) => (
-                        <li key={l}>{l}</li>
+                        <li key={l}><BRLText>{l}</BRLText></li>
                       ))}
                     </ul>
                     <span className={s.cardFoot}>

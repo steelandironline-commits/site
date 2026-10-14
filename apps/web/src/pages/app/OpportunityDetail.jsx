@@ -6,6 +6,7 @@ import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { PriorityBadge, SignalCard, StatusBadge } from '../../components/cards/Cards.jsx';
 import { Button, DemoBadge, ErrorState, Field, ScoreRing, Select, SkeletonCard, Textarea } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
@@ -143,11 +144,11 @@ export default function OpportunityDetail() {
             <dl className={s.kv}>
               <div>
                 <dt>Sinal</dt>
-                <dd>{o.signal}</dd>
+                <dd><BRLText>{o.signal}</BRLText></dd>
               </div>
               <div>
                 <dt>Valor estimado</dt>
-                <dd className={s.revenue}>{formatRange(o.estimatedMinValue, o.estimatedMaxValue)}</dd>
+                <dd className={s.revenue}><BRLText>{formatRange(o.estimatedMinValue, o.estimatedMaxValue)}</BRLText></dd>
               </div>
               <div>
                 <dt>Serviços compatíveis</dt>

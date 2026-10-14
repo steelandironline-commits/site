@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { PRICING, formatCents } from '@autopix/shared';
 import { Logo } from '../../components/brand/Logo.jsx';
+import { BRLText, BRLSymbol } from '../../components/brand/BRLIcon.jsx';
 import { WhatsAppIcon } from '../../components/brand/WhatsAppIcon.jsx';
 import { Button, Dialog, ScoreRing } from '../../components/ui/ui.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
@@ -276,7 +277,7 @@ function LiveDemo() {
                 </div>
                 <div>
                   <dt>Valor potencial</dt>
-                  <dd className={s.previewValue}>R$20.000 – R$60.000</dd>
+                  <dd className={s.previewValue}><BRLText>R$20.000 – R$60.000</BRLText></dd>
                 </div>
                 <div>
                   <dt>Situação</dt>
@@ -350,14 +351,14 @@ function Pricing() {
             <div className={s.priceTop}>
               <p className="eyebrow">Cadastro Pessoa Física · login pelo CPF</p>
               <p className={s.priceValue}>
-                <span className={s.priceCurrency}>R$</span>0<span className={s.pricePer}> para sempre</span>
+                <BRLSymbol className={s.priceCurrency} style={{ verticalAlign: '0.9em', marginRight: '6px' }} />0<span className={s.pricePer}> para sempre</span>
               </p>
               <p className={s.priceNote}>Para trabalhadores e autônomos se identificarem e receberem vagas, serviços e fretes.</p>
             </div>
             <ul className={s.priceList}>
               {PRICING.person.map((f) => (
                 <li key={f}>
-                  <Check size={15} aria-hidden="true" /> {f}
+                  <Check size={15} aria-hidden="true" /> <BRLText>{f}</BRLText>
                 </li>
               ))}
             </ul>
@@ -369,16 +370,16 @@ function Pricing() {
             <div className={s.priceTop}>
               <p className="eyebrow">Cadastro Empresas · CNPJ ou MEI</p>
               <p className={s.priceValue}>
-                <span className={s.priceCurrency}>R$</span>0<span className={s.pricePer}>/mês</span>
+                <BRLSymbol className={s.priceCurrency} style={{ verticalAlign: '0.9em', marginRight: '6px' }} />0<span className={s.pricePer}>/mês</span>
               </p>
               <p className={s.priceNote}>
-                Cadastro único de {formatCents(signup)}: menos de R$ {perDay(signup)} por dia no primeiro ano, e nada de mensalidade depois.
+                <BRLText>Cadastro único de {formatCents(signup)}: menos de R$ {perDay(signup)} por dia no primeiro ano, e nada de mensalidade depois.</BRLText>
               </p>
             </div>
             <ul className={`${s.priceList} gold-icons`}>
               {PRICING.company.map((f) => (
                 <li key={f}>
-                  <Check size={15} aria-hidden="true" /> {f}
+                  <Check size={15} aria-hidden="true" /> <BRLText>{f}</BRLText>
                 </li>
               ))}
             </ul>
@@ -389,8 +390,8 @@ function Pricing() {
         </div>
         <motion.div className={s.priceFoot} {...reveal}>
           <p>
-            <strong>Em todo valor intermediado com sucesso: {fee} fixos.</strong> Exemplo: contrato de R$ 10.000,00 → R$ 200,00 para o TemPix e R$ 9.800,00
-            para quem executou.
+            <strong><BRLText>Em todo valor intermediado com sucesso: {fee} fixos.</BRLText></strong>{' '}
+            <BRLText>Exemplo: contrato de R$ 10.000,00 → R$ 200,00 para o TemPix e R$ 9.800,00 para quem executou.</BRLText>
           </p>
           <p className={s.priceSafe}>
             <ShieldCheck size={14} aria-hidden="true" /> Pagamento assegurado até a conclusão: em obras, serviços, rotas e transportes, o valor fica

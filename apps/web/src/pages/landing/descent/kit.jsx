@@ -3,6 +3,7 @@
 import { createContext, forwardRef, useContext, useImperativeHandle, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { drawBRLCanvasText } from '../../../components/brand/BRLIcon.jsx';
 
 /* ------------------------------------------------------------------ math */
 export const clamp01 = (v) => Math.min(Math.max(v, 0), 1);
@@ -703,11 +704,11 @@ function labelTexture({ text, sub, accent, check, light }) {
   g.textBaseline = 'middle';
   g.fillStyle = light ? '#0b0d12' : '#f3f2ee';
   g.font = fMain;
-  g.fillText(text, tx, sub ? h / 2 - 8 * S : h / 2 + 0.5 * S);
+  drawBRLCanvasText(g, text, tx, sub ? h / 2 - 8 * S : h / 2 + 0.5 * S);
   if (sub) {
     g.font = fSub;
     g.fillStyle = light ? 'rgba(11,13,18,.62)' : 'rgba(236,235,230,.66)';
-    g.fillText(sub, tx, h / 2 + 10 * S);
+    drawBRLCanvasText(g, sub, tx, h / 2 + 10 * S);
   }
   const tex = toTexture(c);
   tex.generateMipmaps = true;

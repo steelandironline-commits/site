@@ -7,6 +7,7 @@ import { api, post, put } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { safeStorage } from '../../lib/hooks.js';
 import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Button, Field, Input, Select, TagInput, Textarea } from '../../components/ui/ui.jsx';
 import { AccountStartFields } from './AccountStartFields.jsx';
 import s from './onboarding.module.css';
@@ -201,7 +202,7 @@ function Ready({ companyName, accountType }) {
         <Check size={26} />
       </span>
       <h1 className={s.readyTitle}>{title}</h1>
-      <p className={s.readyText}>{text}</p>
+      <p className={s.readyText}><BRLText>{text}</BRLText></p>
       {pay ? (
         <Button to="/checkout" size="lg" iconRight={ArrowRight}>
           {subscription ? 'PAGAR COM PIX' : `PAGAR ${formatCents(feeCents)} COM PIX`}
@@ -213,11 +214,11 @@ function Ready({ companyName, accountType }) {
       )}
       {error && (
         <p className={s.readySafe} role="alert">
-          {error}
+          <BRLText>{error}</BRLText>
         </p>
       )}
       <p className={s.readySafe}>
-        <Lock size={13} aria-hidden="true" /> {foot}
+        <Lock size={13} aria-hidden="true" /> <BRLText>{foot}</BRLText>
       </p>
     </motion.div>
   );

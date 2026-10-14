@@ -3,6 +3,7 @@ import { Component, Fragment, Suspense, lazy, useCallback, useEffect, useLayoutE
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
 import { ArrowRight, Building2, Container, Landmark, LayoutDashboard, Radar, Route, UserCheck } from 'lucide-react';
 import { WhatsAppIcon } from '../../../components/brand/WhatsAppIcon.jsx';
+import { loadBRLIconImage } from '../../../components/brand/BRLIcon.jsx';
 import { Button } from '../../../components/ui/ui.jsx';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../../lib/hooks.js';
 import { useSession } from '../../../lib/session.jsx';
@@ -41,7 +42,11 @@ function useFontsReady() {
   useEffect(() => {
     let alive = true;
     const fonts = document.fonts;
-    const loads = fonts ? Promise.all([fonts.load('600 15px "IBM Plex Sans"'), fonts.load('500 12px "IBM Plex Mono"')]) : Promise.resolve();
+    const loads = Promise.all([
+      fonts ? fonts.load('600 15px "IBM Plex Sans"') : Promise.resolve(),
+      fonts ? fonts.load('500 12px "IBM Plex Mono"') : Promise.resolve(),
+      loadBRLIconImage(),
+    ]);
     Promise.race([loads, new Promise((r) => setTimeout(r, 1500))])
       .catch(() => {})
       .then(() => alive && setReady(true));

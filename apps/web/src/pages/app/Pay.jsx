@@ -6,6 +6,7 @@ import { useApi } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { api } from '../../lib/api.js';
 import { fmtDateTime } from '../../lib/time.js';
+import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { MetricCard } from '../../components/cards/Cards.jsx';
 import { Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, Select, SkeletonCard } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
@@ -133,15 +134,15 @@ function NewCharge({ onCreated, reference, caps }) {
         <dl className={s.money} style={{ marginTop: 14 }} aria-live="polite">
           <div>
             <dt>Valor bruto</dt>
-            <dd className="num">{formatCents(quote.grossCents)}</dd>
+            <dd className="num"><BRLText>{formatCents(quote.grossCents)}</BRLText></dd>
           </div>
           <div>
             <dt>Comissão TemPix ({(quote.rateBps / 100).toLocaleString('pt-BR')}%)</dt>
-            <dd className="num">− {formatCents(quote.commissionCents)}</dd>
+            <dd className="num">− <BRLText>{formatCents(quote.commissionCents)}</BRLText></dd>
           </div>
           <div>
             <dt>Você recebe</dt>
-            <dd className={`num ${s.revenue}`}>{formatCents(quote.sellerNetCents)}</dd>
+            <dd className={`num ${s.revenue}`}><BRLText>{formatCents(quote.sellerNetCents)}</BRLText></dd>
           </div>
         </dl>
       )}
@@ -161,7 +162,7 @@ function TxRow({ t, showCommission }) {
         {t.role === 'BUYER' ? <Wallet size={16} /> : <QrCode size={16} />}
       </span>
       <span className={s.rowMain}>
-        <strong className="num">{formatCents(showCommission ? t.commissionAmount : t.grossAmount)}</strong>
+        <strong className="num"><BRLText>{formatCents(showCommission ? t.commissionAmount : t.grossAmount)}</BRLText></strong>
         <span>
           {TRANSACTION_TYPE_LABELS[t.type]} · {t.description} · {t.role === 'BUYER' ? 'você paga' : t.buyerName || 'cliente'} · {fmtDateTime(t.createdAt)}
         </span>
