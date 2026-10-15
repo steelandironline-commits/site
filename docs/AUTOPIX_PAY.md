@@ -141,6 +141,17 @@ seller refunds frozen) → `RESPOND_DISPUTE` → admin `summary` (deterministic,
 | `BB_WEBHOOK_SECRET` (≥ 32 chars) | ✓ | — | only the web service receives webhooks |
 | `BB_PIX_EXPIRATION_SECONDS` | opt | — | default 3600 |
 | `BB_PAY_ENABLED`, `BB_SPLIT_ENABLED`, `BB_PAYOUT_ENABLED`, `BB_PROTECTED_PAYMENT_ENABLED` | opt | opt | contract documentation; do not enable features |
+| `BB_PAY_CONVENIO` | — | req with `PAYMENT_PROVIDER=bb_pay` | BB Pay convênio number; webhooks for another convênio are refused |
+
+### BB Pay (`PAYMENT_PROVIDER=bb_pay`)
+
+- Webhook URL to register in the BB portal (API "BB Pay (v2)", event "PAGAMENTO BB PAY",
+  identifier = convênio): `https://<api>/api/webhooks/payment/bb-pay?token=<BB_WEBHOOK_SECRET>`.
+- `codigoEvento` 1 confirms the request (`numeroSolicitacao` = our `providerPaymentId`) after the
+  amount (`valorOriginal`) matches; 2 (devolvido) is flagged for a human; 3 marks the charge failed;
+  4 (contestado) is recorded. Payer name and document are never stored.
+- Creating a request (solicitação) is not implemented yet: the provider reports `pix: false` and
+  the signup returns 503 without recording anything, until the BB Pay v2 API reference is added.
 | `PROCESS_ROLE` | `web` | `worker` | worker runs without webhook secrets |
 
 After deploy: `npm run bb:register-webhook` (registers

@@ -211,7 +211,8 @@ export class PaymentService {
       throw conflict(`Esta conta não tem taxa de cadastro. O TemPix só cobra ${PRICING.commissionLabel} por contrato fechado.`);
     }
     const provider = this.provider();
-    if (provider.name === 'none') throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE); // nothing is recorded
+    // nothing is recorded when the gateway cannot issue a Pix yet
+    if (provider.name === 'none' || !provider.has('pix')) throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE);
     let access = await this.prisma.subscription.findUnique({ where: { companyId: company.id } });
     if (access?.status === 'ACTIVE') throw conflict('A taxa de cadastro já foi paga.');
     if (!access) {

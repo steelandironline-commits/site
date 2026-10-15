@@ -44,7 +44,7 @@ const schema = z.object({
     .optional()
     .transform((v) => (v || 'mock').toLowerCase().replace(/-/g, '_'))
     // none: no payment gateway — the app runs, every charge fails closed with a clear message.
-    .pipe(z.enum(['mock', 'mercadopago', 'asaas', 'banco_do_brasil', 'none'])),
+    .pipe(z.enum(['mock', 'mercadopago', 'asaas', 'banco_do_brasil', 'bb_pay', 'none'])),
   MOCK_PAYMENT_CAPABILITIES: optional,
   BB_ENVIRONMENT: z
     .string()
@@ -65,6 +65,11 @@ const schema = z.object({
   BB_MTLS_CERT_BASE64: optional,
   BB_MTLS_KEY_BASE64: optional,
   BB_PAY_ENABLED: bool(false),
+  /** BB Pay convênio number (not a secret): webhooks for any other convênio are refused. */
+  BB_PAY_CONVENIO: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.replace(/\D/g, '') : undefined)),
   BB_SPLIT_ENABLED: bool(false),
   BB_PAYOUT_ENABLED: bool(false),
   BB_PROTECTED_PAYMENT_ENABLED: bool(false),
@@ -194,6 +199,11 @@ export function loadConfig(env = process.env) {
         pixExpirationSeconds: e.BB_PIX_EXPIRATION_SECONDS,
       };
     })(),
+    bbPay: {
+      environment: e.BB_ENVIRONMENT,
+      convenio: e.BB_PAY_CONVENIO,
+      webhookSecret: e.BB_WEBHOOK_SECRET,
+    },
     embeddedWorker: e.EMBEDDED_WORKER,
     search: {
       intervalMinutes: e.SEARCH_INTERVAL_MINUTES,
@@ -268,6 +278,12 @@ export function loadConfig(env = process.env) {
       // except an explicit DEMO deployment where every payment is labelled SANDBOX.
       if (looksSandbox && !e.DEMO_MODE) errors.push('Banco do Brasil sandbox configuration refused in production (set BB_ENVIRONMENT=production, or DEMO_MODE=true for a labelled demo)');
       if (!looksSandbox && bb.environment === 'production' && /sandbox|\.hm\./i.test(bb.apiBaseUrl)) errors.push('BB_API_BASE_URL points to a sandbox host');
+    } else if (cfg.payment.provider === 'bb_pay') {
+      if (e.PROCESS_ROLE !== 'worker') {
+        if (!cfg.bbPay.webhookSecret) errors.push('BB_WEBHOOK_SECRET is required when PAYMENT_PROVIDER=bb_pay');
+        else if (cfg.bbPay.webhookSecret.length < 32) errors.push('BB_WEBHOOK_SECRET must be at least 32 characters');
+        if (!cfg.bbPay.convenio) errors.push('BB_PAY_CONVENIO is required when PAYMENT_PROVIDER=bb_pay');
+      }
     } else if (cfg.payment.provider !== 'none') {
       if (!cfg.payment.accessToken) errors.push('PAYMENT_ACCESS_TOKEN is required in production');
       if (!cfg.payment.webhookSecret && e.PROCESS_ROLE !== 'worker') errors.push('PAYMENT_WEBHOOK_SECRET is required in production');

@@ -4,6 +4,7 @@ import { MercadoPagoPaymentProvider } from './MercadoPagoPaymentProvider.js';
 import { AsaasPaymentProvider } from './AsaasPaymentProvider.js';
 import { BancoDoBrasilPaymentProvider } from './providers/banco-do-brasil.provider.js';
 import { DisabledPaymentProvider } from './DisabledPaymentProvider.js';
+import { BbPayPaymentProvider } from './providers/bb-pay.provider.js';
 
 export { PaymentProvider, WebhookSignatureError, PaymentProviderError } from './PaymentProvider.js';
 export { MockPaymentProvider, MercadoPagoPaymentProvider, AsaasPaymentProvider, BancoDoBrasilPaymentProvider, DisabledPaymentProvider };
@@ -42,6 +43,9 @@ export function getPaymentProvider(name, config = getConfig()) {
       break;
     case 'banco_do_brasil':
       provider = new BancoDoBrasilPaymentProvider({ bb: config.bb });
+      break;
+    case 'bb_pay':
+      provider = new BbPayPaymentProvider({ bbPay: config.bbPay });
       break;
     case 'none':
       provider = new DisabledPaymentProvider();
