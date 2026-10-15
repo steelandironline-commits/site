@@ -3,6 +3,11 @@ import {
   BUSINESS_ROLES,
   BUYER_NEEDS,
   CONSTRUCTION_TYPES,
+  CNH_CATEGORIES,
+  LICENSES,
+  NORMS,
+  NRS,
+  TERMINAL_ACCESS_TYPES,
   CONTAINER_TYPES,
   EQUIPMENT_TYPES,
   INDUSTRIAL_SERVICES,
@@ -77,6 +82,8 @@ const list = (catalog, values, max = 4) => {
   const labels = values.map((v) => labelOf(catalog, v));
   return labels.length > max ? `${labels.slice(0, max).join(', ')} +${labels.length - max}` : labels.join(', ');
 };
+/** YYYY-MM-DD to DD/MM/AAAA without going through the local timezone. */
+const brDate = (iso) => (iso ? iso.split('-').reverse().join('/') : null);
 const fmt = (n) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(n);
 
 /** Biggest relevant spec of an equipment item, e.g. "12 t" or "Ø650 mm × 2.000 mm". */
@@ -140,7 +147,20 @@ export function capabilitySummary(rawProfile, company = {}) {
   if (c.maxLiftTons) add('Capacidade', 'Movimenta até', `${fmt(c.maxLiftTons)} t`);
   add('Capacidade', 'Equipe de soldagem', yesNo(p.construction.weldingTeam));
   add('Capacidade', 'Trabalho em altura', yesNo(p.construction.heightTeam));
-  add('Capacidade', 'Acesso a terminais', p.trucker.portAccess ? { sim: 'Sim', nao: 'Não', em_processo: 'Em processo' }[p.trucker.portAccess] : null);
+  // Shown once in "Certificações" when answered there; the old trucker answer is only a fallback.
+  const access = p.certifications.terminal.status ? null : p.trucker.portAccess;
+  add('Capacidade', 'Acesso a terminais', access ? { sim: 'Sim', nao: 'Não', em_processo: 'Em processo' }[access] : null);
+
+  // Certificates: NRs and technical norms of the company, habilitations of people.
+  const cert = p.certifications;
+  add('Certificações', 'NRs', list(NRS, cert.nrs, 8));
+  add('Certificações', 'Normas', list(NORMS, cert.norms, 5));
+  add('Certificações', 'Habilitações', list(LICENSES, cert.licenses, 5));
+  if (cert.cnh.has === true) add('Certificações', 'CNH', [list(CNH_CATEGORIES, cert.cnh.categories, 9), cert.cnh.validUntil && `válida até ${brDate(cert.cnh.validUntil)}`].filter(Boolean).join(' · ') || 'Sim');
+  else if (cert.cnh.has === false) add('Certificações', 'CNH', 'Não possui');
+  if (cert.terminal.status === 'sim') {
+    add('Certificações', 'Acesso a terminal', [list(TERMINAL_ACCESS_TYPES, cert.terminal.types, 3), cert.terminal.validUntil && `válido até ${brDate(cert.terminal.validUntil)}`, cert.terminal.registration && `cadastro ${cert.terminal.registration}`].filter(Boolean).join(' · '));
+  }
 
   // Commercial relationship.
   add('Comercial', 'Atua como', list(BUSINESS_ROLES, p.roles, 3));

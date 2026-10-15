@@ -12,6 +12,7 @@ import {
   BUSINESS_ROLES,
   BUYER_NEEDS,
   CARGO_TYPES,
+  CNH_CATEGORIES,
   CONSTRUCTION_TYPES,
   CONTAINER_OPERATIONS,
   CONTAINER_TYPES,
@@ -21,17 +22,21 @@ import {
   EQUIPMENT_USAGE,
   IDEAL_CUSTOMERS,
   INDUSTRIAL_SERVICES,
+  LICENSES,
   MARITIME_SERVICES,
   MIN_TICKETS,
   MOBILIZATION_TIMES,
+  NORMS,
+  NRS,
   OPERATION_TYPES,
   OPERATOR_MODES,
-  PORT_ACCESS,
   PORTS,
+  PORT_ACCESS,
   REGIONS,
   SUPPLIED_EQUIPMENT,
   SUPPLIERS_SOUGHT,
   TERMINAL_SUPPLIERS,
+  TERMINAL_ACCESS_TYPES,
   TERRAIN_TYPES,
   URGENCY,
   VEHICLE_TYPES,
@@ -43,6 +48,15 @@ export const OPERATIONAL_PROFILE_VERSION = 1;
 const oneOf = (catalog) => z.enum(ids(catalog));
 const many = (catalog, max = 40) => z.array(oneOf(catalog)).max(max).default([]);
 const yes = z.boolean().nullable().optional();
+/** A calendar date as YYYY-MM-DD (what <input type="date"> gives). */
+const isoDate = z.preprocess(
+  (v) => (v === '' || v === undefined ? null : v),
+  z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'data inválida')
+    .refine((v) => !Number.isNaN(Date.parse(v)), 'data inválida')
+    .nullable(),
+).optional();
 const toNumber = (v) => (v === '' || v === undefined || v === null ? null : Number(String(v).replace(',', '.')));
 const num = (max = 1_000_000) => z.preprocess(toNumber, z.number().min(0).max(max).nullable()).optional();
 const int = (max = 100_000) => z.preprocess(toNumber, z.number().int().min(0).max(max).nullable()).optional();
@@ -287,6 +301,30 @@ export const operationalProfileSchema = z.object({
       readyStock: yes,
       madeToOrder: yes,
       acceptsQuotes: yes,
+    })
+    .default({}),
+  certifications: z
+    .object({
+      nrs: many(NRS, 40),
+      norms: many(NORMS, 60),
+      licenses: many(LICENSES, 30),
+      // Driving licence. The number itself is not stored: only what matching needs.
+      cnh: z
+        .object({
+          has: yes,
+          categories: many(CNH_CATEGORIES, 9),
+          validUntil: isoDate,
+        })
+        .default({}),
+      // Access to terminals and ports. `registration` is the terminal's own cadastro, if any.
+      terminal: z
+        .object({
+          status: oneOf(PORT_ACCESS).nullable().optional(),
+          types: many(TERMINAL_ACCESS_TYPES, 6),
+          validUntil: isoDate,
+          registration: text(60),
+        })
+        .default({}),
     })
     .default({}),
   market: z

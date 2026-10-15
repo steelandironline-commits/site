@@ -465,3 +465,123 @@ export function labelOf(catalog, id) {
 }
 
 export const ids = (catalog) => catalog.map((o) => o.id);
+
+/* ------------------------------------------ certificados e normas */
+/** NRs em vigor (MTE). NR-02 e NR-27 foram revogadas e não aparecem. */
+export const NRS = opts([
+  ['nr-01', 'NR-01 · Disposições gerais e gerenciamento de riscos'],
+  ['nr-03', 'NR-03 · Embargo e interdição'],
+  ['nr-04', 'NR-04 · SESMT'],
+  ['nr-05', 'NR-05 · CIPA'],
+  ['nr-06', 'NR-06 · EPI'],
+  ['nr-07', 'NR-07 · PCMSO'],
+  ['nr-08', 'NR-08 · Edificações'],
+  ['nr-09', 'NR-09 · Agentes ambientais'],
+  ['nr-10', 'NR-10 · Eletricidade'],
+  ['nr-11', 'NR-11 · Transporte e movimentação de materiais'],
+  ['nr-12', 'NR-12 · Máquinas e equipamentos'],
+  ['nr-13', 'NR-13 · Caldeiras e vasos de pressão'],
+  ['nr-14', 'NR-14 · Fornos'],
+  ['nr-15', 'NR-15 · Atividades insalubres'],
+  ['nr-16', 'NR-16 · Atividades perigosas'],
+  ['nr-17', 'NR-17 · Ergonomia'],
+  ['nr-18', 'NR-18 · Construção civil'],
+  ['nr-19', 'NR-19 · Explosivos'],
+  ['nr-20', 'NR-20 · Inflamáveis e combustíveis'],
+  ['nr-21', 'NR-21 · Trabalho a céu aberto'],
+  ['nr-22', 'NR-22 · Mineração'],
+  ['nr-23', 'NR-23 · Proteção contra incêndios'],
+  ['nr-24', 'NR-24 · Condições sanitárias e de conforto'],
+  ['nr-25', 'NR-25 · Resíduos industriais'],
+  ['nr-26', 'NR-26 · Sinalização de segurança'],
+  ['nr-28', 'NR-28 · Fiscalização e penalidades'],
+  ['nr-29', 'NR-29 · Trabalho portuário'],
+  ['nr-30', 'NR-30 · Trabalho aquaviário'],
+  ['nr-31', 'NR-31 · Agropecuária e silvicultura'],
+  ['nr-32', 'NR-32 · Serviços de saúde'],
+  ['nr-33', 'NR-33 · Espaços confinados'],
+  ['nr-34', 'NR-34 · Construção e reparação naval'],
+  ['nr-35', 'NR-35 · Trabalho em altura'],
+  ['nr-36', 'NR-36 · Abate e processamento de carnes'],
+  ['nr-37', 'NR-37 · Plataformas de petróleo'],
+  ['nr-38', 'NR-38 · Limpeza urbana e resíduos sólidos'],
+]);
+
+/** Areas used as shortcuts for the norms list. */
+export const NORM_AREAS = Object.freeze([
+  { id: 'gestao', label: 'Gestão e qualidade' },
+  { id: 'industria', label: 'Indústria e usinagem' },
+  { id: 'construcao', label: 'Construção e montagem' },
+  { id: 'movimentacao', label: 'Içamento e transporte' },
+  { id: 'portuario', label: 'Portuário e naval' },
+]);
+
+/** Technical norms and certifications most asked of each area (curated list). */
+export const NORMS = opts([
+  ['iso-9001', 'ISO 9001 · Gestão da qualidade', { area: 'gestao' }],
+  ['iso-45001', 'ISO 45001 · Gestão de segurança e saúde', { area: 'gestao' }],
+  ['iso-14001', 'ISO 14001 · Gestão ambiental', { area: 'gestao' }],
+  ['ghs', 'GHS · Rotulagem de produtos químicos', { area: 'gestao' }],
+  ['nbr-14725', 'ABNT NBR 14725 · FISPQ', { area: 'gestao' }],
+  ['iso-12100', 'ISO 12100 · Segurança de máquinas', { area: 'industria' }],
+  ['nbr-13849', 'ABNT NBR ISO 13849 · Comandos de segurança de máquinas', { area: 'industria' }],
+  ['iso-3834', 'ISO 3834 · Qualidade em soldagem', { area: 'industria' }],
+  ['iso-9606', 'ISO 9606 · Qualificação de soldadores', { area: 'industria' }],
+  ['nbr-6118', 'ABNT NBR 6118 · Estruturas de concreto', { area: 'construcao' }],
+  ['nbr-8800', 'ABNT NBR 8800 · Estruturas de aço', { area: 'construcao' }],
+  ['nbr-6494', 'ABNT NBR 6494 · Segurança em andaimes', { area: 'construcao' }],
+  ['nbr-5410', 'ABNT NBR 5410 · Instalações elétricas de baixa tensão', { area: 'construcao' }],
+  ['nbr-5419', 'ABNT NBR 5419 · Proteção contra descargas atmosféricas', { area: 'construcao' }],
+  ['nbr-16280', 'ABNT NBR 16280 · Reformas em edificações', { area: 'construcao' }],
+  ['nbr-6123', 'ABNT NBR 6123 · Forças do vento em edificações', { area: 'construcao' }],
+  ['nbr-8400', 'ABNT NBR 8400 · Equipamentos de levantamento de cargas', { area: 'movimentacao' }],
+  ['iso-4309', 'ISO 4309 · Cabos de aço de guindastes', { area: 'movimentacao' }],
+  ['iso-1496', 'ISO 1496 · Containers de carga (série 1)', { area: 'movimentacao' }],
+  ['iso-6346', 'ISO 6346 · Codificação de containers', { area: 'movimentacao' }],
+  ['mopp', 'MOPP · Transporte de produtos perigosos (ANTT)', { area: 'movimentacao' }],
+  ['imdg', 'IMDG Code · Produtos perigosos no mar', { area: 'portuario' }],
+  ['isps', 'ISPS Code · Proteção de navios e portos', { area: 'portuario' }],
+  ['ism', 'ISM Code · Gestão de segurança de navios', { area: 'portuario' }],
+  ['solas', 'SOLAS · Segurança da vida no mar', { area: 'portuario' }],
+  ['marpol', 'MARPOL · Poluição por navios', { area: 'portuario' }],
+]);
+
+/** Habilitações e certificados de pessoas que trabalham nas operações. */
+export const LICENSES = opts([
+  ['cnh-b', 'CNH categoria B'],
+  ['cnh-c', 'CNH categoria C'],
+  ['cnh-d', 'CNH categoria D'],
+  ['cnh-e', 'CNH categoria E'],
+  ['mopp-motorista', 'MOPP (motorista)'],
+  ['operador-empilhadeira', 'Operador de empilhadeira (NR-11)'],
+  ['operador-guindaste', 'Operador de guindaste ou munck'],
+  ['operador-plataforma', 'Operador de plataforma elevatória'],
+  ['soldador', 'Soldador qualificado'],
+  ['eletricista-sep', 'Eletricista · SEP (NR-10)'],
+  ['trabalho-altura', 'Trabalho em altura (NR-35)'],
+  ['espacos-confinados', 'Espaços confinados (NR-33)'],
+  ['primeiros-socorros', 'Primeiros socorros'],
+]);
+
+/** Kinds of access a terminal or port can grant (gate, yard, quay, ...). */
+export const TERMINAL_ACCESS_TYPES = opts([
+  ['gate_caminhao', 'Gate de caminhão (entrada e saída)'],
+  ['patio', 'Pátio de containers'],
+  ['area_operacional', 'Área operacional'],
+  ['cais', 'Cais e costado (operação de navio)'],
+  ['pedestre', 'Acesso de pedestre'],
+  ['credencial_motorista', 'Credencial de motorista'],
+]);
+
+/** Categorias da CNH: A moto, B carro, C caminhão, D ônibus, E articulado; pares AB..AE. */
+export const CNH_CATEGORIES = opts([
+  ['A', 'A · motocicleta'],
+  ['B', 'B · carro e utilitário'],
+  ['C', 'C · caminhão'],
+  ['D', 'D · ônibus'],
+  ['E', 'E · carreta e caminhão articulado'],
+  ['AB', 'AB · moto e carro'],
+  ['AC', 'AC · moto e caminhão'],
+  ['AD', 'AD · moto e ônibus'],
+  ['AE', 'AE · moto e carreta'],
+]);

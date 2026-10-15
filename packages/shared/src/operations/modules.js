@@ -16,6 +16,9 @@
  *  vehicles  repeatable fleet vehicles              { path }
  *  lanes     repeatable origin → destination        { path }
  *  requests  repeatable buyer needs with details    { path }
+ *  date      calendar date (YYYY-MM-DD)             { path }
+ *
+ * Any field may carry `when` (shown only if the condition holds).
  */
 import {
   ATTENDANCE,
@@ -27,9 +30,14 @@ import {
   CONSTRUCTION_TYPES,
   CONTAINER_OPERATIONS,
   CONTAINER_TYPES,
+  CNH_CATEGORIES,
   CONTRACT_PREFERENCES,
   DOCUMENTS,
   IDEAL_CUSTOMERS,
+  LICENSES,
+  NORM_AREAS,
+  NORMS,
+  NRS,
   INDUSTRIAL_SERVICES,
   MARITIME_SERVICES,
   MOBILIZATION_TIMES,
@@ -39,6 +47,7 @@ import {
   REGIONS,
   SUPPLIED_EQUIPMENT,
   SUPPLIERS_SOUGHT,
+  TERMINAL_ACCESS_TYPES,
   TERMINAL_SUPPLIERS,
   TERRAIN_TYPES,
   VEHICLE_TYPES,
@@ -228,7 +237,6 @@ export const OPERATION_MODULES = Object.freeze([
       { type: 'chips', path: 'trucker.truckTypes', label: 'Tipos de caminhão', options: VEHICLE_TYPES },
       { type: 'number', path: 'trucker.quantity', label: 'Quantidade', unit: 'caminhões' },
       { type: 'number', path: 'trucker.payloadTons', label: 'Capacidade de carga', unit: 't' },
-      { type: 'choice', path: 'trucker.portAccess', label: 'Possui acesso ou credenciamento para terminais e portos?', options: PORT_ACCESS },
       { type: 'choice', path: 'trucker.availability', label: 'Disponibilidade', options: AVAILABILITY },
       {
         type: 'toggles',
@@ -451,6 +459,76 @@ export const OPERATION_MODULES = Object.freeze([
   },
 
   /* ---------------- universal (empresas) ---------------- */
+  /* ---------------- acesso a terminais e portos ---------------- */
+  {
+    id: 'acesso_terminal',
+    group: 'estrutura',
+    appliesTo: { types: [...TRANSPORT, 'caminhoneiro', 'terminal_portuario', 'fornecedor_maritimo'] },
+    title: 'Acesso a terminais e portos',
+    subtitle: 'Quem já tem acesso entra nos terminais sem espera. Marque o que possui e até quando vale.',
+    fields: [
+      { type: 'choice', path: 'certifications.terminal.status', label: 'Possui acesso ou credenciamento para terminais e portos?', options: PORT_ACCESS },
+      {
+        type: 'chips',
+        path: 'certifications.terminal.types',
+        label: 'Tipos de acesso',
+        options: TERMINAL_ACCESS_TYPES,
+        when: { path: 'certifications.terminal.status', equals: 'sim' },
+      },
+      { type: 'date', path: 'certifications.terminal.validUntil', label: 'Validade do acesso', when: { path: 'certifications.terminal.status', equals: 'sim' } },
+      {
+        type: 'text',
+        path: 'certifications.terminal.registration',
+        label: 'Cadastro no terminal, se houver',
+        placeholder: 'Número ou código do cadastro',
+        when: { path: 'certifications.terminal.status', equals: 'sim' },
+      },
+    ],
+  },
+
+  /* ---------------- certificados e normas (empresas e pessoas) ---------------- */
+  {
+    id: 'certificacoes',
+    group: 'estrutura',
+    appliesTo: { always: true },
+    title: 'Certificados e normas',
+    subtitle: 'Empresas marcam as NRs e normas que cumprem. Pessoas marcam os certificados e habilitações que possuem. Nada aqui é obrigatório.',
+    fields: [
+      {
+        type: 'chips',
+        path: 'certifications.nrs',
+        label: 'Normas Regulamentadoras (NRs)',
+        hint: 'Marque as NRs que sua empresa ou sua equipe cumpre. “Todas as NRs” marca a lista inteira de uma vez.',
+        options: NRS,
+        bulk: [{ label: 'Todas as NRs', ids: NRS.map((o) => o.id) }],
+      },
+      {
+        type: 'chips',
+        path: 'certifications.norms',
+        label: 'Normas técnicas e certificações',
+        hint: 'As normas mais exigidas em cada área. Os atalhos marcam a área inteira.',
+        options: NORMS,
+        bulk: NORM_AREAS.map((a) => ({ label: a.label, ids: NORMS.filter((n) => n.area === a.id).map((n) => n.id) })),
+      },
+      {
+        type: 'chips',
+        path: 'certifications.licenses',
+        label: 'Habilitações e certificados das pessoas',
+        hint: 'Para quem executa o serviço: operação de máquinas, soldagem, altura e outros treinamentos.',
+        options: LICENSES,
+      },
+      {
+        type: 'yesno',
+        path: 'certifications.cnh.has',
+        label: 'Possui CNH?',
+        hint: 'Obrigatória para dirigir. Caminhoneiros: informe a categoria e a validade.',
+        children: [
+          { type: 'chips', path: 'certifications.cnh.categories', label: 'Categoria da CNH', options: CNH_CATEGORIES },
+          { type: 'date', path: 'certifications.cnh.validUntil', label: 'Validade da CNH' },
+        ],
+      },
+    ],
+  },
   {
     id: 'mercado',
     group: 'clientes',

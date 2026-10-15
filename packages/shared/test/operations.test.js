@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   capabilitySummary,
+  conditionMet,
   matchBuyerSupplier,
   matchRequirement,
   modulesFor,
@@ -16,8 +17,8 @@ const co = (profile, extra = {}) => ({ profile: operationalProfileSchema.parse(p
 describe('question engine', () => {
   it('shows only the modules that apply to the operation', () => {
     const ids = (p, t = 'COMPANY') => modulesFor(normalizeOperationalProfile(p), t).map((m) => m.id);
-    expect(ids({ types: ['usinagem'] })).toEqual(['industrial_servicos', 'industrial_maquinas', 'industrial_estrutura', 'mercado']);
-    expect(ids({ types: ['transportadora'] })).toEqual(['transporte_frota', 'transporte_containers', 'transporte_rotas', 'mercado']);
+    expect(ids({ types: ['usinagem'] })).toEqual(['industrial_servicos', 'industrial_maquinas', 'industrial_estrutura', 'certificacoes', 'mercado']);
+    expect(ids({ types: ['transportadora'] })).toEqual(['transporte_frota', 'transporte_containers', 'acesso_terminal', 'certificacoes', 'transporte_rotas', 'mercado']);
     // One equipment list, never three.
     const both = ids({ types: ['obras_montagem', 'guindastes_munck'] });
     expect(both.filter((x) => x.includes('equipamentos'))).toEqual(['pesados_equipamentos']);
@@ -25,7 +26,7 @@ describe('question engine', () => {
     expect(ids({ types: ['comprador_equipamentos'] })).not.toContain('compra_detalhes');
     expect(ids({ types: ['comprador_equipamentos'], buyer: { needs: ['munck'] } })).toContain('compra_detalhes');
     // Professionals (CPF) get no company-only module.
-    expect(ids({ types: ['caminhoneiro'] }, 'PERSON')).toEqual(['caminhoneiro', 'transporte_containers', 'transporte_rotas']);
+    expect(ids({ types: ['caminhoneiro'] }, 'PERSON')).toEqual(['caminhoneiro', 'transporte_containers', 'acesso_terminal', 'certificacoes', 'transporte_rotas']);
     expect(operationTypesFor('PERSON').map((t) => t.id)).toContain('caminhoneiro');
     expect(operationTypesFor('PERSON').map((t) => t.id)).not.toContain('terminal_portuario');
     expect(operationTypesFor('COMPANY').map((t) => t.id)).not.toContain('profissional_autonomo');
@@ -43,6 +44,67 @@ describe('question engine', () => {
     const some = profileCompleteness({ types: ['usinagem'], objectives: ['encontrar_compradores'], industrial: { services: ['torneamento'] } }, { accountType: 'COMPANY', company: { city: 'Santos' } });
     expect(some).toBeGreaterThan(30);
     expect(some).toBeLessThan(80);
+  });
+});
+
+describe('certificates and norms', () => {
+  it('asks companies and people alike, and never requires the answer', () => {
+    expect(modulesFor({ types: [], objectives: [] }, 'COMPANY').map((m) => m.id)).toContain('certificacoes');
+    expect(modulesFor({ types: [], objectives: [] }, 'PERSON').map((m) => m.id)).toContain('certificacoes');
+    const mod = modulesFor({ types: [], objectives: [] }, 'PERSON').find((m) => m.id === 'certificacoes');
+    expect(mod.fields.every((f) => !f.required)).toBe(true);
+  });
+
+  it('stores only catalog ids and rejects anything else (no free text, no certificate numbers)', () => {
+    expect(operationalProfileSchema.safeParse({ certifications: { nrs: ['nr-10', 'nr-35'], norms: ['iso-45001'], licenses: ['soldador'] } }).success).toBe(true);
+    expect(operationalProfileSchema.safeParse({ certifications: { nrs: ['nr-99'] } }).success).toBe(false);
+    expect(operationalProfileSchema.safeParse({ certifications: { licenses: ['CRC 123456'] } }).success).toBe(false);
+  });
+
+  it('lists the chosen certificates in the capability summary', () => {
+    const lines = capabilitySummary({ certifications: { nrs: ['nr-10', 'nr-35'], licenses: ['soldador'] } }, {}).filter((x) => x.section === 'Certificações');
+    expect(lines.find((x) => x.label === 'NRs').value).toContain('NR-35 · Trabalho em altura');
+    expect(lines.find((x) => x.label === 'Habilitações').value).toBe('Soldador qualificado');
+  });
+
+  it('keeps 36 NRs in force and never offers the revoked NR-02 or NR-27', async () => {
+    const { NRS } = await import('../src/index.js');
+    expect(NRS).toHaveLength(36);
+    expect(NRS.map((o) => o.id)).not.toContain('nr-02');
+    expect(NRS.map((o) => o.id)).not.toContain('nr-27');
+  });
+});
+
+describe('driving licence and terminal access', () => {
+  const ids = (p, t = 'COMPANY') => modulesFor(normalizeOperationalProfile(p), t).map((m) => m.id);
+
+  it('keeps the CNH category and validity, never the licence number', () => {
+    const r = operationalProfileSchema.safeParse({ certifications: { cnh: { has: true, categories: ['C', 'E'], validUntil: '2028-03-01', number: '12345678901' } } });
+    expect(r.success).toBe(true);
+    expect(r.data.certifications.cnh).toEqual({ has: true, categories: ['C', 'E'], validUntil: '2028-03-01' });
+  });
+
+  it('accepts only real calendar dates and CNH categories from the catalog', () => {
+    expect(operationalProfileSchema.safeParse({ certifications: { cnh: { validUntil: '2028-13-40' } } }).success).toBe(false);
+    expect(operationalProfileSchema.safeParse({ certifications: { cnh: { validUntil: '10/03/2028' } } }).success).toBe(false);
+    expect(operationalProfileSchema.safeParse({ certifications: { cnh: { categories: ['F'] } } }).success).toBe(false);
+  });
+
+  it('asks about terminal access only to logistics people and only details it when they have access', () => {
+    expect(ids({ types: ['terminal_portuario'] })).toContain('acesso_terminal');
+    expect(ids({ types: ['usinagem'] })).not.toContain('acesso_terminal');
+    const mod = modulesFor(normalizeOperationalProfile({ types: ['caminhoneiro'] }), 'PERSON').find((m) => m.id === 'acesso_terminal');
+    const shown = (p) => mod.fields.filter((f) => !f.when || conditionMet(f.when, normalizeOperationalProfile(p))).map((f) => f.path);
+    expect(shown({ certifications: { terminal: { status: 'nao' } } })).toEqual(['certifications.terminal.status']);
+    expect(shown({ certifications: { terminal: { status: 'sim' } } })).toEqual(['certifications.terminal.status', 'certifications.terminal.types', 'certifications.terminal.validUntil', 'certifications.terminal.registration']);
+  });
+
+  it('summarises the licence and the terminal access, and reads the old trucker answer as a fallback', () => {
+    const line = (p, label) => capabilitySummary(p, {}).find((x) => x.label === label)?.value;
+    const p = { certifications: { cnh: { has: true, categories: ['E'], validUntil: '2028-03-01' }, terminal: { status: 'sim', types: ['gate_caminhao'], validUntil: '2027-01-10', registration: 'CAD-88' } } };
+    expect(line(p, 'CNH')).toBe('E · carreta e caminhão articulado · válida até 01/03/2028');
+    expect(line(p, 'Acesso a terminal')).toBe('Gate de caminhão (entrada e saída) · válido até 10/01/2027 · cadastro CAD-88');
+    expect(line({ trucker: { portAccess: 'em_processo' } }, 'Acesso a terminais')).toBe('Em processo');
   });
 });
 

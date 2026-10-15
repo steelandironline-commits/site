@@ -127,6 +127,29 @@ export function ChipGroup({ options, value, onChange, multiple = true, icons = f
   );
 }
 
+/** Shortcuts that mark or clear a whole list (e.g. all NRs, or one area of norms) at once. */
+function BulkActions({ groups, value, onChange }) {
+  return (
+    <div className={o.bulk} role="group" aria-label="Atalhos de seleção">
+      {groups.map((g) => {
+        const all = g.ids.every((id) => value.includes(id));
+        return (
+          <button
+            key={g.label}
+            type="button"
+            className={`${o.bulkBtn} ${all ? o.bulkOn : ''}`}
+            aria-pressed={all}
+            onClick={() => onChange(all ? value.filter((v) => !g.ids.includes(v)) : [...new Set([...value, ...g.ids])])}
+          >
+            {all ? '− ' : '+ '}
+            {g.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function YesNo({ value, onChange, small = false, label }) {
   return (
     <div className={`${o.yesno} ${small ? o.yesnoSmall : ''}`} role="radiogroup" aria-label={label}>
@@ -138,6 +161,15 @@ export function YesNo({ value, onChange, small = false, label }) {
           {text}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** A calendar date kept as YYYY-MM-DD, which is what the profile stores. */
+function DateField({ value, onChange, label }) {
+  return (
+    <div className={o.unitWrap}>
+      <Input type="date" aria-label={label} value={value || ''} onChange={(e) => onChange(e.target.value || null)} />
     </div>
   );
 }
@@ -427,7 +459,14 @@ function FieldView({ f, profile, set, accountType, errors }) {
     case 'chips':
       return (
         <Group label={f.label} hint={f.hint || T.multiHint} error={error} count={(value || []).length}>
+          {f.bulk && <BulkActions groups={f.bulk} value={value || []} onChange={(v) => set(f.path, v)} />}
           <ChipGroup options={f.byAccount ? operationTypesFor(accountType) : f.options} value={value || []} onChange={(v) => set(f.path, v)} icons={f.byAccount} fold={f.byAccount ? 40 : 14} />
+        </Group>
+      );
+    case 'date':
+      return (
+        <Group label={f.label} hint={f.hint} error={error}>
+          <DateField value={value} onChange={(v) => set(f.path, v)} label={f.label} />
         </Group>
       );
     case 'choice':
