@@ -88,9 +88,9 @@ export const OPERATION_START = Object.freeze({
   title: 'Qual é o seu tipo de operação?',
   subtitle: 'Marque tudo o que faz parte do seu dia a dia. Assim o TemPix entende o que você fornece, compra e executa.',
   fields: [
-    { type: 'chips', path: 'types', label: 'Tipo de operação', hint: 'Marque todas que se aplicam: uma empresa pode ser fornecedora, compradora e executora ao mesmo tempo.', options: OPERATION_TYPES, required: true, byAccount: true },
+    { type: 'chips', path: 'types', label: 'Tipo de operação', hint: 'Marque todas que se aplicam: uma empresa pode ser fornecedora, compradora e executora ao mesmo tempo.', options: OPERATION_TYPES, required: true, byAccount: true, fold: 40, personHint: 'Marque tudo o que você faz no seu dia a dia, como autônomo. Pode marcar mais de uma opção.' },
     { type: 'text', path: 'otherType', label: 'Qual?', placeholder: 'Descreva sua operação', when: { path: 'types', includes: 'outros' } },
-    { type: 'chips', path: 'objectives', label: 'Quais são seus objetivos no TemPix?', hint: 'Marque quantos quiser: quanto mais, melhor o TemPix entende sua empresa.', options: BUSINESS_OBJECTIVES, required: true },
+    { type: 'chips', path: 'objectives', label: 'Quais são seus objetivos no TemPix?', hint: 'Marque quantos quiser: quanto mais, melhor o TemPix entende sua empresa.', options: BUSINESS_OBJECTIVES, required: true, byAccount: true, personHint: 'Marque quantos quiser: quanto mais, melhor o TemPix entende o seu trabalho.' },
   ],
 });
 
@@ -584,11 +584,20 @@ export function modulesFor(profile, accountType) {
     .sort((x, y) => order[x.group] - order[y.group]);
 }
 
+/**
+ * Options of a catalog offered to an account type. People (CPF) see only the
+ * options tagged for them; companies (CNPJ/MEI) see every option tagged for them.
+ */
+export function optionsFor(catalog, accountType) {
+  return catalog
+    .filter((o) => !o.accounts || !accountType || o.accounts.includes(accountType))
+    .filter((o) => accountType !== 'PERSON' || o.accounts)
+    .map((o) => (o.labelByAccount?.[accountType] ? { ...o, label: o.labelByAccount[accountType] } : o));
+}
+
 /** Operation types offered to an account type. */
 export function operationTypesFor(accountType) {
-  return OPERATION_TYPES.filter((t) => !t.accounts || !accountType || t.accounts.includes(accountType)).filter(
-    (t) => accountType !== 'PERSON' || t.accounts,
-  );
+  return optionsFor(OPERATION_TYPES, accountType);
 }
 
 export const groupLabel = (id) => OPERATION_GROUPS.find((g) => g.id === id)?.label ?? '';

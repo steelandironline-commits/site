@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { modulesFor, normalizeOperationalProfile } from '@autopix/shared';
+import { OPERATION_START, modulesFor, normalizeOperationalProfile } from '@autopix/shared';
 import { OperationFields } from '../src/pages/onboarding/operations/OperationFields.jsx';
 
 const fieldsOf = (id, p, type = 'PERSON') => {
@@ -11,6 +11,28 @@ const render = (id, p, type) => {
   const { profile, fields } = fieldsOf(id, p, type);
   return renderToStaticMarkup(<OperationFields fields={fields} profile={profile} onChange={() => {}} accountType={type} errors={{}} />);
 };
+
+describe('operation type screen by account', () => {
+  const start = (type) => renderToStaticMarkup(<OperationFields fields={OPERATION_START.fields} profile={normalizeOperationalProfile({})} onChange={() => {}} accountType={type} errors={{}} />);
+
+  it('shows a person no company-only objective, no MEI and no company wording', () => {
+    const pf = start('PERSON');
+    expect(pf).toContain('Encontrar compradores para meus produtos ou equipamentos');
+    expect(pf).toContain('Caminhoneiro autônomo');
+    expect(pf).not.toContain('MEI');
+    expect(pf).not.toContain('Encontrar fornecedores');
+    expect(pf).not.toContain('Fornecer para operações marítimas');
+    expect(pf).not.toContain('Intermediar oportunidades');
+    expect(pf).not.toMatch(/empresa/i);
+  });
+
+  it('keeps the full company list, with MEI, for CNPJ accounts', () => {
+    const cnpj = start('COMPANY');
+    expect(cnpj).toContain('Encontrar fornecedores');
+    expect(cnpj).toContain('Caminhoneiro autônomo / MEI');
+    expect(cnpj).toContain('uma empresa pode ser fornecedora');
+  });
+});
 
 describe('certificates and access fields', () => {
   it('asks the terminal details only after the person says they have access', () => {

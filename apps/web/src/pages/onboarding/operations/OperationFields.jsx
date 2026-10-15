@@ -41,7 +41,7 @@ import {
   conditionMet,
   getPath,
   labelOf,
-  operationTypesFor,
+  optionsFor,
   setPath,
 } from '@autopix/shared';
 import { Field, Input, TagInput } from '../../../components/ui/ui.jsx';
@@ -458,9 +458,9 @@ function FieldView({ f, profile, set, accountType, errors }) {
   switch (f.type) {
     case 'chips':
       return (
-        <Group label={f.label} hint={f.hint || T.multiHint} error={error} count={(value || []).length}>
+        <Group label={f.label} hint={(accountType === 'PERSON' && f.personHint) || f.hint || T.multiHint} error={error} count={(value || []).length}>
           {f.bulk && <BulkActions groups={f.bulk} value={value || []} onChange={(v) => set(f.path, v)} />}
-          <ChipGroup options={f.byAccount ? operationTypesFor(accountType) : f.options} value={value || []} onChange={(v) => set(f.path, v)} icons={f.byAccount} fold={f.byAccount ? 40 : 14} />
+          <ChipGroup options={f.byAccount ? optionsFor(f.options, accountType) : f.options} value={value || []} onChange={(v) => set(f.path, v)} icons={Boolean(f.byAccount && f.options.some((o) => o.icon))} fold={f.fold ?? 14} />
         </Group>
       );
     case 'date':

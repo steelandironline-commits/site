@@ -11,7 +11,7 @@ export const OPERATION_TYPES = opts([
   ['usinagem', 'Usinagem', { icon: 'cog' }],
   ['caldeiraria_soldagem', 'Caldeiraria / Soldagem', { icon: 'flame' }],
   ['transportadora', 'Transportadora', { icon: 'truck' }],
-  ['caminhoneiro', 'Caminhoneiro autônomo / MEI', { icon: 'truck', accounts: ['COMPANY', 'PERSON'] }],
+  ['caminhoneiro', 'Caminhoneiro autônomo / MEI', { icon: 'truck', accounts: ['COMPANY', 'PERSON'], labelByAccount: { PERSON: 'Caminhoneiro autônomo' } }],
   ['logistica', 'Logística', { icon: 'route' }],
   ['terminal_portuario', 'Terminal / Operador portuário', { icon: 'anchor' }],
   ['fornecedor_maritimo', 'Fornecedor marítimo', { icon: 'ship' }],
@@ -34,19 +34,22 @@ export const OPERATION_TYPES = opts([
   ['outros', 'Outros', { icon: 'plus', accounts: ['COMPANY', 'PERSON'] }],
 ]);
 
+/** Objectives. The COMPANY_ONLY ones (suppliers, teams, maritime, brokerage) are never offered to people. */
+const ANY_ACCOUNT = ['COMPANY', 'PERSON'];
+const COMPANY_ONLY = ['COMPANY'];
 export const BUSINESS_OBJECTIVES = opts([
-  ['encontrar_compradores', 'Encontrar compradores para meus produtos ou equipamentos'],
-  ['encontrar_fornecedores', 'Encontrar fornecedores'],
-  ['contratar_equipamentos', 'Contratar máquinas ou equipamentos'],
-  ['oferecer_equipamentos', 'Oferecer máquinas ou equipamentos'],
-  ['encontrar_obras', 'Encontrar obras e oportunidades'],
-  ['oferecer_servicos', 'Oferecer serviços especializados'],
-  ['comprar_vender_equipamentos', 'Comprar ou vender equipamentos'],
-  ['contratar_equipes', 'Contratar equipes'],
-  ['fornecer_maritimo', 'Fornecer para operações marítimas e portuárias'],
-  ['transportar_cargas', 'Transportar cargas'],
-  ['intermediar', 'Intermediar oportunidades'],
-  ['outros', 'Outros'],
+  ['encontrar_compradores', 'Encontrar compradores para meus produtos ou equipamentos', { accounts: ANY_ACCOUNT }],
+  ['encontrar_fornecedores', 'Encontrar fornecedores', { accounts: COMPANY_ONLY }],
+  ['contratar_equipamentos', 'Contratar máquinas ou equipamentos', { accounts: ANY_ACCOUNT }],
+  ['oferecer_equipamentos', 'Oferecer máquinas ou equipamentos', { accounts: ANY_ACCOUNT }],
+  ['encontrar_obras', 'Encontrar obras e oportunidades', { accounts: ANY_ACCOUNT }],
+  ['oferecer_servicos', 'Oferecer serviços especializados', { accounts: ANY_ACCOUNT }],
+  ['comprar_vender_equipamentos', 'Comprar ou vender equipamentos', { accounts: ANY_ACCOUNT }],
+  ['contratar_equipes', 'Contratar equipes', { accounts: COMPANY_ONLY }],
+  ['fornecer_maritimo', 'Fornecer para operações marítimas e portuárias', { accounts: COMPANY_ONLY }],
+  ['transportar_cargas', 'Transportar cargas', { accounts: ANY_ACCOUNT }],
+  ['intermediar', 'Intermediar oportunidades', { accounts: COMPANY_ONLY }],
+  ['outros', 'Outros', { accounts: ANY_ACCOUNT }],
 ]);
 
 /** How the company acts in a deal (a company can be several at once). */

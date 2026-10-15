@@ -7,7 +7,10 @@ import {
   modulesFor,
   normalizeOperationalProfile,
   operationalProfileSchema,
+  BUSINESS_OBJECTIVES,
+  OPERATION_TYPES,
   operationTypesFor,
+  optionsFor,
   profileCompleteness,
   rankCandidates,
 } from '../src/index.js';
@@ -44,6 +47,30 @@ describe('question engine', () => {
     const some = profileCompleteness({ types: ['usinagem'], objectives: ['encontrar_compradores'], industrial: { services: ['torneamento'] } }, { accountType: 'COMPANY', company: { city: 'Santos' } });
     expect(some).toBeGreaterThan(30);
     expect(some).toBeLessThan(80);
+  });
+});
+
+describe('pessoa física x CNPJ', () => {
+  const ids = (catalog, type) => optionsFor(catalog, type).map((o) => o.id);
+
+  it('offers people only the objectives that fit a person', () => {
+    expect(ids(BUSINESS_OBJECTIVES, 'PERSON')).toEqual([
+      'encontrar_compradores',
+      'contratar_equipamentos',
+      'oferecer_equipamentos',
+      'encontrar_obras',
+      'oferecer_servicos',
+      'comprar_vender_equipamentos',
+      'transportar_cargas',
+      'outros',
+    ]);
+    expect(ids(BUSINESS_OBJECTIVES, 'COMPANY')).toEqual(BUSINESS_OBJECTIVES.map((o) => o.id));
+  });
+
+  it('gives the autonomous trucker a person label, and keeps MEI for companies', () => {
+    const label = (type) => optionsFor(OPERATION_TYPES, type).find((o) => o.id === 'caminhoneiro').label;
+    expect(label('PERSON')).toBe('Caminhoneiro autônomo');
+    expect(label('COMPANY')).toBe('Caminhoneiro autônomo / MEI');
   });
 });
 

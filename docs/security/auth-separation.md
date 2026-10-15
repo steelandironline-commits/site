@@ -1,11 +1,11 @@
 # Separar cadastro e login do restante do sistema
 
-Status: plano aprovado para início. Nenhuma mudança de produção nesta etapa.
+Status: decisão de manter identidade e negócio **dentro de um único Postgres**. Não se cria segundo banco. A separação passa a ser lógica: schema próprio (`identity`) e papéis de banco com permissão mínima por serviço. Nenhuma mudança de produção nesta etapa.
 
 ## Por que
 Hoje a API, o worker e o painel usam o mesmo banco. Se a API for comprometida,
 o atacante alcança senhas (hash), sessões e vínculos de WhatsApp. A separação
-limita esse alcance: a camada de identidade fica num serviço e num banco próprios.
+limita esse alcance: a camada de identidade fica num serviço próprio, com um papel de banco que só enxerga o schema `identity`.
 O navegador nunca recebe credenciais de banco (já é assim; isso não muda).
 
 ## O que é identidade (vai para o banco de identidade)
@@ -21,13 +21,14 @@ Tabelas com o estado de conta e autenticação, hoje em `prisma/schema.prisma`:
 | `SensitiveActionChallenge` | confirmação extra de ações sensíveis |
 | `WhatsAppConnection` | número WhatsApp vinculado à conta |
 
-## O que é negócio (fica no banco atual)
+## O que é negócio (fica no mesmo Postgres, schema `public`)
 `Company`, `Subscription`, `Payment`, `Opportunity`, `Contact`, `Agent*`,
 `Freight*`, `Workforce*`, `Marketplace*`, `Commission*`, `Refund`, `Payout`,
 `ActionLog`, `FinancialAuditLog`, notificações, redes sociais, etc.
 
-## Ligações que atravessam os dois bancos
-Chaves estrangeiras não funcionam entre bancos. Pontos a tratar:
+## Ligações entre identidade e negócio
+No mesmo Postgres, as chaves estrangeiras continuam valendo entre schemas. Os pontos
+abaixo só viram problema na etapa 2, quando o serviço de identidade sair desse banco:
 - `User.companyId -> Company` (cascata). No banco de identidade vira só um `companyId` (texto), sem FK.
 - `Company.users` (relação inversa): removida do lado de negócio.
 - Modelos de negócio com `userId` / `authorUserId` (notificações, push, atividade,
@@ -52,8 +53,8 @@ requisição. Na nova arquitetura essa consulta sai da API.
    assinado (chave assimétrica) de curta duração e um refresh token. A API valida
    o token localmente com a chave pública, sem consultar o banco. Revogação de
    sessão passa a valer em até a duração do token de acesso.
-4. **Endurecimento.** Usuários de banco mínimos por serviço (leitura/escrita só nas
-   tabelas necessárias), rede privada entre serviços, segredos rotacionados, log
+4. **Endurecimento.** Papéis do Postgres por serviço (GRANT só nos schemas e tabelas
+   necessários), rede privada entre serviços, segredos rotacionados, log
    de auditoria das ações administrativas sobre contas.
 
 ## O que a separação não resolve sozinha
@@ -63,6 +64,6 @@ são tratados em paralelo com testes de autorização por empresa, Content Secur
 Policy e revisão de cookies (HttpOnly, Secure, SameSite).
 
 ## Riscos e cuidados
-- Migração de usuários e sessões precisa de backup e de teste em uma cópia do banco.
+- Backup do Postgres antes da etapa 1, e teste da migração em uma cópia do banco.
 - Quem está logado durante a troca não deve ser derrubado (etapa 1 preserva sessões).
 - Cada etapa tem testes próprios antes de ir para produção.
