@@ -213,33 +213,6 @@
   box-shadow: var(--shadow-2);
 }
 
-.ship {
-  width: min(320px, 100%);
-  height: auto;
-  justify-self: center;
-  animation: bob 4s ease-in-out infinite;
-}
-
-.wave {
-  animation: drift 6s linear infinite;
-}
-
-@keyframes bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
-}
-
-@keyframes drift {
-  to {
-    transform: translateX(-36px);
-  }
-}
-
 /* opportunity card: the same premium gold frame as the company plan */
 .opp {
   display: grid;
@@ -692,7 +665,8 @@
 /* 2.5D site (SVG) */
 .stage {
   position: relative;
-  aspect-ratio: 760 / 320;
+  aspect-ratio: 810 / 532;
+  max-height: 580px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
@@ -707,19 +681,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-.trussLift {
-  animation: trussLift 4.5s ease-in-out infinite alternate;
-}
-
-@keyframes trussLift {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-6px);
-  }
 }
 
 .hammer {
@@ -772,18 +733,322 @@
   }
 }
 
-.dig {
-  transform-box: view-box;
-  transform-origin: 668px 222px;
-  animation: dig 3.6s ease-in-out infinite alternate;
+/* live caption of what the site is doing */
+.siteChip {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 28px);
+  margin: 0;
+  padding: 7px 13px;
+  border: 1px solid rgba(255, 179, 92, 0.45);
+  border-radius: 999px;
+  background: rgba(10, 14, 22, 0.8);
+  backdrop-filter: blur(6px);
+  color: #f3f2ee;
+  font-size: var(--fs-13);
+  font-weight: 600;
+  animation: chipIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes dig {
+.siteChipDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffb35c;
+  animation: ping 1.6s ease-out infinite;
+}
+
+.siteChipDone {
+  border-color: rgba(95, 227, 154, 0.55);
+}
+
+.siteChipDone .siteChipDot {
+  background: #5fe39a;
+}
+
+@keyframes chipIn {
   from {
-    transform: rotate(-4deg);
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
   }
   to {
-    transform: rotate(4deg);
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 2.5D maritime: each flow step toggles classes */
+.portArt {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.waves path {
+  animation: waves 3.2s linear infinite;
+}
+
+@keyframes waves {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+.shipBob {
+  animation: bob 3.4s ease-in-out infinite alternate;
+}
+
+@keyframes bob {
+  to {
+    transform: translateY(2px);
+  }
+}
+
+.tugBob {
+  animation: bob 2.6s ease-in-out infinite alternate-reverse;
+}
+
+.shipArriving {
+  animation: arrive 1.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translate(-25px, 15px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.co {
+  transition: filter 0.5s;
+}
+
+.coOn {
+  filter: drop-shadow(0 0 5px rgba(42, 209, 184, 0.45));
+}
+
+.coPick {
+  filter: drop-shadow(0 0 7px rgba(232, 199, 102, 0.7));
+}
+
+.coTag rect {
+  fill: rgba(10, 14, 22, 0.82);
+  stroke: rgba(255, 255, 255, 0.14);
+  transition:
+    stroke 0.4s,
+    fill 0.4s;
+}
+
+.coTag text {
+  fill: var(--text-2);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.coOn .coTag rect {
+  stroke: rgba(42, 209, 184, 0.7);
+}
+
+.coPick .coTag rect {
+  fill: rgba(232, 199, 102, 0.2);
+  stroke: #e8c766;
+}
+
+.coPick .coTag text {
+  fill: #f3d77a;
+}
+
+.link {
+  fill: none;
+  stroke: #2ad1b8;
+  stroke-width: 1.6;
+  stroke-dasharray: 4 6;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.linkOn {
+  opacity: 0.9;
+  animation: flow 0.9s linear infinite;
+}
+
+.linkDim {
+  opacity: 0.18;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.quote {
+  opacity: 0;
+  transform: translateY(6px) scale(0.9);
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition:
+    opacity 0.35s,
+    transform 0.45s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.quoteOn {
+  opacity: 1;
+  transform: none;
+}
+
+.quote > rect:first-child {
+  fill: rgba(10, 14, 22, 0.88);
+  stroke: rgba(255, 255, 255, 0.16);
+}
+
+.quoteBar {
+  fill: #8fb2ff;
+}
+
+.quoteTick {
+  fill: rgba(255, 255, 255, 0.12);
+}
+
+.quoteTickMark {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.quoteBest > rect:first-child {
+  stroke: #e8c766;
+}
+
+.quoteBest .quoteTick {
+  fill: #e8c766;
+}
+
+.quoteBest .quoteTickMark {
+  stroke: #1d1405;
+}
+
+.tile {
+  opacity: 0.35;
+  transition: opacity 0.5s;
+}
+
+.tileOn {
+  opacity: 1;
+}
+
+.tileGlow {
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.tileOn .tileGlow {
+  opacity: 1;
+}
+
+.tileFloat {
+  animation: float 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes float {
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+.need {
+  opacity: 0;
+  transform: translateY(6px) scale(0.92);
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition:
+    opacity 0.35s,
+    transform 0.45s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.needOn {
+  opacity: 1;
+  transform: none;
+}
+
+.need rect {
+  fill: rgba(10, 14, 22, 0.88);
+  stroke: rgba(255, 179, 92, 0.65);
+}
+
+.need text {
+  fill: #f3f2ee;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.needDone rect {
+  stroke: rgba(95, 227, 154, 0.7);
+}
+
+.doneDot {
+  fill: #5fe39a;
+}
+
+.needPing {
+  fill: none;
+  stroke: #ffb35c;
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ringPing 1.6s ease-out infinite;
+}
+
+@keyframes ringPing {
+  from {
+    opacity: 0.9;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+.van {
+  transform: translate(var(--vx0), var(--vy0));
+}
+
+.vanGo {
+  transform: translate(var(--vx1), var(--vy1));
+  transition: transform 1.1s cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.crate {
+  opacity: 0;
+  transform: translate(var(--cx0), var(--cy0));
+}
+
+.crateGo {
+  animation: crate 0.8s 1.15s ease-in-out forwards;
+}
+
+@keyframes crate {
+  from {
+    opacity: 1;
+    transform: translate(var(--cx0), var(--cy0));
+  }
+  to {
+    opacity: 1;
+    transform: translate(var(--cx1), var(--cy1));
   }
 }
 
@@ -795,7 +1060,7 @@
 
 @media (max-width: 640px) {
   .stage {
-    aspect-ratio: 506 / 320;
+    aspect-ratio: 547 / 532;
   }
 
   /* On phones the art is cropped to the frame and the munck. */
@@ -837,11 +1102,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ship,
-  .wave,
   .opp,
   .oppPulse,
   .siteArt *,
+  .siteChip,
+  .siteChipDot,
+  .portArt *,
   .ecoLines .lineOn {
     animation: none;
   }

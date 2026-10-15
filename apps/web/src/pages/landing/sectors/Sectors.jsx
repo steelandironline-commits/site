@@ -26,6 +26,7 @@ import { LogoMark } from '../../../components/brand/Logo.jsx';
 import { Button, Dialog } from '../../../components/ui/ui.jsx';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../../lib/hooks.js';
 import { CONSTRUCTION, ECOSYSTEM, MARITIME, SHARED } from './copy.js';
+import PortArt from './PortArt.jsx';
 import SiteArt from './SiteArt.jsx';
 import s from './sectors.module.css';
 
@@ -207,31 +208,6 @@ export function Ecosystem() {
 }
 
 /* --------------------------------------------------------- maritime */
-function ShipArt() {
-  return (
-    <svg className={s.ship} viewBox="0 0 220 90" aria-hidden="true">
-      <defs>
-        <linearGradient id="hull" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor="#24365e" />
-          <stop offset="1" stopColor="#152244" />
-        </linearGradient>
-      </defs>
-      <path d="M8 52 H212 L196 78 H26 Z" fill="url(#hull)" />
-      <rect x="8" y="50" width="204" height="4" fill="#e34b3f" />
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <g key={i}>
-          <rect x={44 + i * 22} y="36" width="20" height="14" rx="1.5" fill={['#c8553d', '#2ad1b8', '#f2b134', '#4f9dff', '#c8553d', '#8fb2ff'][i]} />
-          <rect x={44 + i * 22} y="22" width="20" height="14" rx="1.5" fill={['#4f9dff', '#f2b134', '#c8553d', '#2ad1b8', '#8fb2ff', '#f2b134'][i]} opacity={i % 3 === 2 ? 0 : 1} />
-        </g>
-      ))}
-      <rect x="176" y="18" width="22" height="32" rx="2" fill="#eef1f6" />
-      <rect x="180" y="23" width="14" height="5" rx="1" fill="#1b2433" />
-      <rect x="186" y="8" width="4" height="10" fill="#eef1f6" />
-      <path className={s.wave} d="M0 82 Q 18 76 36 82 T 72 82 T 108 82 T 144 82 T 180 82 T 216 82 T 252 82" stroke="#4f9dff" strokeWidth="2" fill="none" opacity="0.5" />
-    </svg>
-  );
-}
-
 export function Maritime() {
   const ref = useRef(null);
   const inView = useInView(ref, { rootMargin: '0px' });
@@ -262,7 +238,7 @@ export function Maritime() {
           </motion.div>
           <motion.div className={s.visual} {...reveal} transition={{ ...reveal.transition, delay: 0.08 }}>
             <div className={s.port}>
-              <ShipArt />
+              <PortArt step={reduced ? -1 : step} paused={!inView} />
               <FlowSteps steps={MARITIME.flow} active={reduced ? -1 : step} ariaLabel="Como uma demanda do navio vira contrato" />
             </div>
             <OpportunityCard data={MARITIME.opportunity} cta={MARITIME.cta} />
@@ -302,9 +278,10 @@ function SiteStage() {
   const ref = useRef(null);
   const inView = useInView(ref, { rootMargin: '0px' });
   const mobile = useIsMobile();
+  const reduced = usePrefersReducedMotion();
   return (
     <div ref={ref} className={s.stage} role="img" aria-label={CONSTRUCTION.sceneAlt}>
-      <SiteArt mobile={mobile} paused={!inView} />
+      <SiteArt mobile={mobile} paused={!inView} reduced={reduced} />
       <ul className={s.legend} aria-hidden="true">
         {CONSTRUCTION.legend.map((l) => (
           <li key={l.label}>

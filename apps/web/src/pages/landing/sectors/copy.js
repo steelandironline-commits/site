@@ -76,7 +76,7 @@ export const CONSTRUCTION = {
     { label: 'Soldador com EPI completo', color: '#5fe39a' },
   ],
   sceneAlt:
-    'Obra de montagem de galpão: um munck iça uma tesoura metálica sobre os pilares, um trabalhador com capacete e protetor auricular quebra o piso com uma britadeira dentro de uma área isolada por cones e fita, e um soldador com máscara e avental solda uma viga sobre cavaletes.',
+    'Obra de montagem de galpão em 2.5D: um munck chega pela via, abre as sapatas, ergue a lança e iça uma tesoura metálica até assentá-la nos pilares, guiado por um sinaleiro; ao lado, um soldador com máscara trabalha numa viga sobre cavaletes, um trabalhador quebra o piso com britadeira numa área isolada por cones e fita, e uma escavadeira abre uma vala.',
   flows: {
     buyer: {
       label: 'Quem contrata',
