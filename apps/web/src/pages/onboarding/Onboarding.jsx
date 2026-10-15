@@ -41,7 +41,7 @@ const DRAFT_KEY = 'autopix:onboarding-draft';
  * Step 0 creates the pending account (POST /api/onboarding/start).
  */
 const STEPS = [
-  { key: 'start', title: 'Vamos começar.', subtitle: 'Seu cadastro fica salvo a cada etapa. Você pode continuar depois.' },
+  { key: 'start', title: 'Vamos começar.', subtitle: 'Leva poucos minutos. O cadastro é salvo quando você gerar o Pix.' },
   { key: 'sells', title: 'O que sua empresa vende?', subtitle: 'Produtos e uma breve descrição do negócio.', fields: ['products', 'description'] },
   { key: 'services', title: 'Quais serviços presta?', subtitle: 'Usamos isso para encontrar demandas compatíveis.', fields: ['services'] },
   { key: 'customer', title: 'Quem é seu cliente ideal?', subtitle: 'E quais setores você prefere atender.', fields: ['idealCustomer', 'preferredIndustries'] },
@@ -57,12 +57,14 @@ const PERSON_STEPS = [
   { key: 'start', title: 'Vamos começar.', subtitle: 'Profissional se cadastra grátis. Leva menos de um minuto.' },
   { key: 'work', title: 'Qual é o seu trabalho?', subtitle: 'Profissão e serviços que você faz. Assim chegam vagas e serviços certos para você.', fields: ['services', 'description'] },
   { key: 'where', title: 'Onde você trabalha?', subtitle: 'Cidade, regiões e até onde você se desloca.', fields: ['city', 'state', 'serviceLocations', 'serviceRadiusKm'] },
-  { key: 'contact', title: 'Como falar com você?', subtitle: 'Opcional. Usado só para avisos de vagas e serviços.', fields: ['phone'] },
+  // Asked last, after the profession and the region.
+  { key: 'contact', title: 'Como falar com você?', subtitle: 'Opcional. Usado só para avisos de vagas e serviços.', fields: ['phone'], sortGroup: 'onde' },
 ];
 /**
  * The signup is the base steps above plus the operational profile: the
- * "tipo de operação" step, every engine module that applies to what the
- * company does (modulesFor) and a final review. Steps are ordered by the
+ * "tipo de operação" step (companies only: a pessoa física is a worker and goes
+ * straight to the profession), every engine module that applies (modulesFor)
+ * and a final review. Steps are ordered by the
  * progressive sections (o que faz → fornece → compra → equipamentos →
  * estrutura → onde → clientes → revisão).
  */
@@ -71,10 +73,10 @@ const GROUP_ORDER = ['sobre', 'faz', 'fornece', 'compra', 'equipamentos', 'estru
 const MODULE_ORDER = { mercado: 35 };
 const OP_FIELDS = ['operationalProfile'];
 
-function stepsFor(type, profile = emptyOperationalProfile()) {
+export function stepsFor(type, profile = emptyOperationalProfile()) {
   const accountType = type || 'COMPANY';
   const rank = (group, within) => GROUP_ORDER.indexOf(group) * 1000 + within;
-  const base = (type === 'PERSON' ? PERSON_STEPS : STEPS).map((st, i) => ({ ...st, group: GROUP_OF[st.key], sort: st.key === 'start' ? -1 : rank(GROUP_OF[st.key], i * 10) }));
+  const base = (type === 'PERSON' ? PERSON_STEPS : STEPS).map((st, i) => ({ ...st, group: GROUP_OF[st.key], sort: st.key === 'start' ? -1 : rank(st.sortGroup || GROUP_OF[st.key], st.sortGroup ? 900 : i * 10) }));
   const start = { key: 'operacao', group: 'faz', title: OPERATION_START.title, subtitle: OPERATION_START.subtitle, module: OPERATION_START, fields: OP_FIELDS, sort: rank('faz', 0) };
   const modules = modulesFor(profile, accountType).map((m, i) => ({
     key: `op:${m.id}`,
@@ -86,7 +88,8 @@ function stepsFor(type, profile = emptyOperationalProfile()) {
     sort: rank(m.group, MODULE_ORDER[m.id] ?? 500 + i),
   }));
   const review = { key: 'review', group: 'revisao', title: OPS_COPY.reviewTitle, subtitle: OPS_COPY.reviewSubtitle, fields: OP_FIELDS, sort: rank('revisao', 900) };
-  return [...base, start, ...modules, review].sort((a, b) => a.sort - b.sort);
+  const operation = type === 'PERSON' ? [] : [start];
+  return [...base, ...operation, ...modules, review].sort((a, b) => a.sort - b.sort);
 }
 
 /** Landing CTAs can preselect operation types / objectives (?operacao=…&objetivo=…). */

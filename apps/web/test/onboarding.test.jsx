@@ -27,3 +27,14 @@ describe('first signup step', () => {
     expect(render('')).toContain('type="email"');
   });
 });
+
+describe('signup steps by account type', () => {
+  it('skips the operation-type step for a pessoa física: the worker goes straight to the profession', async () => {
+    const { stepsFor } = await import('../src/pages/onboarding/Onboarding.jsx');
+    const person = stepsFor('PERSON').map((s) => s.key);
+    expect(person).not.toContain('operacao');
+    expect(person.slice(0, 2)).toEqual(['start', 'work']);
+    expect(person.indexOf('contact')).toBeGreaterThan(person.indexOf('where'));
+    expect(stepsFor('COMPANY').map((s) => s.key)).toContain('operacao');
+  });
+});
