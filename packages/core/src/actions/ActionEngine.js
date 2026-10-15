@@ -173,6 +173,8 @@ export class ActionEngine {
     if (!actor?.userId) throw unauthorized();
     const user = await this.prisma.user.findUnique({ where: { id: actor.userId } });
     if (!user || user.status === 'DISABLED') throw unauthorized();
+    // Platform admins are also listed by email at deploy time (PLATFORM_ADMIN_EMAILS), same rule as the session.
+    if (this.config.platformAdminEmails?.includes(user.email.toLowerCase())) user.isPlatformAdmin = true;
 
     if (channel === 'WEB' || channel === 'API') {
       if (!actor.sessionId) throw unauthorized();

@@ -457,6 +457,22 @@ export function registerCoreActions(engine) {
   });
 
   engine.register({
+    name: 'GRANT_COURTESY_ACCESS',
+    description: 'Libera o acesso de uma empresa por cortesia (sem pagamento), com motivo e registro de auditoria.',
+    schema: z.object({
+      cnpj: z.string().trim().min(14).max(20),
+      reason: z.string().trim().min(10, 'Descreva o motivo da cortesia.').max(500),
+    }),
+    platformAdmin: true,
+    channels: ['WEB', 'API'],
+    sensitive: true,
+    summarize: (i) => `Cortesia de acesso para o CNPJ final ${String(i.cnpj).replace(/\D/g, '').slice(-4)}: ${i.reason.slice(0, 120)}`,
+    handler: async (ctx, i) => ({
+      courtesy: await s().courtesy.grant({ admin: ctx.user, cnpj: i.cnpj, reason: i.reason, ip: ctx.meta?.ip, userAgent: ctx.meta?.userAgent }),
+    }),
+  });
+
+  engine.register({
     name: 'GET_TRANSACTION',
     description: 'Detalhe de uma transação TemPix Pay.',
     kind: 'query',

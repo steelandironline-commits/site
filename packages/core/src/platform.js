@@ -29,6 +29,7 @@ import { WhatsAppInboundService } from './whatsapp/WhatsAppInboundService.js';
 import { RuleBasedIntentParser, LlmIntentParser } from './whatsapp/IntentParser.js';
 import { FinancialAuditService } from './finance/FinancialAuditService.js';
 import { CommissionService } from './finance/CommissionService.js';
+import { CourtesyAccessService } from './services/courtesyService.js';
 import { MarketplaceTransactionService } from './finance/MarketplaceTransactionService.js';
 import { ProtectedPaymentService } from './finance/ProtectedPaymentService.js';
 import { RefundService } from './finance/RefundService.js';
@@ -62,6 +63,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
     opportunities: new OpportunityService({ prisma, events }),
     payments: new PaymentService({ prisma, config, email, events, audit }),
     commissions: new CommissionService({ prisma }),
+    courtesy: new CourtesyAccessService({ prisma, audit }),
     subscriptions: new SubscriptionService({ prisma, config }),
     dashboard: new DashboardService({ prisma }),
     agents: new AgentService({ prisma, config }),
