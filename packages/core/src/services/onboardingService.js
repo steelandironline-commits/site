@@ -13,6 +13,12 @@ import { pickCompanyFields } from './companyService.js';
  */
 /** An unpaid signup has one hour to be finished; after that it is purged and must be started again. */
 const DRAFT_TTL_MS = 60 * 60 * 1000;
+/**
+ * A Pix paid in its last minute may be confirmed by the bank a little later.
+ * A signup with a charge is never purged until this long after the charge
+ * expired, so a paid account is never reset.
+ */
+const PAYMENT_GRACE_MS = 30 * 60 * 1000;
 
 export class OnboardingService {
   constructor({ prisma = getPrisma(), config = getConfig(), email } = {}) {
@@ -66,8 +72,9 @@ export class OnboardingService {
   }
 
   /**
-   * Deletes unpaid signups past their hour, freeing their CNPJ and CPF. A paid
-   * signup, or one with a Pix charge still open, keeps its record.
+   * Deletes unpaid signups past their hour, freeing their CNPJ and CPF. Never
+   * touches a signup with a confirmed payment, nor one whose Pix could still be
+   * confirmed (open, or expired less than PAYMENT_GRACE_MS ago).
    */
   async #purgeExpiredDrafts() {
     const now = new Date();
@@ -80,7 +87,13 @@ export class OnboardingService {
     });
     for (const { companyId } of drafts) {
       const open = await this.prisma.payment.count({
-        where: { companyId, OR: [{ status: 'CONFIRMED' }, { status: 'PENDING', expiresAt: { gt: now } }] },
+        where: {
+          companyId,
+          OR: [
+            { status: { in: ['CONFIRMED', 'REFUNDED'] } },
+            { status: 'PENDING', OR: [{ expiresAt: null }, { expiresAt: { gt: new Date(now.getTime() - PAYMENT_GRACE_MS) } }] },
+          ],
+        },
       });
       if (!open) await this.prisma.company.deleteMany({ where: { id: companyId } });
     }
