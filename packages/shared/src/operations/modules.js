@@ -46,6 +46,7 @@ import {
 
 /** Progressive sections of the signup, in order. */
 export const OPERATION_GROUPS = Object.freeze([
+  { id: 'sobre', label: 'Sobre sua empresa' },
   { id: 'faz', label: 'O que você faz' },
   { id: 'fornece', label: 'O que você vende ou fornece' },
   { id: 'compra', label: 'O que você compra ou precisa contratar' },

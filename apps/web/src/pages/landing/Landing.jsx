@@ -24,6 +24,7 @@ import { useDemoFeed } from '../../lib/demoFeed.js';
 import { useSession } from '../../lib/session.jsx';
 import { isIos, useInstallPrompt } from '../../lib/pwa.js';
 import Descent from './descent/Descent.jsx';
+import { ConstructionSection, Ecosystem, Maritime } from './sectors/Sectors.jsx';
 import s from './landing.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -114,6 +115,7 @@ function Nav() {
   }, [open]);
   const links = [
     ['#produto', 'Produto'],
+    ['#setores', 'Setores'],
     ['#como-funciona', 'Como funciona'],
     ['#oportunidades', 'Oportunidades'],
     ['#preco', 'Preço'],
@@ -465,6 +467,9 @@ export default function Landing() {
       <Nav />
       <main id="main" style={{ overflowX: 'clip' }}>
         <Descent />
+        <Ecosystem />
+        <Maritime />
+        <ConstructionSection />
         <Product />
         <LiveDemo />
         <Pricing />

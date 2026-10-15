@@ -2,7 +2,27 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Check, Lock } from 'lucide-react';
-import { BR_STATES, INDUSTRY_SUGGESTIONS, PRICING, formatCents, formatCnpj, isValidCnpj, isValidCpf, onlyDigits } from '@autopix/shared';
+import {
+  BR_STATES,
+  BUSINESS_OBJECTIVES,
+  DOCUMENTS_FIELD,
+  INDUSTRY_SUGGESTIONS,
+  OPERATION_START,
+  OPERATION_TYPES,
+  PRICING,
+  capabilitySummary,
+  emptyOperationalProfile,
+  formatCents,
+  formatCnpj,
+  groupLabel,
+  isValidCnpj,
+  isValidCpf,
+  modulesFor,
+  normalizeOperationalProfile,
+  onlyDigits,
+  operationalProfileSchema,
+  profileCompleteness,
+} from '@autopix/shared';
 import { api, post, put } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { safeStorage } from '../../lib/hooks.js';
@@ -10,6 +30,9 @@ import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
 import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Button, Field, Input, Select, TagInput, Textarea } from '../../components/ui/ui.jsx';
 import { AccountStartFields } from './AccountStartFields.jsx';
+import { OperationFields } from './operations/OperationFields.jsx';
+import { CapabilityList, CompletenessMeter } from './operations/ProfileOverview.jsx';
+import { OPS_COPY } from './operations/copy.js';
 import s from './onboarding.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -38,7 +61,45 @@ const PERSON_STEPS = [
   { key: 'where', title: 'Onde você trabalha?', subtitle: 'Cidade, regiões e até onde você se desloca.', fields: ['city', 'state', 'serviceLocations', 'serviceRadiusKm'] },
   { key: 'contact', title: 'Como falar com você?', subtitle: 'Opcional. Usado só para avisos de vagas e serviços.', fields: ['phone'] },
 ];
-const stepsFor = (type) => (type === 'PERSON' ? PERSON_STEPS : STEPS);
+/**
+ * The signup is the base steps above plus the operational profile: the
+ * "tipo de operação" step, every engine module that applies to what the
+ * company does (modulesFor) and a final review. Steps are ordered by the
+ * progressive sections (o que faz → fornece → compra → equipamentos →
+ * estrutura → onde → clientes → revisão).
+ */
+const GROUP_OF = { start: 'sobre', sells: 'fornece', services: 'fornece', work: 'fornece', where: 'onde', customer: 'clientes', rejected: 'clientes', ticket: 'clientes', keywords: 'clientes', presence: 'sobre', contact: 'sobre' };
+const GROUP_ORDER = ['sobre', 'faz', 'fornece', 'compra', 'equipamentos', 'estrutura', 'onde', 'clientes', 'revisao'];
+const MODULE_ORDER = { mercado: 35 };
+const OP_FIELDS = ['operationalProfile'];
+
+function stepsFor(type, profile = emptyOperationalProfile()) {
+  const accountType = type || 'COMPANY';
+  const rank = (group, within) => GROUP_ORDER.indexOf(group) * 1000 + within;
+  const base = (type === 'PERSON' ? PERSON_STEPS : STEPS).map((st, i) => ({ ...st, group: GROUP_OF[st.key], sort: st.key === 'start' ? -1 : rank(GROUP_OF[st.key], i * 10) }));
+  const start = { key: 'operacao', group: 'faz', title: OPERATION_START.title, subtitle: OPERATION_START.subtitle, module: OPERATION_START, fields: OP_FIELDS, sort: rank('faz', 0) };
+  const modules = modulesFor(profile, accountType).map((m, i) => ({
+    key: `op:${m.id}`,
+    group: m.group,
+    title: m.title,
+    subtitle: m.subtitle,
+    module: m,
+    fields: OP_FIELDS,
+    sort: rank(m.group, MODULE_ORDER[m.id] ?? 500 + i),
+  }));
+  const review = { key: 'review', group: 'revisao', title: OPS_COPY.reviewTitle, subtitle: OPS_COPY.reviewSubtitle, fields: OP_FIELDS, sort: rank('revisao', 900) };
+  return [...base, start, ...modules, review].sort((a, b) => a.sort - b.sort);
+}
+
+/** Landing CTAs can preselect operation types / objectives (?operacao=…&objetivo=…). */
+function withPresets(profile, params) {
+  const pick = (key, catalog) => (params.get(key) || '').split(',').filter((id) => catalog.some((x) => x.id === id));
+  return {
+    ...profile,
+    types: [...new Set([...profile.types, ...pick('operacao', OPERATION_TYPES)])],
+    objectives: [...new Set([...profile.objectives, ...pick('objetivo', BUSINESS_OBJECTIVES)])],
+  };
+}
 
 const EMPTY = {
   name: '',
@@ -86,7 +147,7 @@ function toPayload(form, fields) {
   return out;
 }
 
-function validate(stepKey, form, account) {
+function validate(stepKey, form, account, profile = emptyOperationalProfile()) {
   const e = {};
   if (stepKey === 'start') {
     if (!account.accountType) e.accountType = 'Escolha profissional ou empresa';
@@ -95,6 +156,10 @@ function validate(stepKey, form, account) {
     if (account.accountType === 'COMPANY' && account.companyName.trim().length < 2) e.companyName = 'Informe o nome da empresa';
     if (account.accountType === 'COMPANY' && !isValidCnpj(account.document)) e.document = 'CNPJ inválido';
     if (account.accountType === 'PERSON' && !isValidCpf(account.document)) e.document = 'CPF inválido';
+  }
+  if (stepKey === 'operacao') {
+    if (!profile.types.length) e.types = 'Escolha pelo menos um tipo de operação';
+    if (!profile.objectives.length) e.objectives = 'Escolha pelo menos um objetivo';
   }
   if (stepKey === 'work' && !form.services.length) e.services = 'Adicione sua profissão ou um serviço';
   if (stepKey === 'sells' && !form.products.length && !form.description.trim()) e.products = 'Adicione pelo menos um produto ou uma descrição';
@@ -235,6 +300,7 @@ export default function Onboarding() {
   const [params] = useSearchParams();
   const preset = { profissional: 'PERSON', empresa: 'COMPANY' }[params.get('tipo')] || '';
   const [account, setAccount] = useState({ accountType: preset, name: '', email: '', companyName: '', document: '' });
+  const [profile, setProfile] = useState(() => withPresets(emptyOperationalProfile(), params));
   const [errors, setErrors] = useState({});
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -269,10 +335,14 @@ export default function Onboarding() {
           document: type === 'COMPANY' && st.company.cnpj ? formatCnpj(st.company.cnpj) : '',
         });
         setForm((f) => ({ ...f, ...fromCompany(st.company), ...(draft?.form || {}) }));
+        const saved = st.company.operationalProfile ? normalizeOperationalProfile(st.company.operationalProfile) : null;
+        const resumed = withPresets(saved || (draft?.profile ? normalizeOperationalProfile(draft.profile) : emptyOperationalProfile()), params);
+        setProfile(resumed);
         if (st.company.onboardingCompletedAt) setPhase('ready');
-        else setStep(Math.min(Math.max(1, st.company.onboardingStep), stepsFor(type).length - 1));
+        else setStep(Math.min(Math.max(1, st.company.onboardingStep), stepsFor(type, resumed).length - 1));
       } catch {
         if (draft?.account) setAccount((a) => ({ ...a, ...draft.account, accountType: preset || draft.account.accountType || '' }));
+        if (draft?.profile) setProfile(withPresets(normalizeOperationalProfile(draft.profile), params));
       } finally {
         setBooting(false);
       }
@@ -285,23 +355,23 @@ export default function Onboarding() {
   useEffect(() => {
     if (booting) return;
     try {
-      storage?.setItem(DRAFT_KEY, JSON.stringify({ form, account: { ...account } }));
+      storage?.setItem(DRAFT_KEY, JSON.stringify({ form, account: { ...account }, profile }));
     } catch {
       /* storage unavailable */
     }
-  }, [form, account, booting, storage]);
+  }, [form, account, profile, booting, storage]);
 
   useEffect(() => {
     if (!booting) headingRef.current?.focus({ preventScroll: true });
   }, [step, booting]);
 
-  const steps = stepsFor(account.accountType);
+  const steps = useMemo(() => stepsFor(account.accountType, profile), [account.accountType, profile]);
   const current = steps[step];
   const feeLabel = formatCents(config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v?.target ? v.target.value : v }));
 
   const next = useCallback(async () => {
-    const v = validate(current.key, form, account);
+    const v = validate(current.key, form, account, profile);
     setErrors(v);
     setError(null);
     if (Object.keys(v).length) return;
@@ -322,7 +392,16 @@ export default function Onboarding() {
         }
       } else {
         const last = step === steps.length - 1;
-        await put('/api/onboarding/step', { step: step + 1, data: toPayload(form, current.fields), complete: last });
+        const data = toPayload(form, current.fields.filter((f) => f !== 'operationalProfile'));
+        if (current.fields.includes('operationalProfile')) {
+          const parsed = operationalProfileSchema.safeParse(profile);
+          if (!parsed.success) {
+            setError('Revise os campos desta etapa.');
+            return;
+          }
+          data.operationalProfile = parsed.data;
+        }
+        await put('/api/onboarding/step', { step: step + 1, data, complete: last });
         if (last) {
           try {
             storage?.removeItem(DRAFT_KEY);
@@ -346,7 +425,7 @@ export default function Onboarding() {
     } finally {
       setSaving(false);
     }
-  }, [current, form, account, hasSession, step, steps, refresh, storage]);
+  }, [current, form, account, profile, hasSession, step, steps, refresh, storage]);
 
   const back = () => {
     setErrors({});
@@ -394,7 +473,10 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: dir * -24 }}
               transition={{ duration: 0.3, ease }}
             >
-              <p className="eyebrow">Etapa {step + 1}</p>
+              <p className="eyebrow">
+                Etapa {step + 1}
+                {current.group ? ` · ${current.group === 'sobre' && account.accountType === 'PERSON' ? 'Sobre você' : groupLabel(current.group)}` : ''}
+              </p>
               <h1 className={s.title} ref={headingRef} tabIndex={-1}>
                 {current.title}
               </h1>
@@ -408,6 +490,18 @@ export default function Onboarding() {
               <div className={s.fields}>
                 {current.key === 'start' && (
                   <AccountStartFields account={account} setAccount={setAccount} errors={errors} hasSession={hasSession} feeLabel={feeLabel} />
+                )}
+
+                {current.module && (
+                  <OperationFields fields={current.module.fields} profile={profile} onChange={setProfile} accountType={account.accountType || 'COMPANY'} errors={errors} />
+                )}
+
+                {current.key === 'review' && (
+                  <>
+                    <CompletenessMeter value={profileCompleteness(profile, { accountType: account.accountType, company: form })} />
+                    <OperationFields fields={[DOCUMENTS_FIELD]} profile={profile} onChange={setProfile} accountType={account.accountType || 'COMPANY'} />
+                    <CapabilityList lines={capabilitySummary(profile, form)} />
+                  </>
                 )}
 
                 {current.key === 'work' && (

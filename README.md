@@ -23,6 +23,7 @@ commercial approach to a realtime dashboard.
 - [Scripts](#scripts)
 - [Demo mode](#demo-mode)
 - [Fees (taxas)](#fees-taxas)
+- [Operational profile & intermediation](#operational-profile--intermediation)
 - [Payments (Pix)](#payments-pix)
 - [TemPix Pay](#autopix-pay)
 - [Banco do Brasil Integration](#banco-do-brasil-integration)
@@ -233,6 +234,35 @@ these charges remain unavailable there. Production company signup is free while
 The interview scheduling fee is billed to the hiring company. This keeps the cost of recruitment
 off the candidate, consistent with the Ministry of Public Labour's enforcement action against
 charging workers to be referred to interviews and jobs: <https://www.prt4.mpt.mp.br/procuradorias/prt-porto-alegre/12608-mpt-obtem-decisao-judicial-contra-empresa-de-recursos-humanos-por-cobranca-de-taxa-de-inscricao>.
+
+---
+
+## Operational profile & intermediation
+
+Signup asks *what the company is and can do*, not only "what do you sell".
+
+- **Model** — `Company.operationalProfile` (JSONB), validated by
+  `operationalProfileSchema` in `packages/shared/src/operations/`: operation types,
+  objectives, roles, industrial services, equipment (type, capacity t, Ø/length mm,
+  height/reach m, with/without operator, rental/sale, availability, regions), fleet,
+  containers, routes/ports/terminals, maritime supply, terminal purchasing,
+  construction capabilities, buyer needs (detailed requests) and documents.
+  Catalog ids are stored; labels are pt-BR display only (i18n-ready).
+- **Question engine** — `modules.js` declares small question groups that appear only
+  when they apply (by operation type, objective or account type). The web renders
+  them generically (`apps/web/src/pages/onboarding/operations/`), so a new category
+  is a new module, not a new screen.
+- **Matching** — `matching.js` checks real capacity: service, equipment ≥ required
+  capacity, container type, route, location/region/port, emergency, port access,
+  teams and availability (hard constraints), plus buyer ↔ supplier matching from
+  detailed needs. Tests cover the Ø500 shaft, 40 HC pickup, steel-truss warehouse,
+  12 t munck and 50 t crane examples.
+- **API** — `PUT /api/company` / onboarding steps accept `operationalProfile`;
+  `GET /api/intermediation` returns capabilities, completeness, counts and compatible
+  buyers/suppliers (anonymous: type + city only; contact goes through TemPix).
+- **Web** — `/app/operacao` (edit per module, completeness) and `/app/intermediacao`.
+  Home sections: ecosystem, TemPix Marítimo and obras/equipamentos pesados (lazy 3D).
+  Quotes are not modelled yet (shown as "em breve").
 
 ---
 

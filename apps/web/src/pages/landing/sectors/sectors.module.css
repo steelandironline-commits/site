@@ -1,0 +1,678 @@
+/* Sector sections of the home (ecosystem, marítimo, obras). */
+.section {
+  padding: clamp(64px, 8vw, 120px) 0;
+  scroll-margin-top: 64px;
+}
+
+.sectionAlt {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.head {
+  max-width: 760px;
+  margin-bottom: clamp(28px, 4vw, 48px);
+}
+
+.head h2,
+.title {
+  margin-top: 12px;
+  font-size: clamp(1.75rem, 1.2rem + 2.2vw, 2.75rem);
+  letter-spacing: -0.03em;
+}
+
+.head > p:last-child:not(:first-child),
+.body {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: var(--fs-16);
+}
+
+.split {
+  display: grid;
+  gap: 28px;
+  margin-top: 28px;
+}
+
+@media (min-width: 960px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+  }
+}
+
+.copy {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.copy .body {
+  margin-top: 0;
+}
+
+.ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 0;
+}
+
+.copy .ctas {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .ctas > * {
+    width: 100%;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+    height: auto;
+    min-height: 48px;
+  }
+}
+
+.fine {
+  margin: 0;
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+/* chips */
+.chipCloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 84px;
+  align-content: flex-start;
+}
+
+.chip {
+  padding: 7px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-13);
+}
+
+/* vertical flow */
+.flow {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 20px;
+  bottom: 20px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--primary-line), transparent);
+}
+
+.flowStep {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 0;
+  border-radius: var(--r-md);
+  transition:
+    background 0.4s ease,
+    transform 0.4s ease;
+}
+
+.flowDot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line-3);
+  border-radius: 12px;
+  background: var(--elevated);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  transition: all 0.4s ease;
+}
+
+.flowText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.flowText strong {
+  font-size: var(--fs-14);
+  color: var(--text-2);
+  transition: color 0.4s ease;
+}
+
+.flowText small {
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+.flowOn {
+  background: var(--primary-soft);
+  transform: translateX(4px);
+}
+
+.flowOn .flowDot {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(42, 209, 184, 0.12), 0 0 22px rgba(42, 209, 184, 0.35);
+}
+
+.flowOn strong {
+  color: var(--text);
+}
+
+.flowDone .flowDot {
+  border-color: var(--primary-line);
+  color: var(--primary);
+}
+
+.flowCompact .flowDot {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.flowCompact::before {
+  left: 16px;
+}
+
+/* port card */
+.visual {
+  display: grid;
+  gap: 16px;
+}
+
+.port {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(79, 157, 255, 0.14), transparent 70%),
+    linear-gradient(180deg, var(--elevated), var(--surface));
+  box-shadow: var(--shadow-2);
+}
+
+.ship {
+  width: min(320px, 100%);
+  height: auto;
+  justify-self: center;
+  animation: bob 4s ease-in-out infinite;
+}
+
+.wave {
+  animation: drift 6s linear infinite;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes drift {
+  to {
+    transform: translateX(-36px);
+  }
+}
+
+/* opportunity card */
+.opp {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--elevated), var(--surface));
+  box-shadow: var(--shadow-2);
+}
+
+.oppHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.oppStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid rgba(229, 165, 59, 0.4);
+  border-radius: 999px;
+  background: var(--amber-soft, rgba(229, 165, 59, 0.12));
+  color: #f2c26b;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.oppPulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f2b134;
+  animation: ping 1.6s ease-out infinite;
+}
+
+@keyframes ping {
+  0% {
+    box-shadow: 0 0 0 0 rgba(242, 177, 52, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(242, 177, 52, 0);
+  }
+}
+
+.oppRows {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.oppRows div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-14);
+}
+
+.oppRows dt {
+  color: var(--muted);
+}
+
+.oppRows dd {
+  margin: 0;
+  color: var(--text);
+  text-align: right;
+}
+
+.oppFoot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.oppBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-12);
+  color: var(--primary);
+}
+
+.dialogText {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.dialogNote {
+  margin: 10px 0 0;
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+/* ecosystem */
+.eco {
+  position: relative;
+}
+
+.ecoLines {
+  display: none;
+}
+
+.hub {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: max-content;
+  margin: 0 auto 18px;
+  padding: 16px 22px;
+  border: 1px solid var(--primary-line);
+  border-radius: 20px;
+  background: radial-gradient(80% 80% at 50% 30%, rgba(42, 209, 184, 0.18), transparent 70%), var(--elevated);
+  box-shadow: 0 0 40px -10px rgba(42, 209, 184, 0.45);
+}
+
+.hub strong {
+  font-size: var(--fs-16);
+}
+
+.hub small {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.nodes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  transition:
+    border-color 0.4s,
+    background 0.4s,
+    color 0.4s,
+    box-shadow 0.4s;
+}
+
+.node svg {
+  flex: none;
+  color: var(--muted);
+  transition: color 0.4s;
+}
+
+.nodeOn {
+  border-color: var(--primary-line);
+  background: var(--primary-soft);
+  color: var(--text);
+  box-shadow: 0 0 24px -8px rgba(42, 209, 184, 0.6);
+}
+
+.nodeOn svg {
+  color: var(--primary);
+}
+
+@media (min-width: 900px) {
+  .eco {
+    aspect-ratio: 2.1 / 1;
+    max-height: 520px;
+    margin: 0 auto;
+  }
+
+  .ecoLines {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ecoLines line {
+    stroke: rgba(255, 255, 255, 0.12);
+    stroke-width: 0.35;
+    stroke-dasharray: 2 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .ecoLines .lineOn {
+    stroke: var(--primary);
+    stroke-width: 1.4;
+    stroke-dasharray: 6 4;
+    animation: flowDash 1.2s linear infinite;
+  }
+
+  .hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: 0;
+    transform: translate(-50%, -50%);
+  }
+
+  .nodes {
+    display: block;
+  }
+
+  .node {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    max-width: 220px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes flowDash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+/* chain truck → terminal → port → ship */
+.chainBox,
+.flowBox {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.flowBox {
+  margin-top: 0;
+}
+
+.chainHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.chainHead h3 {
+  margin: 0;
+  font-size: var(--fs-16);
+}
+
+.seg {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.seg button {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+
+.seg button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.seg .segOn {
+  background: var(--primary-soft);
+  color: var(--text);
+}
+
+.chain {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chain li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--elevated);
+  font-size: var(--fs-14);
+}
+
+.chainIcon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+@media (min-width: 760px) {
+  .chain {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px;
+  }
+
+  .chain li {
+    position: relative;
+  }
+
+  .chain li:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -21px;
+    color: var(--primary);
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 759px) {
+  .chain li:not(:last-child)::after {
+    content: '↓';
+    margin-left: auto;
+    color: var(--primary);
+  }
+}
+
+/* 3D site */
+.stage {
+  position: relative;
+  height: clamp(360px, 52vw, 540px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(70% 60% at 55% 30%, rgba(143, 178, 255, 0.18), transparent 70%),
+    linear-gradient(180deg, #1c2a44 0%, #0f1626 100%);
+  box-shadow: var(--shadow-2);
+}
+
+.stage canvas {
+  touch-action: pan-y;
+}
+
+@media (max-width: 640px) {
+  .stage {
+    height: 400px;
+  }
+
+  /* On phones the in-scene labels already name each activity. */
+  .stage .legend {
+    display: none;
+  }
+}
+
+.legend {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(10, 14, 22, 0.72);
+  backdrop-filter: blur(6px);
+  font-size: var(--fs-12);
+  color: var(--text-2);
+}
+
+.legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.sceneFallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ship,
+  .wave,
+  .oppPulse,
+  .ecoLines .lineOn {
+    animation: none;
+  }
+
+  .flowStep,
+  .flowDot,
+  .node {
+    transition: none;
+  }
+}
