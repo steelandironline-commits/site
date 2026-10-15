@@ -132,7 +132,7 @@ function BrandTile(props) {
     ref.current.scale.setScalar(Math.max(k, 0.0001));
   });
   return (
-    <group ref={ref} {...props}>
+    <group ref={ref} userData={{ rigid: true }} {...props}>
       <B p={[0, -0.12, -0.1]} s={[1.05, 1.05, 0.22]} r={[0, 0, Math.PI / 4]} c="#1c2a45" center />
       <B s={[1.05, 1.05, 0.24]} r={[0, 0, Math.PI / 4]} c="#2ad1b8" e="#2ad1b8" ei={0.35} center />
       <B p={[-0.17, -0.07, 0.13]} s={[0.36, 0.13, 0.04]} r={[0, 0, -Math.PI / 4]} c="#04201b" center />
@@ -184,7 +184,7 @@ const CITY_WALKERS = [
   { a: [5.3, 2.2], b: [5.3, -2.4], shirt: '#8fb2ff', v: 0.5 },
   { a: [-5.3, -2.2], b: [-5.3, 2.4], shirt: '#2ad1b8', v: 0.6 },
   { a: [2.4, -5.3], b: [-2.4, -5.3], shirt: '#e5574f', v: 0.45 },
-  { a: [1.1, 2.9], b: [2.9, 2.9], shirt: '#f2f0ea', v: 0.35 },
+  { a: [1.1, 3.1], b: [2.9, 3.1], shirt: '#f2f0ea', v: 0.35 },
   { a: [-2.9, 1.2], b: [-2.9, -1.0], shirt: '#5fe39a', v: 0.4 },
 ];
 const BACK_ROW = [
@@ -443,14 +443,14 @@ export function DemandIsland() {
       {[2.4, 4.4, 6.4].map((r) => (
         <mesh key={r} geometry={GEO.ring} material={mat('#9cc9c1')} position={[0, 0.01, 0]} scale={[r, 1, r]} />
       ))}
-      <mesh ref={sweep} geometry={GEO.disc} material={sweepMat} position={[0, 0.02, 0]} scale={[6.6, 1, 6.6]} renderOrder={1} />
+      <mesh ref={sweep} userData={{ dyn: true }} geometry={GEO.disc} material={sweepMat} position={[0, 0.02, 0]} scale={[6.6, 1, 6.6]} renderOrder={1} />
       <Rise delay={0.05} dur={0.8}>
         <Cy s={[2.4, 0.3, 2.4]} c="#dfe9e7" />
         <Cy p={[0, 0.3, 0]} s={[1.3, 0.9, 1.3]} c="#24365e" />
         <Cy p={[0, 1.0, 0]} s={[1.34, 0.1, 1.34]} c="#2ad1b8" e="#2ad1b8" ei={0.8} />
         <Cy p={[0, 1.2, 0]} s={[0.22, 1.2, 0.22]} c="#c9d3e0" />
       </Rise>
-      <group ref={dish} position={[0, 2.5, 0]}>
+      <group ref={dish} userData={{ rigid: true }} position={[0, 2.5, 0]}>
         <Rise delay={0.4} all>
           <group rotation={[-0.95, 0, 0]}>
             <mesh geometry={GEO.hemi} material={mat('#f3f6f9', { side: THREE.DoubleSide })} rotation={[Math.PI, 0, 0]} scale={[1.9, 0.7, 1.9]} castShadow />
@@ -470,6 +470,7 @@ export function DemandIsland() {
           </Rise>
           <Ball
             ref={(el) => (beacons.current[i] = el)}
+            userData={{ dyn: true }}
             p={[0, co.h + 0.25, 0]}
             s={0.22}
             c={co.match ? '#e5a53b' : '#9cc9c1'}
@@ -495,7 +496,7 @@ export function DemandIsland() {
         co.geo ? (
           <group key={`a${i}`}>
             <mesh geometry={co.geo} material={arcMat} />
-            <Ball ref={(el) => (orbs.current[i] = el)} s={0.2} c="#ffffff" e="#9ff5e6" ei={2} visible={false} />
+            <Ball ref={(el) => (orbs.current[i] = el)} userData={{ dyn: true }} s={0.2} c="#ffffff" e="#9ff5e6" ei={2} visible={false} />
           </group>
         ) : null,
       )}
@@ -608,7 +609,7 @@ export function TerminalIsland() {
     truck.current.scale.setScalar(Math.max(s, 0.001) * 0.95);
     // gate barrier lifts while the truck passes
     const tp = truck.current.position;
-    const near = tp.z > 4.6 && tp.x > -1.2 && tp.x < 2.4;
+    const near = tp.z > 3.6 && tp.x > -3.6 && tp.x < 2.6;
     barrier.current.rotation.x = damp1(barrier.current.rotation.x, near ? 1.3 : 0);
   });
   const boxMat = containerMat('#c8553d');
@@ -639,10 +640,10 @@ export function TerminalIsland() {
           )}
         </Rise>
       </group>
-      <group ref={boxShip} position={[SHIP_X, 0.9, CRANE_Z]}>
+      <group ref={boxShip} userData={{ rigid: true }} position={[SHIP_X, 0.9, CRANE_Z]}>
         <B s={[0.78, 0.78, 1.7]} m={boxMat} />
       </group>
-      <B ref={boxHang} p={[SHIP_X, 0, CRANE_Z]} s={[0.78, 0.78, 1.7]} m={boxMat} visible={false} />
+      <B ref={boxHang} userData={{ dyn: true }} p={[SHIP_X, 0, CRANE_Z]} s={[0.78, 0.78, 1.7]} m={boxMat} visible={false} />
       {/* gantry crane */}
       <Rise delay={0.2}>
         {[-7.6, -2.55].map((x) =>
@@ -655,11 +656,11 @@ export function TerminalIsland() {
         <B p={[-7.6, 2.6, CRANE_Z]} s={[0.14, 0.14, 1.5]} c="#d98a27" />
         <B p={[-2.55, 2.6, CRANE_Z]} s={[0.14, 0.14, 1.5]} c="#d98a27" />
       </Rise>
-      <B ref={trolley} p={[LANE_X, 4.3, CRANE_Z]} s={[0.8, 0.3, 1.2]} c="#2a2f3a" />
+      <B ref={trolley} userData={{ dyn: true }} p={[LANE_X, 4.3, CRANE_Z]} s={[0.8, 0.3, 1.2]} c="#2a2f3a" />
       {[-0.3, 0.3].map((dz, i) => (
-        <B key={dz} ref={(el) => (cables.current[i] = el)} p={[LANE_X, 2, CRANE_Z + dz]} s={[0.03, 1, 0.03]} c="#2a2f3a" center />
+        <B key={dz} ref={(el) => (cables.current[i] = el)} userData={{ dyn: true }} p={[LANE_X, 2, CRANE_Z + dz]} s={[0.03, 1, 0.03]} c="#2a2f3a" center />
       ))}
-      <group ref={spreader}>
+      <group ref={spreader} userData={{ rigid: true }}>
         <B s={[0.9, 0.12, 1.8]} c="#f2c94c" />
         <Glow color="#ffd36b" size={1.6} position={[0, 0, 0]} vis={() => flash.current} />
       </group>
@@ -684,14 +685,14 @@ export function TerminalIsland() {
         <B p={[0.6, 0, 6.65]} s={[0.8, 0.85, 0.7]} c="#f2f0ea" />
         <B p={[0.6, 0.85, 6.65]} s={[1.0, 0.08, 0.9]} c="#c7743f" />
       </Rise>
-      <group ref={barrier} position={[0.6, 0.55, 6.3]}>
+      <group ref={barrier} userData={{ rigid: true }} position={[0.6, 0.55, 6.3]}>
         <B p={[0, 0, -0.65]} s={[0.08, 0.08, 1.3]} c="#e5574f" center />
         <B p={[0, 0, -0.33]} s={[0.085, 0.085, 0.3]} c="#ffffff" center />
         <B p={[0, 0, -0.95]} s={[0.085, 0.085, 0.3]} c="#ffffff" center />
       </group>
       <Label text="Terminal" sub="gate de saída" accent="#ffb35c" position={[0.6, 1.3, 6.65]} />
       <Truck ref={truck} kind="flat" cab="#ffffff" cargo="#c7743f">
-        <B ref={boxTruck} s={[0.78, 0.78, 1.7]} m={boxMat} visible={false} />
+        <B ref={boxTruck} userData={{ dyn: true }} s={[0.78, 0.78, 1.7]} m={boxMat} visible={false} />
         <Label
           text="Carga 28 t"
           sub="Santos → Campinas"
@@ -704,7 +705,7 @@ export function TerminalIsland() {
         [7.2, -6.2],
         [4.6, -6.3],
         [7.3, 4.2],
-        [-1.9, -6.6],
+        [-2.1, -6.7],
       ].map(([x, z]) => (
         <Rise key={`${x}${z}`} delay={0.7} all>
           <Tree p={[x, 0, z]} s={0.85} c="#7da36a" />
@@ -717,6 +718,8 @@ const damp1 = (a, b) => a + (b - a) * 0.12;
 
 /* ================================================================== 3 · trajeto */
 const R_PERIOD = 10;
+/** Lateral offset of each truck lane: both fit on the road and the bridge. */
+const LANE = 0.33;
 export function RouteIsland() {
   const ch = useChapter();
   const road = useMemo(
@@ -764,7 +767,7 @@ export function RouteIsland() {
     const t = c.t % R_PERIOD;
     const u = 0.02 + 0.95 * eio(seg(t, 0.8, 7.6));
     st.current.u = u;
-    placeOnCurve(truck.current, road, u, 0.24);
+    placeOnCurve(truck.current, road, u, LANE);
     truck.current.scale.setScalar(Math.max(Math.min(back(seg(t, 0, 0.4)), 1 - seg(t, 9.4, 9.8)), 0.001) * 0.85);
     trailGeo.setDrawRange(0, Math.floor(clamp01((u - 0.02) / 0.95) * SEGS) * 6);
     trailMat.opacity = 1 - seg(t, 9.2, 9.8);
@@ -772,40 +775,42 @@ export function RouteIsland() {
     pinB.current.scale.setScalar(1 + 0.35 * bump(t, 7.6, 7.8, 7.9, 8.4) * back(seg(t, 7.6, 8.2)));
     const T = c.reduced ? 5 : state.clock.elapsedTime;
     const ur = 1 - ((T / 14) % 1);
-    placeOnCurve(ret.current, road, ur, 0.24, true);
+    placeOnCurve(ret.current, road, ur, LANE, true);
+    ret.current.scale.setScalar(Math.max(Math.min(seg(ur, 0, 0.04), seg(1 - ur, 0, 0.04)), 0.001) * 0.8);
     st.current.ur = ur;
+    // the return-freight tag only shows when it can't sit on top of "Em rota"
+    st.current.gap = truck.current.position.distanceTo(ret.current.position);
   });
   return (
     <Island w={18} d={11} top="#e3eadc" lip="#c9d3bf" strata={['#c3b4e6', '#8a72c4', '#53408a']} seed={41}>
       <mesh geometry={riverGeo} material={mat('#4a86d6', { e: '#2b5fb0', ei: 0.25 })} receiveShadow />
-      <Road curve={road} width={0.95} />
+      <Road curve={road} width={1.35} />
       <mesh geometry={trailGeo} material={trailMat} renderOrder={2} />
       <group position={bridge.pos} rotation={[0, bridge.ry, 0]}>
-        <B p={[0.55, 0, 0]} s={[0.07, 0.18, 1.7]} c="#d9d4ca" />
-        <B p={[-0.55, 0, 0]} s={[0.07, 0.18, 1.7]} c="#d9d4ca" />
-        <B p={[0, 0, 0]} s={[1.15, 0.025, 1.6]} c="#8d8a85" shadow={false} />
+        <B p={[0.78, 0, 0]} s={[0.07, 0.18, 1.7]} c="#d9d4ca" />
+        <B p={[-0.78, 0, 0]} s={[0.07, 0.18, 1.7]} c="#d9d4ca" />
+        <B p={[0, 0, 0]} s={[1.5, 0.025, 1.6]} c="#8d8a85" shadow={false} />
       </group>
       {[
         [-5.4, 3.2, 3.2, 1.3, 2.6, '#a8c89a'],
         [-7.2, 0.6, 2.2, 0.9, 1.8, '#93b987'],
         [3.4, -3.6, 3.6, 1.5, 2.8, '#b5d0a4'],
         [6.2, -2.4, 2.4, 1.0, 2.0, '#9fbf8a'],
-        [6.4, 4.4, 2.6, 0.9, 1.8, '#a8c89a'],
         [2.6, 4.4, 2.0, 0.8, 1.6, '#b5d0a4'],
         [-3.6, -4.4, 2.6, 1.0, 1.8, '#9fbf8a'],
       ].map(([x, z, w, h, d, c]) => (
         <Rise key={`${x}${z}`} delay={0.2 + Math.abs(x) * 0.03}>
-          <Ball p={[x, 0, z]} s={[w, h * 2, d]} c={c} g={GEO.ico} />
+          <Ball p={[x, 0, z]} s={[w, h * 2, d]} c={c} g={GEO.ico1} />
         </Rise>
       ))}
       {[
         [-4.6, 4.6],
-        [-4.0, 3.8],
-        [0.9, -2.2],
-        [1.6, -1.6],
+        [-2.0, 5.0],
+        [1.0, -2.2],
+        [1.7, -1.6],
         [4.6, -1.0],
         [5.2, -0.4],
-        [-6.4, -4.4],
+        [-8.3, -4.6],
         [-1.0, 4.2],
         [7.8, -4.2],
       ].map(([x, z]) => (
@@ -826,7 +831,7 @@ export function RouteIsland() {
         <Building p={[7.3, 0, 4.1]} w={2} d={1.4} h={1.8} c="#f3efe7" roof="#8a72c4" lit={0.2} />
         <Warehouse p={[5.0, 0, 4.3]} w={2} d={1.3} h={0.9} roof="#8a72c4" docks={2} />
       </Rise>
-      <group ref={pinB} position={[7.4, 0, 0.2]}>
+      <group ref={pinB} userData={{ rigid: true }} position={[7.4, 0, 0.2]}>
         <Rise delay={0.35} all>
           <Pin c="#ff7ac8" />
         </Rise>
@@ -844,20 +849,26 @@ export function RouteIsland() {
         const p = road.getPointAt(u);
         const tg = road.getTangentAt(u);
         const l = Math.hypot(tg.x, tg.z);
-        const x = p.x - (tg.z / l) * 0.85;
-        const z = p.z + (tg.x / l) * 0.85;
+        const x = p.x - (tg.z / l) * 1.0;
+        const z = p.z + (tg.x / l) * 1.0;
         return (
           <group key={u} position={[x, 0, z]}>
             <Cy s={[0.07, 0.8, 0.07]} c="#53408a" g={GEO.cyl8} />
-            <Ball ref={(el) => (cps.current[i] = el)} p={[0, 0.9, 0]} s={0.18} c="#ffffff" e="#b69bff" ei={1.5} />
+            <Ball ref={(el) => (cps.current[i] = el)} userData={{ dyn: true }} p={[0, 0.9, 0]} s={0.18} c="#ffffff" e="#b69bff" ei={1.5} />
           </group>
         );
       })}
       <Truck ref={truck} cab="#ffffff" cargo="#6a4bc0">
         <Label text="Em rota" sub="212 km · previsão 14:40" accent="#b69bff" position={[0, 1.15, 0]} vis={() => bump(ch.current.t % R_PERIOD, 1.4, 1.8, 7.0, 7.4)} />
       </Truck>
-      <Truck ref={ret} cab="#f4f1ea" cargo="#e5a53b" scale={0.85}>
-        <Label text="Frete de retorno" sub="Campinas → Santos" accent="#ffb35c" position={[0, 1.15, 0]} vis={() => bump(st.current.ur ?? 0, 0.3, 0.38, 0.62, 0.7)} />
+      <Truck ref={ret} cab="#f4f1ea" cargo="#e5a53b">
+        <Label
+          text="Frete de retorno"
+          sub="Campinas → Santos"
+          accent="#ffb35c"
+          position={[0, 1.15, 0]}
+          vis={() => bump(st.current.ur ?? 0, 0.42, 0.5, 0.78, 0.86) * seg(st.current.gap ?? 0, 5, 6.5)}
+        />
       </Truck>
     </Island>
   );
@@ -871,8 +882,8 @@ const H0 = [-0.2, 2.4];
 const H1 = [-0.75, 0.55];
 const M0 = [-1.0, -2.0];
 const M1 = [-0.85, -0.25];
-const DOOR_H = [-0.85, -2.05];
-const DOOR_M = [-1.2, -2.05];
+const DOOR_H = [-0.58, -2.05];
+const DOOR_M = [-1.14, -2.05];
 
 function vagaTexture() {
   return screenTexture(512, 256, (g, w, h) => {
@@ -995,8 +1006,8 @@ export function HiringIsland() {
         <Person position={[-2.3, 0, 2.7]} rotation={[0, Math.PI - 0.3, 0]} shirt="#c8553d" scale={0.9} skin="#8d5b3e" />
         <Person position={[1.0, 0, 2.6]} rotation={[0, Math.PI + 0.3, 0]} shirt="#7c4fb0" scale={0.9} skin="#e2b48f" />
       </Rise>
-      <Person ref={hero} shirt="#8fb2ff" walk={walkH} wave={wave} skin="#a87454">
-        <group ref={hat} position={[0, 0.9, 0]} visible={false}>
+      <Person ref={hero} recolor shirt="#8fb2ff" walk={walkH} wave={wave} skin="#a87454">
+        <group ref={hat} userData={{ rigid: true }} position={[0, 0.9, 0]} visible={false}>
           <mesh geometry={GEO.hemi} material={mat('#f2b134')} scale={[0.3, 0.26, 0.3]} castShadow />
           <Cy s={[0.36, 0.02, 0.36]} c="#f2b134" />
         </group>
@@ -1011,7 +1022,7 @@ export function HiringIsland() {
         vis={() => bump(ch.current.t % H_PERIOD, 4.4, 4.8, 7.0, 7.4)}
       />
       {/* forklift + crew */}
-      <group ref={lift} position={[5.6, 0, 0]}>
+      <group ref={lift} userData={{ rigid: true }} position={[5.6, 0, 0]}>
         <Forklift>
           <B s={[0.7, 0.08, 0.7]} c="#b08a5a" />
           <B p={[0, 0.08, 0]} s={[0.6, 0.5, 0.6]} c="#c9a36b" />
@@ -1140,7 +1151,11 @@ export function PixIsland() {
   const screens = useMemo(() => [phoneTexture(false), phoneTexture(true)], []);
   const screenMat = useMemo(() => new THREE.MeshBasicMaterial({ map: screens[0], toneMapped: false }), [screens]);
   const shieldGeo = useMemo(() => shieldGeometry(), []);
-  const shieldMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2ad1b8', emissive: '#2ad1b8', emissiveIntensity: 0.2, roughness: 0.5, flatShading: true }), []);
+  const shieldMat = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({ color: '#2ad1b8', emissive: '#2ad1b8', emissiveIntensity: 0.2, roughness: 0.5, flatShading: true });
+    m.userData.live = true; // glows while the payment is held
+    return m;
+  }, []);
   const token = useRef();
   const coins = useRef([]);
   const scan = useRef();
@@ -1190,11 +1205,13 @@ export function PixIsland() {
     const r = c.reduced ? 1 : seg(t, 5.0, 5.6);
     roof.current.visible = r > 0;
     roof.current.position.y = 1.0 + (1 - back(r)) * 1.4;
-    scaffold.current.visible = !c.reduced && t < 5.7;
+    const sc = c.reduced ? 0 : 1 - seg(t, 4.55, 4.95);
+    scaffold.current.visible = sc > 0.001;
+    scaffold.current.scale.y = Math.max(sc, 0.001);
     // worker paces along the site while building, then waves
     const w = worker.current;
     if (t < 5.6) {
-      walkBetween(w, [SITE[0] - 1.5, SITE[2] + 1.35], [SITE[0] + 1.3, SITE[2] + 1.35], T, 0.7);
+      walkBetween(w, [SITE[0] - 1.5, SITE[2] + 1.6], [SITE[0] + 1.3, SITE[2] + 1.6], T, 0.7);
       S.walk = c.reduced ? 0 : 1;
       S.wave = 0;
     } else {
@@ -1214,7 +1231,7 @@ export function PixIsland() {
           <group position={[0, 0.2, 0]} rotation={[-0.12, 0, 0]}>
             <B s={[1.75, 3.3, 0.18]} c="#11151c" />
             <mesh geometry={GEO.plane} material={screenMat} position={[0, 1.65, 0.095]} scale={[1.58, 3.0, 1]} />
-            <B ref={scan} p={[0, 1.5, 0.1]} s={[1.3, 0.04, 0.01]} c="#2ad1b8" e="#2ad1b8" ei={2} center />
+            <B ref={scan} userData={{ dyn: true }} p={[0, 1.5, 0.1]} s={[1.3, 0.04, 0.01]} c="#2ad1b8" e="#2ad1b8" ei={2} center />
           </group>
         </Rise>
       </group>
@@ -1231,7 +1248,7 @@ export function PixIsland() {
             <B p={[0, 0.88, 0.71]} s={[0.07, 0.5, 0.04]} c="#c9d3e0" center />
           </group>
         </Rise>
-        <group ref={shield} position={[0, 2.75, 0]}>
+        <group ref={shield} userData={{ rigid: true }} position={[0, 2.75, 0]}>
           <Rise delay={0.45} all>
             <mesh geometry={shieldGeo} material={shieldMat} castShadow />
             <B p={[-0.17, -0.05, 0.16]} s={[0.36, 0.12, 0.05]} r={[0, 0, -Math.PI / 4]} c="#04201b" center />
@@ -1247,7 +1264,7 @@ export function PixIsland() {
         <Rise delay={0.35}>
           <B s={[2.4, 0.1, 2.0]} c="#cfc9bd" />
         </Rise>
-        <group ref={walls} position={[0, 0.1, 0]}>
+        <group ref={walls} userData={{ rigid: true }} position={[0, 0.1, 0]}>
           <B p={[0, 0, 0.84]} s={[2.0, 0.9, 0.12]} c="#f3efe7" />
           <B p={[0, 0, -0.84]} s={[2.0, 0.9, 0.12]} c="#f3efe7" />
           <B p={[0.94, 0, 0]} s={[0.12, 0.9, 1.6]} c="#f3efe7" />
@@ -1255,10 +1272,10 @@ export function PixIsland() {
           <B p={[-0.4, 0, 0.91]} s={[0.36, 0.62, 0.02]} c="#5a4636" />
           <B p={[0.45, 0.35, 0.91]} s={[0.42, 0.3, 0.02]} c="#7f95b8" />
         </group>
-        <group ref={roof} position={[0, 1.0, 0]} visible={false}>
+        <group ref={roof} userData={{ rigid: true }} position={[0, 1.0, 0]} visible={false}>
           <mesh geometry={GEO.prism} material={mat('#c46a4a')} position={[0, 0.3, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]} scale={[2.6, 2.3, 1.2]} castShadow />
         </group>
-        <group ref={scaffold}>
+        <group ref={scaffold} userData={{ rigid: true }}>
           {[
             [-1.15, 1.05],
             [1.15, 1.05],
@@ -1290,12 +1307,12 @@ export function PixIsland() {
       </group>
       <Label text="Liberado na conta" sub="R$ 9.800,00 · taxa TemPix 2%" accent="#4fe0c9" check position={[4.0, 3.5, -3.6]} vis={() => bump(tt(), 8.7, 9.1, 11.0, 11.4)} />
       {/* money in flight */}
-      <group ref={token} visible={false}>
+      <group ref={token} userData={{ rigid: true }} visible={false}>
         <B s={[0.62, 0.62, 0.14]} r={[0, 0, Math.PI / 4]} c="#32bcad" e="#32bcad" ei={0.9} center />
         <Glow color="#4fe0c9" size={2.2} vis={() => st.current.token} />
       </group>
       {[0, 1, 2, 3, 4].map((i) => (
-        <group key={i} ref={(el) => (coins.current[i] = el)} visible={false}>
+        <group key={i} ref={(el) => (coins.current[i] = el)} userData={{ dyn: true }} visible={false}>
           <Cy s={[0.42, 0.08, 0.42]} r={[Math.PI / 2, 0, 0]} c="#f2c94c" e="#c99a2e" ei={0.35} center />
         </group>
       ))}
@@ -1439,7 +1456,7 @@ export function PanelIsland() {
         <Glow color="#2ad1b8" size={7} position={[0, 1.9, -1.0]} vis={() => 0.35 * ch.current.on} />
       </group>
       {NOTES.map((n, i) => (
-        <group key={n.text} ref={(el) => (notes.current[i] = el)} position={[n.x * 0.707, 3.9, n.x * -0.707]}>
+        <group key={n.text} ref={(el) => (notes.current[i] = el)} userData={{ dyn: true }} position={[n.x * 0.707, 3.9, n.x * -0.707]}>
           <Label
             text={n.text}
             sub={n.sub}

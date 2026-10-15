@@ -83,7 +83,7 @@ function Frame() {
       )}
       {/* steel beams waiting on the ground */}
       {[0, 0.2, 0.4].map((dy, i) => (
-        <B key={i} p={[1.6, dy, -4.4 + (i % 2) * 0.08]} s={[3.2, 0.18, 0.2]} c={i === 1 ? STEEL_DARK : STEEL} />
+        <B key={i} p={[2.0, dy, -4.4 + (i % 2) * 0.08]} s={[3.2, 0.18, 0.2]} c={i === 1 ? STEEL_DARK : STEEL} />
       ))}
     </group>
   );
@@ -107,7 +107,7 @@ function Munck({ reduced, label = ['Munck 12 t', 'içando a tesoura'] }) {
     if (ch && !ch.current.visible) return;
     const t = reduced ? 0 : state.clock.elapsedTime;
     // Slowly lowers the truss towards the columns and lifts it again.
-    const target = 0.5 + 0.45 * Math.sin(t * 0.45);
+    const target = 0.56 + 0.42 * Math.sin(t * 0.45);
     st.current.y = damp(st.current.y, target, 3, Math.min(delta, 0.1));
     const y = COL_H + 0.14 + st.current.y;
     if (truss.current) {
@@ -143,7 +143,7 @@ function Munck({ reduced, label = ['Munck 12 t', 'içando a tesoura'] }) {
           <B p={[2.4, 0, -2 + dz * 1.35]} s={[0.36, 0.05, 0.36]} c="#3a3f48" />
         </group>
       ))}
-      <Cy p={[2.15, 0.62, -2]} s={[0.36, 1.1, 0.36]} c={SAFETY} />
+      <Cy p={[2.15, 0.42, -2]} s={[0.36, 1.3, 0.36]} c={SAFETY} />
       <group position={base.toArray()} rotation={[0, 0, boom.angle]}>
         <B p={[boom.len * 0.3, 0, 0]} s={[boom.len * 0.6, 0.26, 0.26]} c={SAFETY} center />
         <B p={[boom.len * 0.78, 0, 0]} s={[boom.len * 0.46, 0.18, 0.18]} c="#f5a347" center />
@@ -151,11 +151,11 @@ function Munck({ reduced, label = ['Munck 12 t', 'içando a tesoura'] }) {
       </group>
       <Ball p={tip.toArray()} s={0.24} c="#2a3242" />
       {/* cable, hook and two slings */}
-      <mesh ref={cable} geometry={GEO.box} material={mat('#20242c')} position={[-1, 6.5, -2]} scale={[0.035, 1, 0.035]} />
+      <mesh ref={cable} userData={{ dyn: true }} geometry={GEO.box} material={mat('#20242c')} position={[-1, 6.5, -2]} scale={[0.035, 1, 0.035]} />
       {[0, 1].map((i) => (
-        <mesh key={i} ref={(el) => (slings.current[i] = el)} geometry={GEO.box} material={mat('#e0b23a')} />
+        <mesh key={i} ref={(el) => (slings.current[i] = el)} userData={{ dyn: true }} geometry={GEO.box} material={mat('#e0b23a')} />
       ))}
-      <group ref={truss} position={[-1, COL_H + 0.6, -2]}>
+      <group ref={truss} userData={{ rigid: true }} position={[-1, COL_H + 0.6, -2]}>
         <Truss c="#6f86a3" />
         <Label text={label[0]} sub={label[1]} accent="#ffb35c" position={[0, 2.1, 2.6]} />
       </group>
@@ -234,7 +234,7 @@ function Jackhammer({ reduced, label = ['Britadeira', 'área isolada'] }) {
       })}
       {/* worker with the jackhammer */}
       <group position={[3.85, 0, 3.05]}>
-        <group ref={body}>
+        <group ref={body} userData={{ rigid: true }}>
           <Person rotation={[0, -Math.PI / 2, 0]} shirt={SAFETY} pants="#2c3a52" hat="hard" wave={() => 0.15}>
             {/* ear protection + glasses */}
             <B p={[0.15, 0.82, 0]} s={[0.05, 0.1, 0.1]} c="#e34b3f" />
@@ -242,7 +242,7 @@ function Jackhammer({ reduced, label = ['Britadeira', 'área isolada'] }) {
             <B p={[0, 0.88, 0.13]} s={[0.2, 0.05, 0.02]} c="#1b2433" />
           </Person>
         </group>
-        <group ref={tool} position={[-0.42, 0, 0]}>
+        <group ref={tool} userData={{ rigid: true }} position={[-0.42, 0, 0]}>
           <Cy p={[0, 0.02, 0]} s={[0.04, 0.18, 0.04]} c="#9aa3ad" />
           <Cy p={[0, 0.2, 0]} s={[0.15, 0.5, 0.15]} c="#e0b23a" />
           <B p={[0, 0.7, 0]} s={[0.07, 0.1, 0.07]} c="#2a2f37" />
@@ -250,7 +250,7 @@ function Jackhammer({ reduced, label = ['Britadeira', 'área isolada'] }) {
         </group>
         <group position={[-0.42, 0, 0]}>
           {seeds.map((_, i) => (
-            <mesh key={i} ref={(el) => (dust.current[i] = el)} geometry={GEO.sph} material={dustMat[i]} />
+            <mesh key={i} ref={(el) => (dust.current[i] = el)} userData={{ dyn: true }} geometry={GEO.sph} material={dustMat[i]} />
           ))}
         </group>
         <Label text={label[0]} sub={label[1]} accent="#f2b134" position={[0, 1.55, 0]} />
@@ -262,7 +262,6 @@ function Jackhammer({ reduced, label = ['Britadeira', 'área isolada'] }) {
 /** Welder with mask and leather gear, controlled sparks on a steel beam. */
 function Welder({ reduced, label = ['Soldagem', 'EPI completo'] }) {
   const ch = useChapter();
-  const light = useRef();
   const glow = useRef(1);
   const sparks = useRef([]);
   const seeds = useMemo(() => Array.from({ length: 14 }, (_, i) => ({ a: (i / 14) * Math.PI * 2, v: 0.7 + ((i * 37) % 10) / 12, o: (i * 0.137) % 1 })), []);
@@ -273,7 +272,6 @@ function Welder({ reduced, label = ['Soldagem', 'EPI completo'] }) {
     const t = state.clock.elapsedTime;
     const f = reduced ? 0.8 : 0.65 + 0.35 * Math.abs(Math.sin(t * 23) * Math.cos(t * 7.3));
     glow.current = f;
-    if (light.current) light.current.intensity = 2.2 * f;
     sparks.current.forEach((m, i) => {
       if (!m) return;
       const s = seeds[i];
@@ -309,10 +307,9 @@ function Welder({ reduced, label = ['Soldagem', 'EPI completo'] }) {
         </Person>
       </group>
       <group position={WELD}>
-        <pointLight ref={light} color="#ffb35c" intensity={2} distance={3.5} decay={2} />
         <Glow color="#ffcf7a" size={0.9} vis={() => glow.current} />
         {seeds.map((_, i) => (
-          <mesh key={i} ref={(el) => (sparks.current[i] = el)} geometry={GEO.box} material={sparkMat} />
+          <mesh key={i} ref={(el) => (sparks.current[i] = el)} userData={{ dyn: true }} geometry={GEO.box} material={sparkMat} />
         ))}
       </group>
       <group position={[-2.6, 0, 3.8]}>
@@ -332,23 +329,25 @@ function Excavator({ reduced, label = ['Escavadeira', 'disponível hoje · diár
     if (ch && !ch.current.visible) return;
     const t = reduced ? 0 : state.clock.elapsedTime;
     if (turret.current) turret.current.rotation.y = Math.sin(t * 0.35) * 0.35;
-    if (boom.current) boom.current.rotation.z = -0.35 + Math.sin(t * 0.7) * 0.12;
-    if (arm.current) arm.current.rotation.z = 1.2 + Math.sin(t * 0.7 + 0.8) * 0.25;
+    // Boom and arm move in opposition so the bucket stays above the ground.
+    const s = Math.sin(t * 0.7);
+    if (boom.current) boom.current.rotation.z = 0.3 + s * 0.1;
+    if (arm.current) arm.current.rotation.z = -1.35 - s * 0.25;
   });
   return (
     <group>
       {[-0.42, 0.42].map((z) => (
         <B key={z} p={[0, 0, z]} s={[1.7, 0.36, 0.34]} c="#2a2f37" />
       ))}
-      <group ref={turret} position={[0, 0.36, 0]}>
+      <group ref={turret} userData={{ rigid: true }} position={[0, 0.36, 0]}>
         <Cy s={[0.9, 0.12, 0.9]} c="#3a3f48" />
         <B p={[-0.2, 0.12, 0]} s={[1.3, 0.5, 1.0]} c="#f2b134" />
         <B p={[0.25, 0.62, 0.22]} s={[0.5, 0.55, 0.5]} c="#f2b134" />
         <B p={[0.51, 0.72, 0.22]} s={[0.02, 0.36, 0.4]} c="#1b2433" e="#3b5a86" ei={0.25} />
         <B p={[-0.78, 0.18, 0]} s={[0.3, 0.42, 0.95]} c="#3a3f48" />
-        <group ref={boom} position={[0.45, 0.5, -0.2]}>
+        <group ref={boom} userData={{ rigid: true }} position={[0.45, 0.5, -0.2]}>
           <B p={[0.75, 0, 0]} s={[1.5, 0.2, 0.2]} c="#f2b134" center />
-          <group ref={arm} position={[1.5, 0, 0]}>
+          <group ref={arm} userData={{ rigid: true }} position={[1.5, 0, 0]}>
             <B p={[0.55, 0, 0]} s={[1.1, 0.14, 0.14]} c="#e0a21f" center />
             <B p={[1.12, -0.08, 0]} s={[0.32, 0.28, 0.4]} c="#3a3f48" center />
           </group>
@@ -371,7 +370,7 @@ export function MachineSite({ reduced = false, labels = {}, rental = false }) {
       <Jackhammer reduced={reduced} label={labels.jack} />
       <Welder reduced={reduced} label={labels.weld} />
       {rental && (
-        <group position={[6.9, 0, -0.2]} rotation={[0, 0.6, 0]}>
+        <group position={[7.0, 0, -0.4]} rotation={[0, -Math.PI / 2, 0]}>
           <Excavator reduced={reduced} label={labels.excavator} />
         </group>
       )}

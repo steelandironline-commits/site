@@ -7,6 +7,7 @@ import { ChapterCtx, WorldCtx, clamp01, damp, glowTex, lerp, rng } from './kit.j
 import { CityIsland, DemandIsland, HiringIsland, PanelIsland, PixIsland, RouteIsland, TerminalIsland } from './islands.jsx';
 import { descentFrame } from './framing.js';
 import { MachineIsland, PortIsland } from './port.jsx';
+import { mergeStatic } from './merge.js';
 
 const AZ0 = Math.PI / 4;
 const AZ_STEP = 0.32;
@@ -24,6 +25,8 @@ const OFFSETS = [
 ];
 const FREEZE = [6, 13, 4, 7.6, 9, 8.4, 4.9, 6.6, 2];
 const ISLANDS = [CityIsland, DemandIsland, MachineIsland, TerminalIsland, PortIsland, RouteIsland, HiringIsland, PixIsland, PanelIsland];
+/** Seconds after an island first comes into view when every Rise has settled. */
+const SETTLED = 2.4;
 
 export const islandCenter = (k) => [OFFSETS[k][0], -k * SPACING, OFFSETS[k][1]];
 
@@ -44,7 +47,8 @@ function Rig({ progress, pointer, stageRef, layout, onActive, mobile, reduced })
   const world = useContext(WorldCtx);
   const hemi = useRef();
   const sun = useRef();
-  const st = useRef({ p: progress.current, px: 0, py: 0, active: -1, vw: 0, vh: 0, lv: -1, base: 0, css: '' });
+  const fill = useRef();
+  const st = useRef({ p: progress.current, px: 0, py: 0, active: -1, vw: 0, vh: 0, lv: -1, base: 0, css: '', frame: 0 });
   const pal = useMemo(
     () =>
       CHAPTERS.map(({ palette: c }) => ({
@@ -67,6 +71,14 @@ function Rig({ progress, pointer, stageRef, layout, onActive, mobile, reduced })
     const s = st.current;
     const w = world.current;
     const dt = Math.min(delta, 0.25);
+    // Shadows refresh every other frame: the map and its matrix stay paired,
+    // so a skipped frame only delays moving shadows by ~16 ms.
+    const sm = state.gl.shadowMap;
+    if (sm.enabled) {
+      sm.autoUpdate = false;
+      s.frame += 1;
+      sm.needsUpdate = s.frame % 2 === 1;
+    }
     s.p = reduced ? progress.current : damp(s.p, progress.current, 5, dt);
     const { level } = levelFromProgress(s.p);
     w.level = level;
@@ -126,6 +138,11 @@ function Rig({ progress, pointer, stageRef, layout, onActive, mobile, reduced })
       sun.current.target.position.copy(target);
       sun.current.target.updateMatrixWorld();
     }
+    // fill light shares the sun's target (a directional light only needs a direction)
+    if (fill.current) {
+      fill.current.position.set(target.x - 10, target.y + 6, target.z - 8);
+      fill.current.target = sun.current.target;
+    }
     const el2 = stageRef.current;
     if (el2) {
       const css = `${tmp.top.getHexString()}${tmp.bottom.getHexString()}${tmp.accent.getHexString()}`;
@@ -154,15 +171,18 @@ function Rig({ progress, pointer, stageRef, layout, onActive, mobile, reduced })
         color="#fff4e2"
         castShadow={!mobile}
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-14}
-        shadow-camera-right={14}
-        shadow-camera-top={14}
-        shadow-camera-bottom={-14}
+        shadow-camera-left={-13}
+        shadow-camera-right={13}
+        shadow-camera-top={13}
+        shadow-camera-bottom={-13}
         shadow-camera-near={1}
-        shadow-camera-far={60}
+        shadow-camera-far={32}
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
+        shadow-radius={2}
       />
+      {/* cool fill from the opposite side: no shadows, lifts the faces the sun misses */}
+      <directionalLight ref={fill} intensity={0.45} color="#cfe0ff" />
     </>
   );
 }
@@ -170,7 +190,8 @@ function Rig({ progress, pointer, stageRef, layout, onActive, mobile, reduced })
 function Chapter({ index, children }) {
   const world = useContext(WorldCtx);
   const group = useRef();
-  const state = useRef({ index, t: 0, t0: 0, first: null, since: -1, armed: false, visible: index === 0, on: 0, reduced: false });
+  const state = useRef({ index, t: 0, t0: 0, first: null, since: -1, armed: false, visible: index === 0, on: 0, reduced: false, settled: 0, batched: 0, unmerge: null });
+  useEffect(() => () => state.current.unmerge?.(), []);
   useFrame((st, delta) => {
     const s = state.current;
     const w = world.current;
@@ -186,6 +207,19 @@ function Chapter({ index, children }) {
     s.t = w.reduced ? FREEZE[index] : now - s.t0;
     s.since = s.first === null ? -1 : now - s.first;
     s.on = damp(s.on, armed ? 1 : 0, 4, Math.min(delta, 0.25));
+    // Batch the static meshes into a few draw calls: first what is already in
+    // place (a neighbour seen before it rises), then everything once risen.
+    // A couple of frames of delay let each Rise apply its scale/visibility.
+    if (s.visible && group.current && s.batched < 2) {
+      s.settled += 1;
+      const full = s.since > SETTLED;
+      if (s.settled > 2 && (s.batched === 0 || full)) {
+        s.unmerge?.();
+        s.unmerge = mergeStatic(group.current);
+        s.batched = full ? 2 : 1;
+        s.settled = 0;
+      }
+    }
   }, -1);
   const [x, y, z] = islandCenter(index);
   return (
@@ -195,6 +229,36 @@ function Chapter({ index, children }) {
       </group>
     </ChapterCtx.Provider>
   );
+}
+
+/** Lowers the pixel ratio when frames run long and restores it when they're fast again. */
+function AdaptiveDpr({ max }) {
+  const setDpr = useThree((s) => s.setDpr);
+  const initial = useThree((s) => s.viewport.dpr);
+  const st = useRef({ acc: 0, n: 0, dpr: initial, calm: 0 });
+  useFrame((_, delta) => {
+    const s = st.current;
+    if (delta > 0.2) return; // tab switch or a one-off hitch
+    s.acc += delta;
+    s.n += 1;
+    if (s.n < 90) return;
+    const avg = s.acc / s.n;
+    s.acc = 0;
+    s.n = 0;
+    if (avg > 1 / 42 && s.dpr > 1) {
+      s.dpr = Math.max(1, Math.round((s.dpr - 0.25) * 4) / 4);
+      s.calm = 0;
+      setDpr(s.dpr);
+    } else if (avg < 1 / 56 && s.dpr < max) {
+      s.calm += 1;
+      if (s.calm >= 4) {
+        s.dpr = Math.min(max, s.dpr + 0.25);
+        s.calm = 0;
+        setDpr(s.dpr);
+      }
+    } else s.calm = 0;
+  });
+  return null;
 }
 
 /** Dust in the whole shaft + cloud banks between islands that we dive through. */
@@ -247,19 +311,26 @@ function Atmosphere() {
     });
   }, []);
   const points = useRef();
+  const groups = useRef([]);
   useFrame((state) => {
     const L = world.current.level;
     banks.forEach((bk, g) => {
       bk.material.opacity = 0.5 * clamp01(1 - Math.abs(L - (g + 0.5)) * 1.8);
+      // a faded bank still costs one draw call per puff, so hide it
+      if (groups.current[g]) groups.current[g].visible = bk.material.opacity > 0.004;
     });
     if (points.current) points.current.rotation.y = state.clock.elapsedTime * 0.012;
   });
   return (
     <>
       <points ref={points} geometry={dust} material={dustMat} />
-      {banks.map((bk, g) =>
-        bk.puffs.map((p, i) => <sprite key={`${g}-${i}`} material={bk.material} position={p.p} scale={[p.s, p.s * 0.62, 1]} renderOrder={5} />),
-      )}
+      {banks.map((bk, g) => (
+        <group key={g} ref={(el) => (groups.current[g] = el)} visible={false}>
+          {bk.puffs.map((p, i) => (
+            <sprite key={i} material={bk.material} position={p.p} scale={[p.s, p.s * 0.62, 1]} renderOrder={5} />
+          ))}
+        </group>
+      ))}
     </>
   );
 }
@@ -269,6 +340,7 @@ export default function DescentScene({ progress, pointer, stageRef, layout, onAc
   world.current.reduced = reduced;
   world.current.compact = mobile;
   world.current.labelScale = mobile ? 0.86 : 1;
+  world.current.shadows = !mobile;
   return (
     <Canvas
       shadows={mobile ? false : 'percentage'}
@@ -285,6 +357,7 @@ export default function DescentScene({ progress, pointer, stageRef, layout, onAc
       <WorldCtx.Provider value={world}>
         <fog attach="fog" args={['#0e1830', 40, 120]} />
         <Rig progress={progress} pointer={pointer} stageRef={stageRef} layout={layout} onActive={onActive} mobile={mobile} reduced={reduced} />
+        <AdaptiveDpr max={mobile ? 1.5 : 1.75} />
         <Atmosphere />
         {ISLANDS.map((Island, i) => (
           <Chapter key={CHAPTERS[i].id} index={i}>

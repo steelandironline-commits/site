@@ -53,6 +53,8 @@ export const GEO = {
   sph: new THREE.SphereGeometry(0.5, 18, 12),
   hemi: new THREE.SphereGeometry(0.5, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2),
   ico: new THREE.IcosahedronGeometry(0.5, 0),
+  /** rounder low-poly crowns and hills (80 facets) */
+  ico1: new THREE.IcosahedronGeometry(0.5, 1),
   ring: flat(new THREE.RingGeometry(0.9, 1, 56)),
   disc: flat(new THREE.CircleGeometry(1, 48)),
   plane: new THREE.PlaneGeometry(1, 1),
@@ -241,9 +243,11 @@ export function Ball({ p = [0, 0, 0], s = 1, c = '#ffffff', e, ei, m, g = GEO.sp
   return <mesh geometry={g} material={m || mat(c, { e, ei })} position={p} scale={s} castShadow receiveShadow {...rest} />;
 }
 
-/** Soft dark disc under moving things (cheap contact shadow, also on mobile). */
+/** Soft dark disc under moving things: a cheap contact shadow where the sun casts none (mobile). */
 const blobMat = new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.22, depthWrite: false });
 export function Blob({ w = 1, d = 1, y = 0.012 }) {
+  const world = useWorld();
+  if (world?.current.shadows) return null;
   return <mesh geometry={GEO.disc} material={blobMat} position={[0, y, 0]} scale={[w / 2, 1, d / 2]} renderOrder={1} />;
 }
 
@@ -435,7 +439,7 @@ export function Tree({ p = [0, 0, 0], s = 1, c = '#5f9a6a' }) {
   return (
     <group position={p} scale={s}>
       <Cy s={[0.12, 0.35, 0.12]} c="#7b5b45" g={GEO.cyl8} />
-      <Ball p={[0, 0.62, 0]} s={[0.62, 0.72, 0.62]} c={c} g={GEO.ico} />
+      <Ball p={[0, 0.62, 0]} s={[0.62, 0.72, 0.62]} c={c} g={GEO.ico1} />
     </group>
   );
 }
@@ -466,33 +470,19 @@ export function Pin({ p = [0, 0, 0], c = '#2ad1b8', s = 1 }) {
 }
 
 /* --------------------------------------------------------------- truck */
-const _wp = new THREE.Vector3();
-/** Forward is +Z. Children ride on the bed (bed top at y = 0.34). */
+/**
+ * Forward is +Z. Children ride on the bed (bed top at y = 0.34). The truck is
+ * one rigid piece (parents move the root), so its parts batch into a few draw calls.
+ */
 export const Truck = forwardRef(function Truck({ cab = '#f4f1ea', cargo = '#24365e', kind = 'box', children, scale = 1, ...props }, ref) {
-  const root = useRef();
-  const wheels = useRef([]);
-  const st = useRef({ last: null, spin: 0 });
-  useImperativeHandle(ref, () => root.current);
-  useFrame(() => {
-    const g = root.current;
-    if (!g) return;
-    g.getWorldPosition(_wp);
-    const s = st.current;
-    if (s.last) {
-      const dist = _wp.distanceTo(s.last);
-      if (dist < 1) s.spin += dist / (0.17 * scale);
-      s.last.copy(_wp);
-    } else s.last = _wp.clone();
-    for (const w of wheels.current) if (w) w.rotation.x = s.spin;
-  });
   const wz = kind === 'tractor' ? [0.62, -0.1] : [0.72, -0.38, -0.72];
   return (
-    <group ref={root} scale={scale} {...props}>
+    <group ref={ref} scale={scale} userData={{ rigid: true }} {...props}>
       <Blob w={1.1} d={2.5} />
       <B p={[0, 0.16, -0.05]} s={[0.66, 0.1, kind === 'tractor' ? 1.3 : 2.1]} c="#2a2f3a" />
       {wz.map((z) =>
         [-0.33, 0.33].map((x) => (
-          <group key={`${x}${z}`} position={[x, 0.17, z]} ref={(el) => el && !wheels.current.includes(el) && wheels.current.push(el)}>
+          <group key={`${x}${z}`} position={[x, 0.17, z]}>
             <mesh geometry={GEO.cyl} material={mat('#1b1e25')} rotation={[0, 0, Math.PI / 2]} scale={[0.34, 0.14, 0.34]} castShadow />
             <mesh geometry={GEO.box} material={mat('#c9ced8')} position={[x > 0 ? 0.072 : -0.072, 0, 0]} scale={[0.01, 0.12, 0.06]} />
           </group>
@@ -501,9 +491,9 @@ export const Truck = forwardRef(function Truck({ cab = '#f4f1ea', cargo = '#2436
       {/* cab */}
       <B p={[0, 0.22, 0.78]} s={[0.72, 0.6, 0.52]} c={cab} />
       <B p={[0, 0.22, 0.95]} s={[0.74, 0.16, 0.22]} c="#2a2f3a" />
-      <B p={[0, 0.53, 1.045]} s={[0.6, 0.22, 0.02]} c="#1b2433" e="#3b5a86" ei={0.25} />
-      <B p={[0.25, 0.36, 1.045]} s={[0.12, 0.06, 0.02]} c="#fff6d8" e="#fff1c2" ei={1.2} />
-      <B p={[-0.25, 0.36, 1.045]} s={[0.12, 0.06, 0.02]} c="#fff6d8" e="#fff1c2" ei={1.2} />
+      <B p={[0, 0.53, 1.045]} s={[0.6, 0.22, 0.02]} c="#1b2433" e="#3b5a86" ei={0.25} shadow={false} />
+      <B p={[0.25, 0.36, 1.045]} s={[0.12, 0.06, 0.02]} c="#fff6d8" e="#fff1c2" ei={1.2} shadow={false} />
+      <B p={[-0.25, 0.36, 1.045]} s={[0.12, 0.06, 0.02]} c="#fff6d8" e="#fff1c2" ei={1.2} shadow={false} />
       <B p={[0, 0.82, 0.74]} s={[0.66, 0.06, 0.4]} c={cargo} />
       {kind === 'box' && (
         <>
@@ -521,13 +511,13 @@ export const Truck = forwardRef(function Truck({ cab = '#f4f1ea', cargo = '#2436
 
 export function Car({ c = '#e5574f', ...props }) {
   return (
-    <group {...props}>
+    <group userData={{ rigid: true }} {...props}>
       <Blob w={0.8} d={1.4} />
       <B p={[0, 0.1, 0]} s={[0.56, 0.24, 1.1]} c={c} />
-      <B p={[0, 0.34, -0.06]} s={[0.48, 0.2, 0.6]} c="#1b2433" e="#2b4466" ei={0.2} />
+      <B p={[0, 0.34, -0.06]} s={[0.48, 0.2, 0.6]} c="#1b2433" e="#2b4466" ei={0.2} shadow={false} />
       <B p={[0, 0.54, -0.06]} s={[0.5, 0.03, 0.56]} c={c} />
-      <B p={[0.18, 0.18, 0.555]} s={[0.1, 0.05, 0.01]} c="#fff" e="#fff1c2" ei={1} />
-      <B p={[-0.18, 0.18, 0.555]} s={[0.1, 0.05, 0.01]} c="#fff" e="#fff1c2" ei={1} />
+      <B p={[0.18, 0.18, 0.555]} s={[0.1, 0.05, 0.01]} c="#fff" e="#fff1c2" ei={1} shadow={false} />
+      <B p={[-0.18, 0.18, 0.555]} s={[0.1, 0.05, 0.01]} c="#fff" e="#fff1c2" ei={1} shadow={false} />
       {[0.34, -0.34].map((z) => (
         <B key={z} p={[0, 0.02, z]} s={[0.6, 0.16, 0.2]} c="#1b1e25" />
       ))}
@@ -537,7 +527,7 @@ export function Car({ c = '#e5574f', ...props }) {
 
 /* --------------------------------------------------------------- people */
 /** Forward is +Z. `walk()` returns 0..1 stride amplitude, `wave()` raises the right arm. */
-export const Person = forwardRef(function Person({ shirt = '#2ad1b8', pants = '#2a3242', skin = '#c99a76', hair = '#2b2420', hat, walk, wave, speed = 9, phase = 0, children, ...props }, ref) {
+export const Person = forwardRef(function Person({ shirt = '#2ad1b8', pants = '#2a3242', skin = '#c99a76', hair = '#2b2420', hat, walk, wave, speed = 9, phase = 0, recolor = false, children, ...props }, ref) {
   const root = useRef();
   const legL = useRef();
   const legR = useRef();
@@ -545,7 +535,11 @@ export const Person = forwardRef(function Person({ shirt = '#2ad1b8', pants = '#
   const armR = useRef();
   const body = useRef();
   const world = useWorld();
-  const shirtMat = useMemo(() => new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.85, flatShading: true }), [shirt]);
+  const shirtMat = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.85, flatShading: true });
+    m.userData.live = recolor; // recoloured at runtime: keep it out of the batches
+    return m;
+  }, [shirt, recolor]);
   useImperativeHandle(ref, () => {
     const g = root.current;
     if (g) g.userData.shirt = shirtMat;
@@ -564,9 +558,9 @@ export const Person = forwardRef(function Person({ shirt = '#2ad1b8', pants = '#
     if (body.current) body.current.position.y = Math.abs(Math.cos(t)) * 0.035 * a;
   });
   return (
-    <group ref={root} {...props}>
+    <group ref={root} userData={{ dyn: true }} {...props}>
       <Blob w={0.5} d={0.5} />
-      <group ref={body}>
+      <group ref={body} userData={{ rigid: true }}>
         <group ref={legL} position={[-0.075, 0.36, 0]}>
           <B p={[0, -0.36, 0]} s={[0.11, 0.36, 0.13]} c={pants} />
         </group>
@@ -635,6 +629,7 @@ export function Pulse({ color = '#2ad1b8', radius = 1.6, period = 2, delay = 0, 
     const f = t < 0 ? 0 : (t % period) / period;
     ref.current.scale.setScalar(0.1 + eo(f) * radius);
     material.opacity = (1 - f) * 0.85 * v * (t < 0 ? 0 : 1);
+    ref.current.visible = material.opacity > 0.004; // no draw call while faded out
   });
   return <mesh ref={ref} geometry={GEO.ring} material={material} position={[0, y, 0]} renderOrder={2} {...props} />;
 }

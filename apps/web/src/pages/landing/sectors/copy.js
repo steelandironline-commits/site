@@ -42,6 +42,7 @@ export const MARITIME = {
   services: ['Usinagem', 'Soldagem', 'Caldeiraria', 'Elétrica', 'Hidráulica', 'Bombas', 'Motores', 'Válvulas', 'Peças industriais', 'Ferramentas', 'Suprimentos', 'EPI', 'Transporte', 'Caminhões', 'Guindastes', 'Munck', 'Inspeção', 'Limpeza', 'Manutenção emergencial', 'Alimentação', 'Água', 'Logística'],
   opportunity: {
     kicker: 'Oportunidade marítima',
+    title: 'Usinagem emergencial para um navio atracado',
     rows: [
       ['Comprador', 'Operação portuária'],
       ['Navio', 'Operação portuária'],
@@ -101,6 +102,7 @@ export const CONSTRUCTION = {
   },
   opportunity: {
     kicker: 'Oportunidade de obra',
+    title: 'Munck 12 t e equipe de solda para montar um galpão',
     rows: [
       ['Comprador', 'Construtora / empresa de montagem'],
       ['Local', 'Campinas/SP'],

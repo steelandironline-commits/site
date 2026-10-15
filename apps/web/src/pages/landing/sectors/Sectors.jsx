@@ -1,21 +1,24 @@
 /* Home sector sections: ecosystem, TemPix Marítimo and obras / máquinas.
-   Visual first: flows, an opportunity card and a 3D site; text kept short. */
-import { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
+   Visual first: flows, an opportunity card and a 2.5D site; text kept short. */
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
   Building2,
   ClipboardList,
+  Clock,
   Construction,
   Container,
   Factory,
   HardHat,
   Handshake,
+  MapPin,
   Route,
   Scale,
   Ship,
   ShoppingCart,
   Store,
+  Tag,
   Truck,
   Wrench,
 } from 'lucide-react';
@@ -23,9 +26,9 @@ import { LogoMark } from '../../../components/brand/Logo.jsx';
 import { Button, Dialog } from '../../../components/ui/ui.jsx';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../../lib/hooks.js';
 import { CONSTRUCTION, ECOSYSTEM, MARITIME, SHARED } from './copy.js';
+import SiteArt from './SiteArt.jsx';
 import s from './sectors.module.css';
 
-const ConstructionScene = lazy(() => import('./ConstructionScene.jsx'));
 const ease = [0.22, 1, 0.36, 1];
 const reveal = { initial: { opacity: 0, y: 16 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-80px' }, transition: { duration: 0.6, ease } };
 
@@ -65,30 +68,57 @@ export function FlowSteps({ steps, active = -1, compact = false, ariaLabel }) {
 }
 
 /* ----------------------------------------------------- opportunity */
+const ROW_ICONS = { Comprador: Building2, Navio: Ship, Necessidade: Wrench, Categoria: Tag, Equipamento: Construction, 'Serviço adicional': HardHat };
+const FACTS = { Local: MapPin, Prazo: Clock };
+
+/** Premium (gold) card: the need as a headline, place and deadline up front, details below. */
 function OpportunityCard({ data, cta }) {
   const [open, setOpen] = useState(false);
+  const facts = data.rows.filter(([k]) => FACTS[k]);
+  const rows = data.rows.filter(([k]) => !FACTS[k]);
   return (
-    <article className={s.opp}>
+    <article className={`${s.opp} gold-icons`}>
       <header className={s.oppHead}>
-        <span className="eyebrow">{data.kicker}</span>
+        <span className={s.oppKicker}>{data.kicker}</span>
         <span className={s.oppStatus}>
           <span className={s.oppPulse} aria-hidden="true" />
           {data.status}
         </span>
       </header>
+      <div className={s.oppLead}>
+        <h3 className={s.oppTitle}>{data.title}</h3>
+        <ul className={s.oppFacts}>
+          {facts.map(([k, v]) => {
+            const I = FACTS[k];
+            return (
+              <li key={k}>
+                <I size={15} aria-hidden="true" />
+                <span className="sr-only">{k}: </span>
+                {v}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
       <dl className={s.oppRows}>
-        {data.rows.map(([k, v]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
+        {rows.map(([k, v]) => {
+          const I = ROW_ICONS[k] || ClipboardList;
+          return (
+            <div key={k}>
+              <dt>
+                <I size={14} aria-hidden="true" />
+                {k}
+              </dt>
+              <dd>{v}</dd>
+            </div>
+          );
+        })}
       </dl>
       <footer className={s.oppFoot}>
         <span className={s.oppBadge}>
-          <span aria-hidden="true">●</span> {SHARED.intermediated}
+          <LogoMark size={18} /> {SHARED.intermediated}
         </span>
-        <Button size="sm" variant="outline" iconRight={ArrowRight} onClick={() => setOpen(true)}>
+        <Button size="sm" className={s.oppCta} iconRight={ArrowRight} onClick={() => setOpen(true)}>
           {SHARED.seeOpportunity}
         </Button>
       </footer>
@@ -267,59 +297,14 @@ export function Maritime() {
   );
 }
 
-/* ------------------------------------------------- construction 3D */
-function webglAvailable() {
-  try {
-    const c = document.createElement('canvas');
-    return Boolean(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
-  } catch {
-    return false;
-  }
-}
-
-class SceneBoundary extends Component {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}
-
-function SceneFallback() {
-  return (
-    <div className={s.sceneFallback}>
-      <Construction size={44} aria-hidden="true" />
-      <HardHat size={44} aria-hidden="true" />
-      <Wrench size={44} aria-hidden="true" />
-    </div>
-  );
-}
-
+/* ---------------------------------------------- construction 2.5D */
 function SiteStage() {
   const ref = useRef(null);
-  const inView = useInView(ref, { rootMargin: '200px' });
+  const inView = useInView(ref, { rootMargin: '0px' });
   const mobile = useIsMobile();
-  const reduced = usePrefersReducedMotion();
-  const [webgl, setWebgl] = useState(null);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setWebgl(webglAvailable()), []);
-  // Load the 3D bundle only once the site scrolls near the viewport.
-  useEffect(() => {
-    if (inView) setMounted(true);
-  }, [inView]);
   return (
     <div ref={ref} className={s.stage} role="img" aria-label={CONSTRUCTION.sceneAlt}>
-      {webgl && mounted ? (
-        <SceneBoundary fallback={<SceneFallback />}>
-          <Suspense fallback={null}>
-            <ConstructionScene mobile={mobile} reduced={reduced} running={inView} />
-          </Suspense>
-        </SceneBoundary>
-      ) : webgl === false ? (
-        <SceneFallback />
-      ) : null}
+      <SiteArt mobile={mobile} paused={!inView} />
       <ul className={s.legend} aria-hidden="true">
         {CONSTRUCTION.legend.map((l) => (
           <li key={l.label}>
