@@ -344,6 +344,8 @@ model User {
   name              String
   passwordHash      String?
   status            UserStatus @default(PENDING_PAYMENT)
+  /// Unpaid signup (PENDING_PAYMENT) must be finished by this time; then it is purged.
+  pendingExpiresAt  DateTime?
   role              UserRole   @default(OWNER)
   companyId         String
   company           Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -404,7 +406,7 @@ model Company {
   id                    String      @id @default(cuid())
   accountType           AccountType @default(COMPANY)
   name                  String
-  cnpj                  String?
+  cnpj                  String?   @unique
   website               String?
   instagram             String?
   phone                 String?
@@ -449,7 +451,6 @@ model Company {
   workforceDemands WorkforceDemand[]
   workforceMatches WorkforceMatch[]
 
-  @@index([cnpj])
 }
 
 model Subscription {

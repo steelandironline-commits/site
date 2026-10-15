@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
-import { disconnectPrisma } from '@autopix/core';
+import { disconnectPrisma, getPrisma } from '@autopix/core';
 import { formatCnpj, formatCpf } from '@autopix/shared';
 import { setupApp, resetDb, client, hasDb, PROFILE, STRONG_PASSWORD, testCnpj, testCpf, activationTokenFromEmail } from './helpers.js';
 
@@ -59,12 +59,17 @@ describe.skipIf(!hasDb)('login by CPF / CNPJ and collaborators', () => {
     expect(dup.start.status).toBe(409);
   });
 
-  it('an unfinished draft does not lock the CNPJ', async () => {
+  it('an unfinished draft holds the CNPJ for one hour, then frees it', async () => {
     const cnpj = testCnpj();
-    const draft = client(ctx.app);
-    expect((await draft.post('/api/onboarding/start', { accountType: 'COMPANY', name: 'Rascunho Silva', email: 'draft@ex.example', companyName: 'Rascunho Ltda', document: cnpj })).status).toBe(201);
+    const prisma = getPrisma();
+    expect((await client(ctx.app).post('/api/onboarding/start', { accountType: 'COMPANY', name: 'Rascunho Silva', email: 'draft@ex.example', companyName: 'Rascunho Ltda', document: cnpj })).status).toBe(201);
+    const blocked = await signUp({ accountType: 'COMPANY', document: cnpj });
+    expect(blocked.start.status).toBe(409);
+    // Once the hour is up, the unpaid draft is purged and the CNPJ is free again.
+    await prisma.user.update({ where: { email: 'draft@ex.example' }, data: { pendingExpiresAt: new Date(Date.now() - 1000) } });
     const real = await signUp({ accountType: 'COMPANY', document: cnpj });
     expect(real.start.status).toBe(201);
+    expect(await prisma.user.findUnique({ where: { email: 'draft@ex.example' } })).toBeNull();
     expect((await login(ctx.app, cnpj)).status).toBe(200);
   });
 

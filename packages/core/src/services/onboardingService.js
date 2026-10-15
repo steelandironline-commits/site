@@ -2,7 +2,7 @@ import { COMMISSION_PLAN_CODE, formatCents } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { hashToken } from '../security/tokens.js';
-import { badRequest, conflict, unavailable } from '../errors.js';
+import { badRequest, conflict, gone, unavailable } from '../errors.js';
 import { AuthService } from './authService.js';
 import { pickCompanyFields } from './companyService.js';
 
@@ -11,6 +11,9 @@ import { pickCompanyFields } from './companyService.js';
  * company and an ONBOARDING-scoped session (HTTP-only cookie), so every
  * following step is persisted server-side and can be resumed.
  */
+/** An unpaid signup has one hour to be finished; after that it is purged and must be started again. */
+const DRAFT_TTL_MS = 60 * 60 * 1000;
+
 export class OnboardingService {
   constructor({ prisma = getPrisma(), config = getConfig(), email } = {}) {
     this.prisma = prisma;
@@ -23,23 +26,24 @@ export class OnboardingService {
     // A professional's account is named after the person.
     const accountName = accountType === 'PERSON' ? name : companyName;
     const loginId = document; // CNPJ (company) or CPF (person), digits only
+    await this.#purgeExpiredDrafts();
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing && existing.status !== 'PENDING_PAYMENT') {
       throw conflict('Este e-mail já possui uma conta TemPix. Entre ou recupere sua senha.');
     }
-    // One login per CNPJ / CPF. An unfinished draft never holds it.
+    // One login and one CNPJ per account. An unpaid draft holds them until its hour is up.
     const holder = loginId ? await this.prisma.user.findUnique({ where: { loginId } }) : null;
-    const staleDraft = holder && holder.id !== existing?.id && holder.status === 'PENDING_PAYMENT';
-    if (holder && holder.id !== existing?.id && !staleDraft) {
+    const companyHolder = accountType === 'COMPANY' && loginId ? await this.prisma.company.findUnique({ where: { cnpj: loginId } }) : null;
+    if ((holder && holder.id !== existing?.id) || (companyHolder && companyHolder.id !== existing?.companyId)) {
       throw conflict(
         accountType === 'COMPANY'
           ? 'Este CNPJ já tem cadastro no TemPix. Entre com ele ou recupere a senha.'
           : 'Este CPF já tem cadastro no TemPix. Entre com ele ou recupere a senha.',
       );
     }
+    const pendingExpiresAt = new Date(Date.now() + DRAFT_TTL_MS);
 
     return this.prisma.$transaction(async (tx) => {
-      if (staleDraft) await tx.user.update({ where: { id: holder.id }, data: { loginId: null } });
       let user;
       if (existing) {
         // Unpaid draft: restart it. Previous draft data is overwritten, never
@@ -49,16 +53,46 @@ export class OnboardingService {
           where: { id: existing.companyId },
           data: { name: accountName, accountType, cnpj: accountType === 'COMPANY' ? loginId : null, onboardingStep: 1, onboardingCompletedAt: null },
         });
-        user = await tx.user.update({ where: { id: existing.id }, data: { name, loginId } });
+        user = await tx.user.update({ where: { id: existing.id }, data: { name, loginId, pendingExpiresAt } });
       } else {
         const company = await tx.company.create({
           data: { name: accountName, accountType, cnpj: accountType === 'COMPANY' ? loginId : null, onboardingStep: 1 },
         });
-        user = await tx.user.create({ data: { email, name, loginId, companyId: company.id, status: 'PENDING_PAYMENT' } });
+        user = await tx.user.create({ data: { email, name, loginId, companyId: company.id, status: 'PENDING_PAYMENT', pendingExpiresAt } });
       }
       const { token, session } = await this.auth.createSession(user.id, { scope: 'ONBOARDING', ...meta }, tx);
       return { token, session, user };
     });
+  }
+
+  /**
+   * Deletes unpaid signups past their hour, freeing their CNPJ and CPF. A paid
+   * signup, or one with a Pix charge still open, keeps its record.
+   */
+  async #purgeExpiredDrafts() {
+    const now = new Date();
+    const drafts = await this.prisma.user.findMany({
+      where: {
+        status: 'PENDING_PAYMENT',
+        OR: [{ pendingExpiresAt: { lt: now } }, { pendingExpiresAt: null, createdAt: { lt: new Date(now.getTime() - DRAFT_TTL_MS) } }],
+      },
+      select: { companyId: true },
+    });
+    for (const { companyId } of drafts) {
+      const open = await this.prisma.payment.count({
+        where: { companyId, OR: [{ status: 'CONFIRMED' }, { status: 'PENDING', expiresAt: { gt: now } }] },
+      });
+      if (!open) await this.prisma.company.deleteMany({ where: { id: companyId } });
+    }
+  }
+
+  /** Refuses to continue an unpaid signup whose hour has passed. */
+  async #assertNotExpired(userId) {
+    const row = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true, pendingExpiresAt: true, companyId: true } });
+    if (row.status !== 'PENDING_PAYMENT' || !row.pendingExpiresAt || row.pendingExpiresAt > new Date()) return;
+    const sub = await this.prisma.subscription.findUnique({ where: { companyId: row.companyId } });
+    if (sub?.status === 'ACTIVE') return;
+    throw gone('O prazo de 1 hora para concluir este cadastro acabou. Comece de novo.');
   }
 
   async state(user) {
@@ -91,6 +125,7 @@ export class OnboardingService {
     if (user.status !== 'PENDING_PAYMENT' && user.status !== 'PENDING_ACTIVATION') {
       throw conflict('Onboarding já concluído.');
     }
+    await this.#assertNotExpired(user.id);
     const company = await this.prisma.company.findUnique({ where: { id: user.companyId } });
     const patch = pickCompanyFields(data || {});
     // The CNPJ given at the start is the company's login: it can't change here.
@@ -134,6 +169,7 @@ export class OnboardingService {
     const fresh = await this.prisma.user.findUnique({ where: { id: user.id } });
     if (fresh.status === 'ACTIVE') return { alreadyActive: true };
     if (fresh.status !== 'PENDING_PAYMENT' && fresh.status !== 'PENDING_ACTIVATION') throw conflict('Onboarding já concluído.');
+    await this.#assertNotExpired(fresh.id);
     const company = await this.prisma.company.findUnique({ where: { id: fresh.companyId } });
     if (!company.onboardingCompletedAt) throw badRequest('Complete os dados do cadastro antes de continuar.');
     const fee = this.#signupFee(company);
