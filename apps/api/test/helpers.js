@@ -147,6 +147,7 @@ export const PROFILE = {
   preferredIndustries: ['Indústria', 'Metalurgia'],
   excludedIndustries: [],
   keywords: ['manutenção preventiva'],
+  postalCode: '89201000',
 };
 
 /** Run the onboarding up to a pending Pix charge. */

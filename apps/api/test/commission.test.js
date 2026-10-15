@@ -3,7 +3,7 @@ import { disconnectPrisma } from '@autopix/core';
 import { COMMISSION_PLAN_CODE } from '@autopix/shared';
 import { setupApp, resetDb, client, hasDb, PROFILE, STRONG_PASSWORD, testCnpj, testCpf, activationTokenFromEmail } from './helpers.js';
 
-const WORKER_PROFILE = { services: ['Eletricista'], city: 'Joinville', state: 'SC', serviceLocations: ['Joinville - SC'] };
+const WORKER_PROFILE = { services: ['Eletricista'], city: 'Joinville', state: 'SC', serviceLocations: ['Joinville - SC'], postalCode: '89201000' };
 
 /**
  * TemPix has no subscription: professionals (pessoa física) sign up free,

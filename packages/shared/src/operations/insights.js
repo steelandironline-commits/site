@@ -173,3 +173,17 @@ export function capabilitySummary(rawProfile, company = {}) {
 
   return out;
 }
+
+/** Simulated travel time for a distance at a steady speed (80 km/h by default): one way and round trip. */
+export function travelEstimate(km, speedKmh = 80) {
+  const n = Number(km) || 0;
+  if (n <= 0) return null;
+  const oneWayMin = Math.round((n / speedKmh) * 60);
+  return { oneWay: formatTravel(oneWayMin), roundTrip: formatTravel(oneWayMin * 2) };
+}
+
+function formatTravel(total) {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min`;
+}

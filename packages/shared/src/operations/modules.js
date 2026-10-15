@@ -492,12 +492,16 @@ export const OPERATION_MODULES = Object.freeze([
     group: 'estrutura',
     appliesTo: { always: true },
     title: 'Certificados e normas',
+    titlePerson: 'Certificados e habilitações',
     subtitle: 'Empresas marcam as NRs e normas que cumprem. Pessoas marcam os certificados e habilitações que possuem. Nada aqui é obrigatório.',
+    subtitlePerson: 'Marque os treinamentos e habilitações que você possui. Nada aqui é obrigatório.',
     fields: [
       {
         type: 'chips',
         path: 'certifications.nrs',
         label: 'Normas Regulamentadoras (NRs)',
+        labelPerson: 'Treinamentos NR (segurança do trabalho)',
+        hintPerson: 'Marque os treinamentos NR que você já fez, como NR-35 (altura) ou NR-10 (eletricidade).',
         hint: 'Marque as NRs que sua empresa ou sua equipe cumpre. “Todas as NRs” marca a lista inteira de uma vez.',
         options: NRS,
         bulk: [{ label: 'Todas as NRs', ids: NRS.map((o) => o.id) }],
@@ -505,6 +509,7 @@ export const OPERATION_MODULES = Object.freeze([
       {
         type: 'chips',
         path: 'certifications.norms',
+        accounts: ['COMPANY'],
         label: 'Normas técnicas e certificações',
         hint: 'As normas mais exigidas em cada área. Os atalhos marcam a área inteira.',
         options: NORMS,
@@ -514,7 +519,9 @@ export const OPERATION_MODULES = Object.freeze([
         type: 'chips',
         path: 'certifications.licenses',
         label: 'Habilitações e certificados das pessoas',
+        labelPerson: 'Habilitações e treinamentos que você possui',
         hint: 'Para quem executa o serviço: operação de máquinas, soldagem, altura e outros treinamentos.',
+        hintPerson: 'Operação de máquinas, soldagem, altura e outros treinamentos que você tem.',
         options: LICENSES,
       },
       {
@@ -560,6 +567,22 @@ function applies(module, profile, accountType) {
   return hasAny(profile.types, a.types || []) || hasAny(profile.objectives, a.objectives || []);
 }
 
+/**
+ * A module shaped for the account. A pessoa física sees her own certificates and
+ * training: no company norms and no "Todas as NRs" shortcut. Companies see it whole.
+ */
+function forAccount(module, accountType) {
+  if (accountType !== 'PERSON') return module;
+  return {
+    ...module,
+    title: module.titlePerson ?? module.title,
+    subtitle: module.subtitlePerson ?? module.subtitle,
+    fields: module.fields
+      .filter((f) => !f.accounts || f.accounts.includes('PERSON'))
+      .map(({ bulk, ...f }) => ({ ...f, label: f.labelPerson ?? f.label, hint: f.hintPerson ?? f.hint })),
+  };
+}
+
 export function conditionMet(when, profile) {
   if (!when) return true;
   const value = when.path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), profile);
@@ -581,7 +604,8 @@ export function modulesFor(profile, accountType) {
   return picked
     .filter((m) => !(m.skipIfAny || []).some((id) => pickedIds.has(id)))
     .filter((m) => conditionMet(m.when, profile))
-    .sort((x, y) => order[x.group] - order[y.group]);
+    .sort((x, y) => order[x.group] - order[y.group])
+    .map((m) => forAccount(m, accountType));
 }
 
 /**

@@ -28,6 +28,7 @@ import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
 import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Button, Field, Input, Select, TagInput, Textarea } from '../../components/ui/ui.jsx';
 import { AccountStartFields } from './AccountStartFields.jsx';
+import { PersonWhereFields } from './PersonWhereFields.jsx';
 import { OperationFields } from './operations/OperationFields.jsx';
 import { CapabilityList, CompletenessMeter } from './operations/ProfileOverview.jsx';
 import { OPS_COPY } from './operations/copy.js';
@@ -56,7 +57,7 @@ const STEPS = [
 const PERSON_STEPS = [
   { key: 'start', title: 'Vamos começar.', subtitle: 'Profissional se cadastra grátis. Leva menos de um minuto.' },
   { key: 'work', title: 'Qual é o seu trabalho?', subtitle: 'Profissão e serviços que você faz. Assim chegam vagas e serviços certos para você.', fields: ['services', 'description'] },
-  { key: 'where', title: 'Onde você trabalha?', subtitle: 'Cidade, regiões e até onde você se desloca.', fields: ['city', 'state', 'serviceLocations', 'serviceRadiusKm'] },
+  { key: 'where', title: 'Onde você trabalha?', subtitle: 'Seu CEP e até quantos km você aceita ir para o trabalho.', fields: ['postalCode', 'serviceRadiusKm'] },
   // Asked last, after the profession and the region.
   { key: 'contact', title: 'Como falar com você?', subtitle: 'Opcional. Usado só para avisos de vagas e serviços.', fields: ['phone'], sortGroup: 'onde' },
 ];
@@ -110,6 +111,7 @@ const EMPTY = {
   phone: '',
   city: '',
   state: '',
+  postalCode: '',
   serviceLocations: [],
   serviceRadiusKm: 100,
   description: '',
@@ -125,6 +127,9 @@ const EMPTY = {
 
 const ANALYSIS = ['Perfil comercial', 'Mercado', 'Segmentos', 'Região', 'Ticket', 'Sinais'];
 const PERSON_ANALYSIS = ['Perfil profissional', 'Região', 'Vagas', 'Serviços', 'Fretes'];
+/** Section names for pessoa física: the company wording does not apply to a worker. */
+const PERSON_GROUP_LABELS = { sobre: 'Sobre você', estrutura: 'Seus certificados', onde: 'Onde você trabalha' };
+const groupTitle = (group, accountType) => (accountType === 'PERSON' && PERSON_GROUP_LABELS[group]) || groupLabel(group);
 
 function toPayload(form, fields) {
   const out = {};
@@ -156,7 +161,8 @@ function validate(stepKey, form, account, profile = emptyOperationalProfile()) {
   if (stepKey === 'sells' && !form.products.length && !form.description.trim()) e.products = 'Adicione pelo menos um produto ou uma descrição';
   if (stepKey === 'services' && !form.services.length && !form.products.length) e.services = 'Adicione pelo menos um serviço';
   if (stepKey === 'customer' && form.idealCustomer.trim().length < 3) e.idealCustomer = 'Descreva seu cliente ideal';
-  if (stepKey === 'where' && !form.city.trim() && !form.serviceLocations.length) e.city = 'Informe sua cidade ou regiões atendidas';
+  if (stepKey === 'where' && account.accountType === 'PERSON' && !/^\d{8}$/.test(String(form.postalCode || ''))) e.postalCode = 'Informe o CEP com 8 números';
+  if (stepKey === 'where' && account.accountType !== 'PERSON' && !form.city.trim() && !form.serviceLocations.length) e.city = 'Informe sua cidade ou regiões atendidas';
   return e;
 }
 
@@ -423,7 +429,7 @@ export default function Onboarding() {
             >
               <p className="eyebrow">
                 Etapa {step + 1}
-                {current.group ? ` · ${current.group === 'sobre' && account.accountType === 'PERSON' ? 'Sobre você' : groupLabel(current.group)}` : ''}
+                {current.group ? ` · ${groupTitle(current.group, account.accountType)}` : ''}
               </p>
               <h1 className={s.title} ref={headingRef} tabIndex={-1}>
                 {current.title}
@@ -527,7 +533,9 @@ export default function Onboarding() {
                   </Field>
                 )}
 
-                {current.key === 'where' && (
+                {current.key === 'where' && account.accountType === 'PERSON' && <PersonWhereFields form={form} set={set} errors={errors} />}
+
+                {current.key === 'where' && account.accountType !== 'PERSON' && (
                   <>
                     <div className={s.row2}>
                       <Field label="Cidade-base" error={errors.city}>

@@ -12,6 +12,7 @@ export const COMPANY_FIELDS = [
   'phone',
   'city',
   'state',
+  'postalCode',
   'serviceLocations',
   'serviceRadiusKm',
   'description',

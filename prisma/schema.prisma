@@ -412,6 +412,7 @@ model Company {
   phone                 String?
   city                  String?
   state                 String?
+  postalCode            String?
   serviceLocations      String[]  @default([])
   serviceRadiusKm       Int?
   description           String?

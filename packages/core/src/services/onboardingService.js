@@ -150,7 +150,7 @@ export class OnboardingService {
       const missing = [];
       if (company.accountType === 'PERSON') {
         if (!next.services.length) missing.push('profissão ou serviços');
-        if (!next.serviceLocations.length && !next.city) missing.push('cidade ou região');
+        if (!next.postalCode) missing.push('CEP');
       } else {
         if (!next.products.length && !next.services.length) missing.push('produtos ou serviços');
         if (!next.idealCustomer) missing.push('cliente ideal');

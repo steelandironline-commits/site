@@ -57,6 +57,7 @@ export const companyProfileSchema = z.object({
   phone: optionalText(30),
   city: optionalText(80),
   state: optionalText(2).transform((v) => (v ? v.toUpperCase() : v)),
+  postalCode: z.string().regex(/^\d{8}$/, 'Informe o CEP com 8 números').nullable().optional(),
   serviceLocations: tagList(20),
   serviceRadiusKm: z.coerce.number().int().min(0).max(5000).nullable().optional(),
   description: optionalText(2000),

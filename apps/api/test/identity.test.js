@@ -23,7 +23,7 @@ describe.skipIf(!hasDb)('login by CPF / CNPJ and collaborators', () => {
     const body = accountType === 'PERSON' ? { accountType, name: 'João Pereira', email, document } : { accountType, name: 'Bia Lima', email, companyName: 'Construtora Lima', document };
     const start = await c.post('/api/onboarding/start', body);
     if (start.status !== 201) return { start };
-    const data = accountType === 'PERSON' ? { services: ['Eletricista'], city: 'Joinville', state: 'SC' } : PROFILE;
+    const data = accountType === 'PERSON' ? { services: ['Eletricista'], city: 'Joinville', state: 'SC', postalCode: '89201000' } : PROFILE;
     await c.put('/api/onboarding/step', { step: 9, data, complete: true });
     const fin = await c.post('/api/onboarding/finish');
     expect(fin.body.emailVerificationRequired).toBe(true);

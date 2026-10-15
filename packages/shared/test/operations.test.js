@@ -74,6 +74,28 @@ describe('pessoa física x CNPJ', () => {
   });
 });
 
+describe('pessoa física: certificates and travel', () => {
+  it('shows a worker her certificates, never company norms or the bulk NR shortcut', async () => {
+    const pf = modulesFor({ types: ['caminhoneiro'], objectives: [] }, 'PERSON').find((m) => m.id === 'certificacoes');
+    expect(pf.title).toBe('Certificados e habilitações');
+    expect(pf.fields.map((f) => f.path)).not.toContain('certifications.norms');
+    const nrs = pf.fields.find((f) => f.path === 'certifications.nrs');
+    expect(nrs.bulk).toBeUndefined();
+    expect(nrs.label).toBe('Treinamentos NR (segurança do trabalho)');
+    expect(JSON.stringify(pf)).not.toMatch(/empresa|equipe/i);
+    const co = modulesFor({ types: ['usinagem'], objectives: [] }, 'COMPANY').find((m) => m.id === 'certificacoes');
+    expect(co.fields.map((f) => f.path)).toContain('certifications.norms');
+    expect(co.title).toBe('Certificados e normas');
+  });
+
+  it('estimates the travel time at 80 km/h, one way and round trip', async () => {
+    const { travelEstimate } = await import('../src/index.js');
+    expect(travelEstimate(80)).toEqual({ oneWay: '1 h 00 min', roundTrip: '2 h 00 min' });
+    expect(travelEstimate(50).oneWay).toBe('38 min');
+    expect(travelEstimate(0)).toBeNull();
+  });
+});
+
 describe('certificates and norms', () => {
   it('asks companies and people alike, and never requires the answer', () => {
     expect(modulesFor({ types: [], objectives: [] }, 'COMPANY').map((m) => m.id)).toContain('certificacoes');
