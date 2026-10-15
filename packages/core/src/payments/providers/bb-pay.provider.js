@@ -1,31 +1,48 @@
+import QRCode from 'qrcode';
 import { PaymentProvider, NO_CAPABILITIES } from '../PaymentProvider.js';
-import { FinancialError } from '../errors.js';
+import { FinancialError, withRetry } from '../errors.js';
+import { BancoDoBrasilAuthService } from './banco-do-brasil.auth.js';
+import { createMtlsFetch } from './http.js';
 import { safeEqual } from '../../security/tokens.js';
-import { unavailable } from '../../errors.js';
-import { PAYMENTS_UNAVAILABLE_MESSAGE } from '../DisabledPaymentProvider.js';
+import { logger } from '../../logger.js';
 
 /**
  * BB Pay (v2) — Banco do Brasil payment gateway, identified by a convênio.
+ * Reference: Portal de Apoio ao Desenvolvedor BB, API "BB Pay" v2
+ * (apoio.developers.bb.com.br/apis/41?versaoApi=2), topics "Especificações e
+ * testes" and "Webhook".
  *
- * Webhook (Portal de Apoio ao Desenvolvedor BB, "Webhook BB Pay"): the bank
- * POSTs `{ codigoEvento, dadosEvento: { numeroConvenio, numeroSolicitacao,
- * numeroPagamento, valorOriginal, timestampPagamento, codigoTipoPagamento, … } }`
- * once a requested payment changes. codigoEvento: 1 pago, 2 devolvido,
- * 3 não autorizado, 4 contestado. It expects HTTP 200/201 and retries up to
- * 3 times otherwise.
+ *  - POST {base}/solicitacoes creates a payment request; with formasPagamento
+ *    PIX the response carries informacoesPix.textoQrCode (copia e cola).
+ *  - GET {base}/solicitacoes?numeroConvenio&codigoConciliacaoSolicitacao lists
+ *    it back with codigoEstadoSolicitacao (0 aguardando, 1 paga, 800 expirada,
+ *    850 abandonada, 900 excluída).
+ *  - Webhook `{ codigoEvento, dadosEvento }`: 1 pago, 2 devolvido,
+ *    3 não autorizado, 4 contestado.
  *
- * Authenticity: TLS ends at the PaaS edge, so the registered URL carries a
- * shared secret (?token=…) and the convênio must be ours. The amount is checked
- * against our own charge by PaymentService before anything is confirmed.
+ * Hosts are mTLS (checkout.mtls.api[.hm].bb.com.br): a client certificate is
+ * required. OAuth is BB's client_credentials, app key as gw-dev-app-key.
  *
- * Creating a payment request (solicitação) is not implemented until the BB Pay
- * v2 API reference is in hand: no charge is ever faked.
+ * Our providerPaymentId is `${numeroSolicitacao}:${codigoConciliacao}`: the
+ * webhook carries both, and the conciliation code is what the documented GET
+ * filters on, so status can always be re-read from the bank.
  */
 export const BB_PAY_EVENT_STATUS = Object.freeze({ 1: 'CONFIRMED', 2: 'REFUNDED', 3: 'FAILED', 4: 'CONTESTED' });
+const REQUEST_STATUS = Object.freeze({ 0: 'PENDING', 1: 'CONFIRMED', 800: 'EXPIRED', 850: 'EXPIRED', 900: 'CANCELED' });
 
 const toCents = (v) => (v == null || v === '' ? null : Math.round(Number(v) * 100));
 
-/** BB sends local Brasília time without an offset ("2022-02-23T13:02:55.00000"). */
+/** Our reference sent to BB (alphanumeric, derived from our payment id). */
+export const conciliationFor = (paymentId) => `TP${String(paymentId).replace(/[^a-zA-Z0-9]/g, '')}`.slice(0, 40);
+
+export const providerIdFor = (numeroSolicitacao, conciliacao) => `${numeroSolicitacao}:${conciliacao}`;
+
+function splitProviderId(id) {
+  const [numero, conciliacao] = String(id).split(':');
+  return { numero, conciliacao };
+}
+
+/** BB sends Brasília local time without an offset ("2022-02-23T13:02:55.00000"). */
 function brTime(v) {
   if (!v) return null;
   const s = String(v);
@@ -33,14 +50,48 @@ function brTime(v) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/** Deadline sent to BB, in Brasília time with an explicit offset. */
+export function bbTimestamp(date) {
+  const local = new Date(new Date(date).getTime() - 3 * 60 * 60 * 1000);
+  return `${local.toISOString().slice(0, 19)}-03:00`;
+}
+
 export class BbPayPaymentProvider extends PaymentProvider {
   name = 'bb_pay';
   label = 'Banco do Brasil · BB Pay';
 
-  constructor({ bbPay }) {
+  constructor({ bbPay, fetchImpl, now = () => Date.now(), sleep } = {}) {
     super();
     this.cfg = bbPay;
     this.isSandbox = bbPay.environment !== 'production';
+    this.fetch = fetchImpl || (bbPay.mtls ? createMtlsFetch(bbPay.mtls) : globalThis.fetch);
+    this.now = now;
+    this.sleep = sleep;
+    this.auth = new BancoDoBrasilAuthService({
+      clientId: bbPay.clientId,
+      clientSecret: bbPay.clientSecret,
+      oauthUrl: bbPay.oauthUrl,
+      scopes: bbPay.scopes,
+      fetchImpl: this.fetch,
+      now,
+      sleep,
+    });
+  }
+
+  /** What is missing to talk to the BB Pay API (empty when ready). */
+  get missing() {
+    const c = this.cfg;
+    return [
+      !c.convenio && 'BB_PAY_CONVENIO',
+      !c.clientId && 'BB_CLIENT_ID',
+      !c.clientSecret && 'BB_CLIENT_SECRET',
+      !c.appKey && 'BB_DEVELOPER_APPLICATION_KEY',
+      !c.mtls && 'BB_MTLS_CERT_BASE64/BB_MTLS_KEY_BASE64',
+    ].filter(Boolean);
+  }
+
+  get apiReady() {
+    return this.missing.length === 0;
   }
 
   getCapabilities() {
@@ -48,18 +99,114 @@ export class BbPayPaymentProvider extends PaymentProvider {
     const webhookReady = Boolean(this.cfg.webhookSecret && this.cfg.convenio);
     if (!this.cfg.webhookSecret) reasons.pixWebhook = 'BB_WEBHOOK_SECRET ausente.';
     else if (!this.cfg.convenio) reasons.pixWebhook = 'BB_PAY_CONVENIO ausente.';
-    reasons.pix = 'Criação de cobrança BB Pay aguardando a especificação da API (solicitação de pagamento).';
-    for (const k of Object.keys(NO_CAPABILITIES)) if (k !== 'pixWebhook' && !reasons[k]) reasons[k] = 'Não disponível pelo BB Pay nesta versão.';
-    return { capabilities: { ...NO_CAPABILITIES, pixWebhook: webhookReady }, reasons };
+    if (!this.apiReady) {
+      const why = `Credenciais BB Pay incompletas: ${this.missing.join(', ')}.`;
+      reasons.pix = why;
+      reasons.paymentStatus = why;
+    }
+    for (const k of Object.keys(NO_CAPABILITIES)) {
+      if (!['pix', 'pixWebhook', 'paymentStatus'].includes(k) && !reasons[k]) reasons[k] = 'Não disponível pelo BB Pay nesta versão.';
+    }
+    return {
+      capabilities: { ...NO_CAPABILITIES, pix: this.apiReady, paymentStatus: this.apiReady, pixWebhook: webhookReady },
+      reasons,
+    };
   }
 
-  async createPixCharge() {
-    throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE);
+  // ------------------------------------------------------------------ http
+
+  async #call(method, path, { query = {}, body, retry = true } = {}) {
+    if (!this.apiReady) throw new FinancialError('PROVIDER_AUTH_FAILED', { detail: `missing: ${this.missing.join(', ')}` });
+    const qs = new URLSearchParams({ ...query, [this.cfg.appKeyParam]: this.cfg.appKey }).toString();
+    const url = `${this.cfg.apiBaseUrl}${path}?${qs}`;
+    const exec = async () => {
+      const token = await this.auth.getToken();
+      let res;
+      try {
+        res = await this.fetch(url, {
+          method,
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: body ? JSON.stringify(body) : undefined,
+          signal: AbortSignal.timeout(15_000),
+        });
+      } catch (err) {
+        throw new FinancialError('PROVIDER_UNAVAILABLE', { detail: `${method} ${path}: ${err.name}`, retryable: true });
+      }
+      if (res.status === 401) {
+        this.auth.invalidate();
+        throw new FinancialError('PROVIDER_AUTH_FAILED', { providerStatus: 401, retryable: true });
+      }
+      if (res.status === 429) throw new FinancialError('RATE_LIMITED', { providerStatus: 429, retryable: true });
+      if (res.status >= 500) throw new FinancialError('PROVIDER_UNAVAILABLE', { providerStatus: res.status, retryable: true });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // Safe metadata only: status and the bank's error codes, never the request body.
+        const erro = data?.erros?.[0] || data?.errors?.[0] || data;
+        logger.warn('bb pay api rejected request', { method, path, status: res.status, codigo: erro?.codigo ?? erro?.code, mensagem: erro?.mensagem ?? erro?.message ?? erro?.detail });
+        throw new FinancialError('PIX_CREATE_FAILED', { providerStatus: res.status, detail: erro?.mensagem || erro?.message || erro?.detail });
+      }
+      return data;
+    };
+    return retry ? withRetry(exec, { retries: 3, sleep: this.sleep }) : exec();
   }
 
-  async getPaymentStatus() {
-    throw unavailable(PAYMENTS_UNAVAILABLE_MESSAGE);
+  // ------------------------------------------------------------------- Pix
+
+  async createPixCharge({ paymentId, amountCents, description, expiresAt }) {
+    const conciliacao = conciliationFor(paymentId);
+    const deadline = expiresAt ? new Date(expiresAt) : new Date(this.now() + 60 * 60 * 1000);
+    const body = {
+      numeroConvenio: Number(this.cfg.convenio),
+      pagamentoUnico: true,
+      timestampLimiteSolicitacao: bbTimestamp(deadline),
+      valorSolicitacao: Number((amountCents / 100).toFixed(2)),
+      descricaoSolicitacaoPagamento: String(description || 'TemPix').slice(0, 140),
+      codigoConciliacaoSolicitacao: conciliacao,
+      formasPagamento: [{ codigoTipoPagamento: 'PIX', quantidadeParcelas: 1 }],
+    };
+    let res;
+    try {
+      // Not idempotent at the bank: never retried. A failure marks our charge
+      // FAILED; a request that did reach BB expires at its own deadline unpaid.
+      res = await this.#call('POST', '/solicitacoes', { body, retry: false });
+    } catch (err) {
+      throw new FinancialError('PIX_CREATE_FAILED', { detail: err.detail || err.code, providerStatus: err.providerStatus });
+    }
+    const copyPaste = res?.informacoesPix?.textoQrCode;
+    if (!res?.numeroSolicitacao || !copyPaste) throw new FinancialError('PIX_CREATE_FAILED', { detail: 'BB Pay response without numeroSolicitacao or textoQrCode' });
+    const png = await QRCode.toDataURL(copyPaste, { margin: 1, width: 320, errorCorrectionLevel: 'M' });
+    return {
+      providerPaymentId: providerIdFor(res.numeroSolicitacao, conciliacao),
+      status: 'PENDING',
+      qrCodeBase64: png.replace(/^data:image\/png;base64,/, ''),
+      copyPaste,
+      expiresAt: deadline,
+      metadata: {
+        txid: res.informacoesPix?.txId ?? null,
+        numeroSolicitacao: res.numeroSolicitacao,
+        urlSolicitacao: res.urlSolicitacao ?? null,
+        environment: this.cfg.environment,
+      },
+    };
   }
+
+  /** Reads the request back from the bank (authoritative state). */
+  async getPaymentStatus(providerPaymentId) {
+    const { numero, conciliacao } = splitProviderId(providerPaymentId);
+    if (!numero || !conciliacao) throw new FinancialError('PIX_NOT_FOUND', { detail: 'unknown BB Pay reference' });
+    const data = await this.#call('GET', '/solicitacoes', { query: { numeroConvenio: this.cfg.convenio, codigoConciliacaoSolicitacao: conciliacao } });
+    const item = (data?.listaSolicitacoes || []).find((s) => String(s.numeroSolicitacao) === String(numero));
+    if (!item) throw new FinancialError('PIX_NOT_FOUND', { detail: 'BB Pay request not found' });
+    const status = REQUEST_STATUS[Number(item.codigoEstadoSolicitacao)] || 'PENDING';
+    return {
+      status,
+      paidAt: null,
+      amountCents: status === 'CONFIRMED' ? toCents(item.valorSolicitacao) : null,
+      raw: { codigoEstadoSolicitacao: item.codigoEstadoSolicitacao },
+    };
+  }
+
+  // --------------------------------------------------------------- webhook
 
   validateWebhook({ query = {}, headers = {} }) {
     const token = query.token || headers['x-autopix-webhook-token'];
@@ -82,10 +229,20 @@ export class BbPayPaymentProvider extends PaymentProvider {
     if (!this.cfg.convenio || String(d.numeroConvenio) !== String(this.cfg.convenio)) {
       throw new FinancialError('WEBHOOK_INVALID', { detail: 'convenio mismatch' });
     }
+    const providerPaymentId = providerIdFor(d.numeroSolicitacao, d.codigoConciliacaoSolicitacao ?? '');
+    // A payment is confirmed only when the bank itself says the request is paid:
+    // a forged notification with a leaked token cannot open an account.
+    if (status === 'CONFIRMED' && this.apiReady) {
+      const bank = await this.getPaymentStatus(providerPaymentId).catch((err) => {
+        if (err.retryable) throw err; // 5xx → the bank retries the webhook
+        throw new FinancialError('WEBHOOK_INVALID', { detail: `not confirmed by BB Pay: ${err.code}` });
+      });
+      if (bank.status !== 'CONFIRMED') throw new FinancialError('WEBHOOK_INVALID', { detail: `BB Pay request state ${bank.raw.codigoEstadoSolicitacao}` });
+    }
     return [
       {
         providerEventId: `bbpay:${d.numeroSolicitacao}:${d.numeroPagamento ?? '-'}:${body.codigoEvento}`,
-        providerPaymentId: String(d.numeroSolicitacao),
+        providerPaymentId,
         type: `bbpay.event.${body.codigoEvento}`,
         status,
         paidAt: status === 'CONFIRMED' ? brTime(d.timestampPagamento) : null,

@@ -49,7 +49,8 @@ export class BancoDoBrasilAuthService {
               Authorization: `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`,
               'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: new URLSearchParams({ grant_type: 'client_credentials', scope: this.scopes }).toString(),
+            // An empty scope list is not sent at all (configurable per API).
+            body: new URLSearchParams({ grant_type: 'client_credentials', ...(this.scopes ? { scope: this.scopes } : {}) }).toString(),
             signal: AbortSignal.timeout(10_000),
           });
         } catch (err) {

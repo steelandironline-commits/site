@@ -65,6 +65,9 @@ const schema = z.object({
   BB_MTLS_CERT_BASE64: optional,
   BB_MTLS_KEY_BASE64: optional,
   BB_PAY_ENABLED: bool(false),
+  /** BB Pay API base (mTLS host) and OAuth scopes; defaults follow the BB Pay v2 documentation. */
+  BB_PAY_API_BASE_URL: optional,
+  BB_PAY_OAUTH_SCOPES: optional,
   /** BB Pay convênio number (not a secret): webhooks for any other convênio are refused. */
   BB_PAY_CONVENIO: z
     .string()
@@ -199,11 +202,23 @@ export function loadConfig(env = process.env) {
         pixExpirationSeconds: e.BB_PIX_EXPIRATION_SECONDS,
       };
     })(),
-    bbPay: {
-      environment: e.BB_ENVIRONMENT,
-      convenio: e.BB_PAY_CONVENIO,
-      webhookSecret: e.BB_WEBHOOK_SECRET,
-    },
+    bbPay: (() => {
+      const sandbox = e.BB_ENVIRONMENT !== 'production';
+      return {
+        environment: e.BB_ENVIRONMENT,
+        convenio: e.BB_PAY_CONVENIO,
+        webhookSecret: e.BB_WEBHOOK_SECRET,
+        clientId: e.BB_CLIENT_ID,
+        clientSecret: e.BB_CLIENT_SECRET,
+        appKey: e.BB_DEVELOPER_APPLICATION_KEY,
+        apiBaseUrl: (e.BB_PAY_API_BASE_URL || (sandbox ? 'https://checkout.mtls.api.hm.bb.com.br/v2' : 'https://checkout.mtls.api.bb.com.br/v2')).replace(/\/$/, ''),
+        oauthUrl: e.BB_OAUTH_URL || (sandbox ? 'https://oauth.sandbox.bb.com.br/oauth/token' : 'https://oauth.bb.com.br/oauth/token'),
+        scopes: e.BB_PAY_OAUTH_SCOPES || '',
+        // The BB Pay documentation sends the application key as gw-dev-app-key.
+        appKeyParam: e.BB_APP_KEY_PARAM || 'gw-dev-app-key',
+        mtls: e.BB_MTLS_CERT_BASE64 && e.BB_MTLS_KEY_BASE64 ? { certBase64: e.BB_MTLS_CERT_BASE64, keyBase64: e.BB_MTLS_KEY_BASE64 } : null,
+      };
+    })(),
     embeddedWorker: e.EMBEDDED_WORKER,
     search: {
       intervalMinutes: e.SEARCH_INTERVAL_MINUTES,

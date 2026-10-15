@@ -29,7 +29,7 @@ const sample = (over = {}) => ({
 describe('BB Pay webhook', () => {
   it('turns a paid event into a confirmation of our request, with the amount in cents and no payer data', async () => {
     const [ev] = await provider().handleWebhook({ query: { token: SECRET }, body: sample() });
-    expect(ev).toMatchObject({ providerPaymentId: '56789', status: 'CONFIRMED', amountCents: 10020, providerEventId: 'bbpay:56789:123456:1' });
+    expect(ev).toMatchObject({ providerPaymentId: '56789:', status: 'CONFIRMED', amountCents: 10020, providerEventId: 'bbpay:56789:123456:1' });
     expect(ev.paidAt.toISOString()).toBe('2022-02-23T16:02:55.000Z');
     expect(JSON.stringify(ev.payload)).not.toMatch(/NOME DO PAGADOR|5544562701/);
   });
@@ -50,11 +50,12 @@ describe('BB Pay webhook', () => {
     await expect(provider().handleWebhook({ query: { token: SECRET }, body: { codigoEvento: 9, dadosEvento: {} } })).rejects.toThrow();
   });
 
-  it('never claims it can create a Pix before the request API is implemented', async () => {
+  it('does not offer Pix until credentials and the mTLS certificate are configured', async () => {
     const p = provider();
     expect(p.has('pix')).toBe(false);
     expect(p.has('pixWebhook')).toBe(true);
-    await expect(p.createPixCharge({})).rejects.toThrow();
+    expect(p.getCapabilities().reasons.pix).toMatch(/BB_CLIENT_ID.*BB_MTLS_CERT_BASE64/);
+    await expect(p.createPixCharge({ paymentId: 'x', amountCents: 100 })).rejects.toThrow();
   });
 
   it('requires the secret and the convênio in production', () => {
@@ -62,5 +63,95 @@ describe('BB Pay webhook', () => {
     expect(() => loadConfig(base)).toThrow(/BB_PAY_CONVENIO/);
     expect(() => loadConfig({ ...base, BB_WEBHOOK_SECRET: SECRET, BB_PAY_CONVENIO: '421.378' })).not.toThrow();
     expect(loadConfig({ ...base, BB_WEBHOOK_SECRET: SECRET, BB_PAY_CONVENIO: '421.378' }).bbPay.convenio).toBe('421378');
+  });
+});
+
+/** In-memory fake of the BB Pay v2 API (no live banking API is ever called). */
+function fakeBbPay() {
+  const state = { calls: [], requests: new Map(), next: 9001 };
+  const res = (status, data) => ({ ok: status < 400, status, json: async () => data });
+  const fetchImpl = async (url, opts = {}) => {
+    const u = new URL(url);
+    state.calls.push({ method: opts.method, path: u.pathname, query: Object.fromEntries(u.searchParams), body: opts.body && String(opts.body).startsWith('{') ? JSON.parse(opts.body) : opts.body ?? null });
+    if (u.pathname === '/oauth/token') return res(200, { access_token: 'tok', expires_in: 600 });
+    if (opts.method === 'POST' && u.pathname === '/v2/solicitacoes') {
+      const b = JSON.parse(opts.body);
+      const numero = state.next++;
+      state.requests.set(numero, { ...b, numeroSolicitacao: numero, codigoEstadoSolicitacao: 0 });
+      return res(201, { numeroSolicitacao: numero, timestampCriacaoSolicitacao: '2026-10-15T10:00:00', urlSolicitacao: `https://bbpay.apps.bb.com.br/m/#/${numero}`, informacoesPix: { textoQrCode: `00020126BBPAY${numero}`, txId: `TX${numero}` } });
+    }
+    if (opts.method === 'GET' && u.pathname === '/v2/solicitacoes') {
+      const list = [...state.requests.values()].filter((r) => r.codigoConciliacaoSolicitacao === u.searchParams.get('codigoConciliacaoSolicitacao'));
+      return res(200, { totalRegistros: list.length, listaSolicitacoes: list.map((r) => ({ numeroSolicitacao: r.numeroSolicitacao, codigoEstadoSolicitacao: r.codigoEstadoSolicitacao, codigoConciliacaoSolicitacao: r.codigoConciliacaoSolicitacao, valorSolicitacao: r.valorSolicitacao })) });
+    }
+    return res(404, {});
+  };
+  return { state, fetchImpl };
+}
+
+const READY = {
+  environment: 'production',
+  convenio: '421378',
+  webhookSecret: SECRET,
+  clientId: 'cid',
+  clientSecret: 'csecret',
+  appKey: 'appkey',
+  apiBaseUrl: 'https://bbpay.fake/v2',
+  oauthUrl: 'https://bbpay.fake/oauth/token',
+  scopes: '',
+  appKeyParam: 'gw-dev-app-key',
+  mtls: { certBase64: 'x', keyBase64: 'y' },
+};
+
+describe('BB Pay payment requests', () => {
+  it('creates a single-payment Pix request with our conciliation code and returns the QR code', async () => {
+    const bb = fakeBbPay();
+    const p = new BbPayPaymentProvider({ bbPay: READY, fetchImpl: bb.fetchImpl });
+    expect(p.has('pix')).toBe(true);
+    const deadline = new Date('2026-10-15T15:00:00Z');
+    const charge = await p.createPixCharge({ paymentId: 'cm9pay01', amountCents: 20000, description: 'Taxa de cadastro TemPix', expiresAt: deadline });
+
+    const post = bb.state.calls.find((c) => c.method === 'POST' && c.path === '/v2/solicitacoes');
+    expect(post.query['gw-dev-app-key']).toBe('appkey');
+    expect(post.body).toEqual({
+      numeroConvenio: 421378,
+      pagamentoUnico: true,
+      timestampLimiteSolicitacao: '2026-10-15T12:00:00-03:00',
+      valorSolicitacao: 200,
+      descricaoSolicitacaoPagamento: 'Taxa de cadastro TemPix',
+      codigoConciliacaoSolicitacao: 'TPcm9pay01',
+      formasPagamento: [{ codigoTipoPagamento: 'PIX', quantidadeParcelas: 1 }],
+    });
+    expect(charge.providerPaymentId).toBe('9001:TPcm9pay01');
+    expect(charge.copyPaste).toBe('00020126BBPAY9001');
+    expect(charge.qrCodeBase64.length).toBeGreaterThan(100);
+    expect(charge.expiresAt).toEqual(deadline);
+  });
+
+  it('reads the state back from the bank, and confirms a webhook only when the bank says it is paid', async () => {
+    const bb = fakeBbPay();
+    const p = new BbPayPaymentProvider({ bbPay: READY, fetchImpl: bb.fetchImpl });
+    const charge = await p.createPixCharge({ paymentId: 'cm9pay02', amountCents: 20000, description: 'x', expiresAt: new Date(Date.now() + 3600_000) });
+    expect((await p.getPaymentStatus(charge.providerPaymentId)).status).toBe('PENDING');
+
+    const paidEvent = { codigoEvento: 1, dadosEvento: { numeroConvenio: 421378, numeroSolicitacao: 9001, numeroPagamento: 1, valorOriginal: 200, codigoConciliacaoSolicitacao: 'TPcm9pay02' } };
+    // Forged "paid" while the bank still says "aguardando pagamento": refused.
+    await expect(p.handleWebhook({ query: { token: SECRET }, body: paidEvent })).rejects.toBeInstanceOf(FinancialError);
+
+    bb.state.requests.get(9001).codigoEstadoSolicitacao = 1;
+    const st = await p.getPaymentStatus(charge.providerPaymentId);
+    expect(st).toMatchObject({ status: 'CONFIRMED', amountCents: 20000 });
+    const [ev] = await p.handleWebhook({ query: { token: SECRET }, body: paidEvent });
+    expect(ev).toMatchObject({ providerPaymentId: '9001:TPcm9pay02', status: 'CONFIRMED', amountCents: 20000 });
+  });
+
+  it('maps expired, abandoned and deleted requests', async () => {
+    const bb = fakeBbPay();
+    const p = new BbPayPaymentProvider({ bbPay: READY, fetchImpl: bb.fetchImpl });
+    const charge = await p.createPixCharge({ paymentId: 'cm9pay03', amountCents: 100, description: 'x' });
+    for (const [code, status] of [[800, 'EXPIRED'], [850, 'EXPIRED'], [900, 'CANCELED']]) {
+      bb.state.requests.get(9001).codigoEstadoSolicitacao = code;
+      expect((await p.getPaymentStatus(charge.providerPaymentId)).status).toBe(status);
+    }
   });
 });

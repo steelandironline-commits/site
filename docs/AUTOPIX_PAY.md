@@ -150,8 +150,17 @@ seller refunds frozen) → `RESPOND_DISPUTE` → admin `summary` (deterministic,
 - `codigoEvento` 1 confirms the request (`numeroSolicitacao` = our `providerPaymentId`) after the
   amount (`valorOriginal`) matches; 2 (devolvido) is flagged for a human; 3 marks the charge failed;
   4 (contestado) is recorded. Payer name and document are never stored.
-- Creating a request (solicitação) is not implemented yet: the provider reports `pix: false` and
-  the signup returns 503 without recording anything, until the BB Pay v2 API reference is added.
+- Charges: `POST {BB_PAY_API_BASE_URL}/solicitacoes` (default `https://checkout.mtls.api.bb.com.br/v2`,
+  homologation `https://checkout.mtls.api.hm.bb.com.br/v2`), Pix only, `pagamentoUnico: true`, deadline =
+  the signup hour, `codigoConciliacaoSolicitacao` = `TP<paymentId>`. The QR code comes from
+  `informacoesPix.textoQrCode`. Our `providerPaymentId` is `<numeroSolicitacao>:<codigoConciliacao>`.
+- Status: `GET /solicitacoes?numeroConvenio&codigoConciliacaoSolicitacao` (0 aguardando, 1 paga,
+  800/850 expirada/abandonada, 900 excluída). A "paid" webhook is confirmed only after this read says 1.
+- Needs `BB_CLIENT_ID`, `BB_CLIENT_SECRET`, `BB_DEVELOPER_APPLICATION_KEY` (sent as `gw-dev-app-key`),
+  `BB_PAY_CONVENIO` and the client certificate `BB_MTLS_CERT_BASE64` / `BB_MTLS_KEY_BASE64` (mTLS host).
+  Optional `BB_PAY_OAUTH_SCOPES` (empty: no scope parameter). Until all are set, `pix: false` and the
+  signup answers 503 without recording a charge.
+- Reference: Portal de Apoio ao Desenvolvedor BB, API BB Pay v2 (apis/41?versaoApi=2).
 | `PROCESS_ROLE` | `web` | `worker` | worker runs without webhook secrets |
 
 After deploy: `npm run bb:register-webhook` (registers

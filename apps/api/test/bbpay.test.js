@@ -7,7 +7,7 @@ const SECRET = 'bbpay-webhook-secret-0123456789abcdef0123';
 const CONVENIO = '421378';
 const URL = `/api/webhooks/payment/bb-pay?token=${SECRET}`;
 
-const event = (numeroSolicitacao, valorOriginal, codigoEvento = 1) => ({
+const event = (numeroSolicitacao, valorOriginal, codigoEvento = 1, codigoConciliacaoSolicitacao = 'TPconc777') => ({
   codigoEvento,
   dadosEvento: {
     numeroConvenio: Number(CONVENIO),
@@ -17,6 +17,7 @@ const event = (numeroSolicitacao, valorOriginal, codigoEvento = 1) => ({
     timestampPagamento: '2026-10-15T13:02:55.00000',
     valorOriginal,
     codigoTipoPagamento: 'PIX',
+    codigoConciliacaoSolicitacao,
     nomePagador: 'NOME DO PAGADOR',
   },
 });
@@ -57,16 +58,16 @@ describe.skipIf(!hasDb)('BB Pay webhook route', () => {
     await c.put('/api/onboarding/step', { step: 9, data: PROFILE, complete: true });
     const sub = await prisma.subscription.create({ data: { companyId, plan: 'commission', priceCents: 0, provider: 'bb_pay' } });
     await prisma.payment.create({
-      data: { kind: 'SIGNUP_FEE', subscriptionId: sub.id, companyId, provider: 'bb_pay', providerPaymentId: '777', amountCents: 20000, idempotencyKey: 'bbpay-777', expiresAt: new Date(Date.now() + 3600_000) },
+      data: { kind: 'SIGNUP_FEE', subscriptionId: sub.id, companyId, provider: 'bb_pay', providerPaymentId: '777:TPconc777', amountCents: 20000, idempotencyKey: 'bbpay-777', expiresAt: new Date(Date.now() + 3600_000) },
     });
 
     // Wrong amount: flagged for a human, never confirmed.
     await request(ctx.app).post(URL).send(event(777, 2.0));
-    expect((await prisma.payment.findFirst({ where: { providerPaymentId: '777' } })).status).toBe('PENDING');
+    expect((await prisma.payment.findFirst({ where: { providerPaymentId: '777:TPconc777' } })).status).toBe('PENDING');
 
     const paid = await request(ctx.app).post(URL).send({ ...event(777, 200.0), dadosEvento: { ...event(777, 200.0).dadosEvento, numeroPagamento: 999 } });
     expect(paid.status).toBe(200);
-    expect((await prisma.payment.findFirst({ where: { providerPaymentId: '777' } })).status).toBe('CONFIRMED');
+    expect((await prisma.payment.findFirst({ where: { providerPaymentId: '777:TPconc777' } })).status).toBe('CONFIRMED');
     expect((await prisma.subscription.findUnique({ where: { companyId } })).status).toBe('ACTIVE');
 
     // The bank retries: same event, nothing changes twice.
