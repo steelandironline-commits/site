@@ -59,3 +59,5 @@ export { DisputeService, EvidenceSummarizer, OPEN_DISPUTE_STATUSES } from './fin
 export { TripService, haversineM, geocodeCity, normalizeCity, ARRIVAL_RADIUS_M, NEAR_RADIUS_M } from './finance/TripService.js';
 export { ReconciliationService } from './finance/ReconciliationService.js';
 export { AdminService } from './finance/AdminService.js';
+export { createPlatformAdmin } from './services/platformAdminService.js';
+export { CourtesyAccessService } from './services/courtesyService.js';
