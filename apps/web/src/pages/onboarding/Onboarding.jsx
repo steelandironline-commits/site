@@ -13,17 +13,15 @@ import {
   capabilitySummary,
   emptyOperationalProfile,
   formatCents,
-  formatCnpj,
   groupLabel,
   isValidCnpj,
   isValidCpf,
   modulesFor,
-  normalizeOperationalProfile,
   onlyDigits,
   operationalProfileSchema,
   profileCompleteness,
 } from '@autopix/shared';
-import { api, post, put } from '../../lib/api.js';
+import { post, put } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { safeStorage } from '../../lib/hooks.js';
 import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
@@ -124,16 +122,6 @@ const EMPTY = {
 
 const ANALYSIS = ['Perfil comercial', 'Mercado', 'Segmentos', 'Região', 'Ticket', 'Sinais'];
 const PERSON_ANALYSIS = ['Perfil profissional', 'Região', 'Vagas', 'Serviços', 'Fretes'];
-
-function fromCompany(c) {
-  if (!c) return {};
-  const out = {};
-  for (const k of Object.keys(EMPTY)) {
-    if (c[k] !== null && c[k] !== undefined) out[k] = c[k];
-  }
-  if (out.cnpj) out.cnpj = formatCnpj(out.cnpj);
-  return out;
-}
 
 function toPayload(form, fields) {
   const out = {};
@@ -319,60 +307,26 @@ export default function Onboarding() {
   const [error, setError] = useState(null);
   const [booting, setBooting] = useState(true);
   const [phase, setPhase] = useState('form'); // form | analysis | ready
-  const [hasSession, setHasSession] = useState(false);
   const headingRef = useRef(null);
 
-  // Resume: server state first, local draft as a convenience.
+  // Every visit starts from zero. Nothing is kept in the browser or on the server
+  // before the Pix, so a half-finished form never comes back; an old draft is discarded.
   useEffect(() => {
     document.title = 'Cadastre-se no TemPix';
     if (sessionLoading) return;
-    (async () => {
-      let draft = null;
-      try {
-        draft = JSON.parse(storage?.getItem(DRAFT_KEY) || 'null');
-      } catch {
-        draft = null;
-      }
-      try {
-        if (!me) throw new Error('anonymous');
-        if (me.scope === 'FULL' && me.user.status === 'ACTIVE') return navigate('/app', { replace: true });
-        const st = await api('/api/onboarding', { quiet401: true });
-        if (st.user.status === 'ACTIVE') return navigate('/app', { replace: true });
-        setHasSession(true);
-        const type = st.company.accountType || 'COMPANY';
-        setAccount({
-          accountType: type,
-          name: st.user.name,
-          email: st.user.email,
-          companyName: type === 'COMPANY' ? st.company.name : '',
-          document: type === 'COMPANY' && st.company.cnpj ? formatCnpj(st.company.cnpj) : '',
-        });
-        setForm((f) => ({ ...f, ...fromCompany(st.company), ...(draft?.form || {}) }));
-        const saved = st.company.operationalProfile ? normalizeOperationalProfile(st.company.operationalProfile) : null;
-        const resumed = withPresets(saved || (draft?.profile ? normalizeOperationalProfile(draft.profile) : emptyOperationalProfile()), params);
-        setProfile(resumed);
-        if (st.company.onboardingCompletedAt) setPhase('ready');
-        else setStep(Math.min(Math.max(1, st.company.onboardingStep), stepsFor(type, resumed).length - 1));
-      } catch {
-        if (draft?.account) setAccount((a) => ({ ...a, ...draft.account, accountType: preset || draft.account.accountType || '' }));
-        if (draft?.profile) setProfile(withPresets(normalizeOperationalProfile(draft.profile), params));
-      } finally {
-        setBooting(false);
-      }
-      return undefined;
-    })();
-    // Runs once the session is known; later session refreshes must not reset the form.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionLoading]);
-
-  useEffect(() => {
-    if (booting) return;
+    if (me?.scope === 'FULL' && me.user.status === 'ACTIVE') {
+      navigate('/app', { replace: true });
+      return;
+    }
     try {
-      storage?.setItem(DRAFT_KEY, JSON.stringify({ form, account: { ...account }, profile }));
+      storage?.removeItem(DRAFT_KEY);
     } catch {
       /* storage unavailable */
     }
-  }, [form, account, profile, booting, storage]);
+    setBooting(false);
+    // Runs once the session is known; later session refreshes must not reset the form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionLoading]);
 
   useEffect(() => {
     if (!booting) headingRef.current?.focus({ preventScroll: true });
@@ -422,7 +376,7 @@ export default function Onboarding() {
     setErrors({});
     setError(null);
     setDir(-1);
-    setStep((st) => Math.max(hasSession ? 1 : 0, st - 1));
+    setStep((st) => Math.max(0, st - 1));
   };
 
   const onSubmit = (e) => {
@@ -480,7 +434,7 @@ export default function Onboarding() {
 
               <div className={s.fields}>
                 {current.key === 'start' && (
-                  <AccountStartFields account={account} setAccount={setAccount} errors={errors} hasSession={hasSession} feeLabel={feeLabel} />
+                  <AccountStartFields account={account} setAccount={setAccount} errors={errors} feeLabel={feeLabel} />
                 )}
 
                 {current.module && (
@@ -644,7 +598,7 @@ export default function Onboarding() {
               </div>
 
               <footer className={s.actions}>
-                {step > (hasSession ? 1 : 0) ? (
+                {step > 0 ? (
                   <Button variant="ghost" icon={ArrowLeft} onClick={back}>
                     Voltar
                   </Button>
@@ -655,7 +609,7 @@ export default function Onboarding() {
                   {step === steps.length - 1 ? 'CONCLUIR' : 'CONTINUAR'}
                 </Button>
               </footer>
-              {step === 0 && !hasSession && (
+              {step === 0 && (
                 <p className={s.legal}>
                   Já tem conta? <Link to="/login">Entrar</Link>
                 </p>
