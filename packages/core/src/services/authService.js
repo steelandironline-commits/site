@@ -62,8 +62,6 @@ export class AuthService {
       return null;
     }
     if (session.user.status === 'DISABLED') return null;
-    // Platform admins are also listed by email at deploy time (PLATFORM_ADMIN_EMAILS).
-    if (this.config.platformAdminEmails?.includes(session.user.email.toLowerCase())) session.user.isPlatformAdmin = true;
 
     // Slide the window when more than half of the TTL has elapsed.
     const ttl = session.scope === 'ONBOARDING' ? this.config.session.onboardingTtlMs : this.config.session.ttlMs;

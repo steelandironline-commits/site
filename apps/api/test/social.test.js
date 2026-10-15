@@ -76,7 +76,7 @@ describe.skipIf(!hasDb)('Social — confirmed delivery, privacy and interactions
 
   it('disputed and refunded services cannot claim successful delivery or earn success commissions', async () => {
     const t = await deal(); const published = await publish(seller, t.id); expect(published.status).toBe(200);
-    expect((await seller.c.get('/api/pay/summary')).body.summary.commissionsCents).toBe(2000);
+    expect((await seller.c.get('/api/pay/summary')).body.summary.commissionsCents).toBe(5000);
     await ctx.prisma.marketplaceTransaction.update({ where: { id: t.id }, data: { status: 'DISPUTED' } });
     expect((await publish(buyer, t.id)).status).toBe(409);
     expect((await stranger.c.get('/api/social/posts')).body.items).toHaveLength(0);
@@ -96,11 +96,11 @@ describe.skipIf(!hasDb)('Social — confirmed delivery, privacy and interactions
     expect((await ctx.prisma.workforceMatch.findUnique({ where: { id: m.id } })).agreedSalaryCents).toBe(300000);
   });
 
-  it('quotes exactly 2% for every marketplace type even with legacy custom rules; preserves existing contracts', async () => {
+  it('quotes the value tier for every marketplace type, ignoring legacy custom rules; preserves existing contracts', async () => {
     await ctx.prisma.commissionRule.create({ data: { name: 'Legacy company 3%', companyId: seller.companyId, rateBps: 300, fixedAmountCents: 1000, minimumCents: 10000 } });
     for (const type of ['SALES', 'FREIGHT', 'WORKFORCE', 'SERVICE']) {
       const q = await ctx.services.commissions.quote({ transactionType: type, companyId: seller.companyId, grossCents: 140000 });
-      expect(q).toMatchObject({ rateBps: 200, commissionCents: 2800, sellerNetCents: 137200 });
+      expect(q).toMatchObject({ rateBps: 500, commissionCents: 7000, sellerNetCents: 133000 });
     }
     const t = await deal();
     await ctx.prisma.marketplaceTransaction.update({ where: { id: t.id }, data: { commissionRateBps: 300, commissionAmount: 3000, sellerNetAmount: 97000 } });

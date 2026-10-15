@@ -29,7 +29,7 @@ export function systemRoutes({ config, prisma, hub }) {
       plan: { name: PLAN.name, priceCents: PLAN.priceCents, features: PLAN.features },
       billing: {
         model: config.billing.model,
-        commissionRateBps: PRICING.commissionRateBps,
+        commissionTiers: PRICING.commissionTiers.map((t) => ({ label: t.label, rateBps: t.rateBps })),
         commissionLabel: PRICING.commissionLabel,
         companySignupFeeCents: config.billing.model === 'commission' ? config.billing.companySignupFeeCents : 0,
       },

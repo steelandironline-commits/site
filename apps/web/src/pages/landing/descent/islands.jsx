@@ -1139,7 +1139,7 @@ function shieldGeometry() {
   return g;
 }
 
-/** Contract paid by Pix → held by the partner institution → works concluded → released to the account (minus 2%). */
+/** Contract paid by Pix → held by the partner institution → works concluded → released to the account (minus the commission). */
 export function PixIsland() {
   const ch = useChapter();
   const PHONE = [-3.8, 0, 3.4];
@@ -1305,7 +1305,7 @@ export function PixIsland() {
         </Rise>
         <Pulse color="#23b3a6" radius={2.6} period={P_PERIOD} delay={8.6} y={0.32} />
       </group>
-      <Label text="Liberado na conta" sub="R$ 9.800,00 · taxa TemPix 2%" accent="#4fe0c9" check position={[4.0, 3.5, -3.6]} vis={() => bump(tt(), 8.7, 9.1, 11.0, 11.4)} />
+      <Label text="Liberado na conta" sub="R$ 9.500,00 · taxa TemPix 5%" accent="#4fe0c9" check position={[4.0, 3.5, -3.6]} vis={() => bump(tt(), 8.7, 9.1, 11.0, 11.4)} />
       {/* money in flight */}
       <group ref={token} userData={{ rigid: true }} visible={false}>
         <B s={[0.62, 0.62, 0.14]} r={[0, 0, Math.PI / 4]} c="#32bcad" e="#32bcad" ei={0.9} center />

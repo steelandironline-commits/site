@@ -7,7 +7,8 @@ const WORKER_PROFILE = { services: ['Eletricista'], city: 'Joinville', state: 'S
 
 /**
  * TemPix has no subscription: professionals (pessoa física) sign up free,
- * companies pay a one-time signup fee, and every contract pays 2%.
+ * companies pay a one-time signup fee, and every contract pays a commission
+ * by value tier (5% down to 2%).
  */
 describe.skipIf(!hasDb)('commission model: free professionals, one-time company fee', () => {
   let ctx;
@@ -121,7 +122,9 @@ describe.skipIf(!hasDb)('commission model: free professionals, one-time company 
 
   it('publishes the model in the public config', async () => {
     const res = await client(ctx.app).get('/api/config');
-    expect(res.body.billing).toEqual({ model: 'commission', commissionRateBps: 200, commissionLabel: '2%', companySignupFeeCents: 20000 });
+    expect(res.body.billing).toMatchObject({ model: 'commission', companySignupFeeCents: 20000 });
+    expect(res.body.billing.commissionTiers.map((t) => t.rateBps)).toEqual([500, 400, 300, 200]);
+    expect(res.body.billing.commissionLabel).toContain('5% a 2%');
   });
 });
 

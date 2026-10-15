@@ -1,11 +1,17 @@
+import { commissionRateBps } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { badRequest } from '../errors.js';
 
-/** Default rules: fixed 2% on every contract between the parties; legacy subscriptions are 100% TemPix revenue. */
+/**
+ * Stored rules. Contracts between the parties use the value tiers in
+ * @autopix/shared (COMMISSION_TIERS), not a stored rule. Legacy subscriptions
+ * are 100% TemPix revenue.
+ */
 export const DEFAULT_COMMISSION_RULES = [
-  { name: 'Padrão TemPix 2%', transactionType: null, rateBps: 200, priority: 0 },
   { name: 'Assinatura TemPix', transactionType: 'SUBSCRIPTION', rateBps: 10000, priority: 10 },
 ];
+/** The former flat rule; retired once the value tiers took over. */
+const RETIRED_FLAT_RULE = 'Padrão TemPix 2%';
 
 /**
  * CommissionService — provider-independent. Commission is never hardcoded in
@@ -18,6 +24,7 @@ export class CommissionService {
   }
 
   async ensureDefaults() {
+    await this.prisma.commissionRule.updateMany({ where: { name: RETIRED_FLAT_RULE, active: true }, data: { active: false } });
     const count = await this.prisma.commissionRule.count();
     if (count) return;
     await this.prisma.commissionRule.createMany({ data: DEFAULT_COMMISSION_RULES });
@@ -49,10 +56,19 @@ export class CommissionService {
 
   async quote({ transactionType, companyId, grossCents }) {
     await this.ensureDefaults();
-    const rule = await this.ruleFor({ transactionType, companyId });
-    if (!rule) throw badRequest('Nenhuma regra de comissão ativa.');
-    const applied = transactionType === 'SUBSCRIPTION' ? rule : { ...rule, rateBps: 200, fixedAmountCents: 0, minimumCents: null, maximumCents: null };
-    return { ...CommissionService.compute(grossCents, applied), ruleId: rule.id, ruleName: transactionType === 'SUBSCRIPTION' ? rule.name : 'TemPix 2% por intermediação concluída', currency: rule.currency };
+    if (transactionType === 'SUBSCRIPTION') {
+      const rule = await this.ruleFor({ transactionType, companyId });
+      if (!rule) throw badRequest('Nenhuma regra de comissão ativa.');
+      return { ...CommissionService.compute(grossCents, rule), ruleId: rule.id, ruleName: rule.name, currency: rule.currency };
+    }
+    // Contract between the parties: the rate follows the contract's value tier.
+    const rateBps = commissionRateBps(grossCents);
+    return {
+      ...CommissionService.compute(grossCents, { rateBps }),
+      ruleId: null,
+      ruleName: `Taxa TemPix por valor do contrato: ${(rateBps / 100).toLocaleString('pt-BR')}%`,
+      currency: 'BRL',
+    };
   }
 
   /**
@@ -60,7 +76,7 @@ export class CommissionService {
    * apply to NEW transactions; existing ones keep their snapshot.
    */
   async upsert({ id, ...data }, { user, audit, ip }) {
-    if (data.transactionType !== 'SUBSCRIPTION' && (data.rateBps !== 200 || data.fixedAmountCents || data.minimumCents != null || data.maximumCents != null)) throw badRequest('A taxa de intermediação é fixa em 2%, sem acréscimos.');
+    if (data.transactionType !== 'SUBSCRIPTION') throw badRequest('A taxa de intermediação segue as faixas por valor do contrato e não é cadastrada como regra.');
     if (data.minimumCents != null && data.maximumCents != null && data.minimumCents > data.maximumCents) throw badRequest('Mínimo maior que o máximo.');
     return this.prisma.$transaction(async (tx) => {
       const before = id ? await tx.commissionRule.findUnique({ where: { id } }) : null;

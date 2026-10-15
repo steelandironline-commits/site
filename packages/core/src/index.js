@@ -60,4 +60,3 @@ export { TripService, haversineM, geocodeCity, normalizeCity, ARRIVAL_RADIUS_M, 
 export { ReconciliationService } from './finance/ReconciliationService.js';
 export { AdminService } from './finance/AdminService.js';
 export { createPlatformAdmin } from './services/platformAdminService.js';
-export { CourtesyAccessService } from './services/courtesyService.js';

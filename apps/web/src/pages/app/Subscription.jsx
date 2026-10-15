@@ -223,7 +223,7 @@ function CommissionPlan() {
             quando a conclusão é confirmada. Chegada por GPS ou mensagem de WhatsApp sozinhas não liberam dinheiro.
           </p>
           <p className={s.pageSub}>
-            <BRLText>Exemplo: contrato de R$ 10.000,00 → taxa TemPix de R$ 200,00 ({fee}) e R$ 9.800,00 para quem executou.</BRLText>
+            <BRLText>Exemplo: contrato de R$ 10.000,00 → taxa TemPix de R$ 500,00 ({fee}) e R$ 9.500,00 para quem executou.</BRLText>
           </p>
         </section>
       </div>

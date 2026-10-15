@@ -218,7 +218,7 @@ TemPix has no subscription. What each side pays:
 | --- | --- | --- |
 | Professional (pessoa física, CPF) | Free signup | — |
 | Company (CNPJ or MEI) | Free in production while `COMPANY_SIGNUP_FEE_CENTS=0` (default is R$ 200,00) | Before activation |
-| Contracts (obras, serviços, rotas, transportes) | 2% of the successfully intermediated contract value, deducted from what is released to whoever did the work (`CommissionRule`) | When the payment is released |
+| Contracts (obras, serviços, rotas, transportes) | 5% up to R$ 10.000, 4% up to R$ 100.000, 3% up to R$ 1.000.000, 2% above, by contract value (`COMMISSION_TIERS`), deducted from what is released to whoever did the work | When the payment is released |
 | **Hiring company** | **R$ 1,00 interview scheduling fee** | When the interview is scheduled |
 | **Hiring company** | **2% of the successfully intermediated value through TemPix Pay; no additional hiring charge** | After confirmed completion |
 
@@ -321,11 +321,11 @@ Marketplace payments on top of the same provider abstraction (details:
   Comissões, Histórico, Configurações; metrics RECEBIDO, A LIBERAR,
   EM PROCESSAMENTO, COMISSÕES AUTOPIX; "Pagamentos processados por instituições
   financeiras parceiras." and a `SANDBOX` badge outside production.
-- `/app/pay/transactions/:id` — values (gross, 2% commission, seller net),
+- `/app/pay/transactions/:id` — values (gross, commission by tier, seller net),
   Pix, timeline, freight trip panel, and only the actions the server allows
   for your role and the current state.
 - `MarketplaceTransaction` with server-side amounts and a commission snapshot
-  (`CommissionRule`, default 2% → R$ 1.400 = R$ 28 + R$ 1.372).
+  (by value tier: R$ 1.400 at 5% → R$ 70 + R$ 1.330).
 - Protected payment, split and payout appear **only** when the provider
   reports the capability. Without them the seller payable is tracked as
   `PENDING_PROVIDER_CAPABILITY` — TemPix never acts as unofficial escrow.

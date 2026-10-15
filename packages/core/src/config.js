@@ -73,8 +73,6 @@ const schema = z.object({
   PAYMENT_WEBHOOK_SECRET: optional,
   PAYMENT_API_URL: optional,
   DEMO_MODE: bool(false),
-  // Comma-separated emails of platform admins (in addition to User.isPlatformAdmin).
-  PLATFORM_ADMIN_EMAILS: optional,
   // commission: free signup, TemPix keeps a fixed % of each contract (default).
   // subscription: legacy monthly Pix plan (kept for existing accounts/tests).
   BILLING_MODEL: z
@@ -170,7 +168,6 @@ export function loadConfig(env = process.env) {
       apiUrl: e.PAYMENT_API_URL,
     },
     demoMode: e.DEMO_MODE,
-    platformAdminEmails: (e.PLATFORM_ADMIN_EMAILS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
     billing: { model: e.BILLING_MODEL, companySignupFeeCents: e.COMPANY_SIGNUP_FEE_CENTS },
     mockCapabilities: (e.MOCK_PAYMENT_CAPABILITIES || '').split(',').map((s) => s.trim()).filter(Boolean),
     bb: (() => {

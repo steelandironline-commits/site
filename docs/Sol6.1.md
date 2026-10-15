@@ -13,7 +13,7 @@ Lista do que ficou para a próxima rodada (Sol6.1), em ordem de prioridade.
 - Implementado para contas com número verificado usando template Meta de autenticação para OTP. Ainda depende das credenciais da Meta, de aprovar/configurar `WHATSAPP_TEMPLATE_AUTH` e de vincular um número em produção.
 
 ## 3. Taxa de intermediação e Social
-- Taxa fixa de **2% sobre o valor intermediado com sucesso**, em todos os contratos do TemPix Pay.
+- Taxa por faixa de valor do contrato sobre o valor intermediado com sucesso: **5% até R$ 10.000, 4% até R$ 100.000, 3% até R$ 1.000.000 e 2% acima** (`COMMISSION_TIERS`).
 - O acordo de contratação não gera mais a cobrança separada de 3%. Valores existentes já cobrados permanecem no histórico.
 - Orçamentos exibem taxa prevista; comissões concluídas exigem confirmação do cliente e pagamento confirmado, sem reembolso.
 - Social: opinião e foto opcionais após entrega confirmada; comentários, respostas e repostagens.

@@ -65,7 +65,7 @@ export const CHAPTERS = [
     rail: 'Garantia',
     kicker: 'Tem garantia · pagamento assegurado',
     title: 'Pagamento assegurado até a conclusão.',
-    body: 'Em obras, serviços, rotas e transportes, o valor fica protegido na instituição de pagamento parceira e só é liberado, por Pix, quando a conclusão é confirmada. O TemPix fica com 2% do contrato.',
+    body: 'Em obras, serviços, rotas e transportes, o valor fica protegido na instituição de pagamento parceira e só é liberado, por Pix, quando a conclusão é confirmada. O TemPix fica com uma taxa por valor do contrato, de 5% a 2%.',
     palette: { top: '#23b3a6', bottom: '#04282b', sky: '#c4fff6', ground: '#0a2f30', accent: '#4fe0c9' },
   },
   {
@@ -73,7 +73,7 @@ export const CHAPTERS = [
     rail: 'Painel',
     kicker: 'Tem tudo · seu painel',
     title: 'Tudo isso numa tela só.',
-    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Sem mensalidade: 2% sobre todo valor intermediado com sucesso, após a conclusão confirmada.',
+    body: 'Clientes, cargas, equipes e recebimentos no mesmo lugar, no computador ou no celular. Sem mensalidade: de 5% a 2% sobre o valor intermediado com sucesso, conforme o valor do contrato, após a conclusão confirmada.',
     palette: { top: '#24365e', bottom: '#0a0b0d', sky: '#c7d6ff', ground: '#10141f', accent: '#2ad1b8' },
   },
 ];

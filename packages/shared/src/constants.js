@@ -1,13 +1,31 @@
 // Product-wide constants shared by web, api and worker.
 
 /**
- * How TemPix earns: no subscription. A fixed 2% of every contract closed
- * between the parties (cargas, rotas, obras, serviços, vagas).
+ * TemPix's commission on each contract closed between the parties, by contract
+ * value. The rate steps down one tier each time the value grows by an order of
+ * magnitude. Bounds are inclusive, in cents. Edit here only (CommissionService
+ * reads this table; nothing else hardcodes the rate).
+ */
+export const COMMISSION_TIERS = Object.freeze([
+  { maxCents: 1_000_000, rateBps: 500, label: 'até R$ 10.000' },
+  { maxCents: 10_000_000, rateBps: 400, label: 'de R$ 10.000,01 a R$ 100.000' },
+  { maxCents: 100_000_000, rateBps: 300, label: 'de R$ 100.000,01 a R$ 1.000.000' },
+  { maxCents: Infinity, rateBps: 200, label: 'acima de R$ 1.000.000' },
+]);
+
+/** Commission rate (basis points) for a contract of `grossCents`. */
+export function commissionRateBps(grossCents) {
+  return COMMISSION_TIERS.find((t) => grossCents <= t.maxCents).rateBps;
+}
+
+/**
+ * How TemPix earns: no subscription. A commission on every contract closed
+ * between the parties (cargas, rotas, obras, serviços, vagas), by value tier.
  */
 export const PRICING = Object.freeze({
   model: 'commission',
-  commissionRateBps: 200,
-  commissionLabel: '2%',
+  commissionTiers: COMMISSION_TIERS,
+  commissionLabel: '5% a 2%, conforme o valor do contrato',
   /** One-time signup fee for companies (CNPJ). Professionals sign up free. */
   companySignupFeeCents: 20000,
   person: [

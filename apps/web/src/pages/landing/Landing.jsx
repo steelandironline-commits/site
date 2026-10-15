@@ -392,8 +392,8 @@ function Pricing() {
         </div>
         <motion.div className={s.priceFoot} {...reveal}>
           <p>
-            <strong><BRLText>Em todo valor intermediado com sucesso: {fee} fixos.</BRLText></strong>{' '}
-            <BRLText>Exemplo: contrato de R$ 10.000,00 → R$ 200,00 para o TemPix e R$ 9.800,00 para quem executou.</BRLText>
+            <strong><BRLText>Em todo valor intermediado com sucesso: {fee}.</BRLText></strong>{' '}
+            <BRLText>Exemplo: contrato de R$ 10.000,00 → R$ 500,00 para o TemPix e R$ 9.500,00 para quem executou.</BRLText>
           </p>
           <p className={s.priceSafe}>
             <ShieldCheck size={14} aria-hidden="true" /> Pagamento assegurado até a conclusão: em obras, serviços, rotas e transportes, o valor fica
