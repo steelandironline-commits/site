@@ -212,7 +212,7 @@ function Analysis({ onDone, items = ANALYSIS }) {
   );
 }
 
-function Ready({ companyName, accountType }) {
+function Ready({ companyName, accountType, onSave }) {
   const navigate = useNavigate();
   const { config } = useSession();
   const subscription = config?.billing?.model === 'subscription';
@@ -223,11 +223,25 @@ function Ready({ companyName, accountType }) {
   const [error, setError] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
 
+  // The account is created here, when the Pix is requested; the Pix then has one hour.
+  const goToPix = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await onSave();
+      navigate('/checkout');
+    } catch (err) {
+      setError(err.message || 'Não foi possível gerar o Pix agora. Tente novamente.');
+      setBusy(false);
+    }
+  };
+
   // Free accounts receive a single-use activation link at their email address.
   const finish = async () => {
     setBusy(true);
     setError(null);
     try {
+      await onSave();
       const res = await post('/api/onboarding/finish');
       if (res.alreadyActive) return navigate('/login', { replace: true });
       if (res.emailVerificationRequired) {
@@ -269,7 +283,7 @@ function Ready({ companyName, accountType }) {
       <h1 className={s.readyTitle}>{title}</h1>
       <p className={s.readyText}><BRLText>{text}</BRLText></p>
       {pay ? (
-        <Button to="/checkout" size="lg" iconRight={ArrowRight}>
+        <Button size="lg" iconRight={ArrowRight} onClick={goToPix} loading={busy}>
           {subscription ? 'PAGAR COM PIX' : `PAGAR ${formatCents(feeCents)} COM PIX`}
         </Button>
       ) : (
@@ -303,7 +317,6 @@ export default function Onboarding() {
   const [profile, setProfile] = useState(() => withPresets(emptyOperationalProfile(), params));
   const [errors, setErrors] = useState({});
   const [error, setError] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [booting, setBooting] = useState(true);
   const [phase, setPhase] = useState('form'); // form | analysis | ready
   const [hasSession, setHasSession] = useState(false);
@@ -370,62 +383,40 @@ export default function Onboarding() {
   const feeLabel = formatCents(config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v?.target ? v.target.value : v }));
 
+  /**
+   * Creates the account on the server. It runs only when the person asks for the
+   * Pix (or the activation link, for free accounts): until then nothing is saved,
+   * and the signup has one hour from here.
+   */
+  const persistSignup = useCallback(async () => {
+    const parsed = operationalProfileSchema.safeParse(profile);
+    if (!parsed.success) throw new Error('Revise os campos das etapas anteriores.');
+    let data = { operationalProfile: parsed.data };
+    for (const st of steps) {
+      if (st.key !== 'start') data = { ...data, ...toPayload(form, st.fields.filter((f) => f !== 'operationalProfile')) };
+    }
+    const company = account.accountType === 'COMPANY';
+    await post('/api/onboarding/start', {
+      accountType: account.accountType,
+      name: account.name,
+      email: account.email,
+      document: account.document,
+      ...(company ? { companyName: account.companyName } : {}),
+    });
+    await put('/api/onboarding/step', { step: steps.length, data, complete: true });
+    await refresh();
+  }, [account, form, profile, steps, refresh]);
+
   const next = useCallback(async () => {
     const v = validate(current.key, form, account, profile);
     setErrors(v);
     setError(null);
     if (Object.keys(v).length) return;
-    setSaving(true);
-    try {
-      if (current.key === 'start') {
-        if (!hasSession) {
-          const company = account.accountType === 'COMPANY';
-          await post('/api/onboarding/start', {
-            accountType: account.accountType,
-            name: account.name,
-            email: account.email,
-            document: account.document,
-            ...(company ? { companyName: account.companyName } : {}),
-          });
-          setHasSession(true);
-          setForm((f) => ({ ...f, name: f.name || (company ? account.companyName : account.name) }));
-        }
-      } else {
-        const last = step === steps.length - 1;
-        const data = toPayload(form, current.fields.filter((f) => f !== 'operationalProfile'));
-        if (current.fields.includes('operationalProfile')) {
-          const parsed = operationalProfileSchema.safeParse(profile);
-          if (!parsed.success) {
-            setError('Revise os campos desta etapa.');
-            return;
-          }
-          data.operationalProfile = parsed.data;
-        }
-        await put('/api/onboarding/step', { step: step + 1, data, complete: last });
-        if (last) {
-          try {
-            storage?.removeItem(DRAFT_KEY);
-          } catch {
-            /* ignore */
-          }
-          await refresh();
-          setPhase('analysis');
-          return;
-        }
-      }
-      setDir(1);
-      setStep((st) => st + 1);
-    } catch (err) {
-      setErrors(err.fields || {});
-      setError(err.status === 401 ? 'Sua sessão de cadastro expirou. Recomece informando seu e-mail.' : err.message);
-      if (err.status === 401) {
-        setHasSession(false);
-        setStep(0);
-      }
-    } finally {
-      setSaving(false);
-    }
-  }, [current, form, account, profile, hasSession, step, steps, refresh, storage]);
+    // The last step only opens the review; the account is created when the person asks for the Pix.
+    if (step === steps.length - 1) return setPhase('analysis');
+    setDir(1);
+    setStep((st) => st + 1);
+  }, [current, form, account, profile, step, steps]);
 
   const back = () => {
     setErrors({});
@@ -460,7 +451,7 @@ export default function Onboarding() {
           {phase === 'analysis' && (
             <Analysis key="analysis" items={account.accountType === 'PERSON' ? PERSON_ANALYSIS : ANALYSIS} onDone={() => setPhase('ready')} />
           )}
-          {phase === 'ready' && <Ready key="ready" accountType={account.accountType} companyName={form.name || account.companyName} />}
+          {phase === 'ready' && <Ready key="ready" accountType={account.accountType} companyName={form.name || account.companyName} onSave={persistSignup} />}
           {phase === 'form' && !booting && (
             <motion.form
               key={current.key}
@@ -654,13 +645,13 @@ export default function Onboarding() {
 
               <footer className={s.actions}>
                 {step > (hasSession ? 1 : 0) ? (
-                  <Button variant="ghost" icon={ArrowLeft} onClick={back} disabled={saving}>
+                  <Button variant="ghost" icon={ArrowLeft} onClick={back}>
                     Voltar
                   </Button>
                 ) : (
                   <span />
                 )}
-                <Button type="submit" loading={saving} iconRight={ArrowRight} size="lg">
+                <Button type="submit" iconRight={ArrowRight} size="lg">
                   {step === steps.length - 1 ? 'CONCLUIR' : 'CONTINUAR'}
                 </Button>
               </footer>

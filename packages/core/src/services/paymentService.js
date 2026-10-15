@@ -3,7 +3,7 @@ import { PLAN, checkoutState, deepLinks, formatCents, PRICING, COMMISSION_PLAN_C
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { generateToken, hashToken } from '../security/tokens.js';
-import { badRequest, conflict, forbidden, notFound, unavailable } from '../errors.js';
+import { badRequest, conflict, forbidden, gone, notFound, unavailable } from '../errors.js';
 import { FinancialError } from '../payments/errors.js';
 import { PAYMENTS_UNAVAILABLE_MESSAGE } from '../payments/DisabledPaymentProvider.js';
 import { getPaymentProvider, isWebhookProviderAllowed } from '../payments/index.js';
@@ -236,7 +236,13 @@ export class PaymentService {
     });
     if (pending) return pending;
 
-    const expiresAt = new Date(Date.now() + PIX_TTL_MS);
+    // The Pix never outlives the signup's hour; an unpaid signup past it is reset, not charged.
+    const draft = await this.prisma.user.findUnique({ where: { id: user.id }, select: { status: true, pendingExpiresAt: true } });
+    if (draft?.status === 'PENDING_PAYMENT' && draft.pendingExpiresAt && draft.pendingExpiresAt <= new Date()) {
+      throw gone('O prazo de 1 hora para concluir este cadastro acabou. Comece de novo.');
+    }
+    const deadline = draft?.pendingExpiresAt ? draft.pendingExpiresAt.getTime() : Infinity;
+    const expiresAt = new Date(Math.min(Date.now() + PIX_TTL_MS, deadline));
     const payment = await this.prisma.payment.create({
       data: {
         kind: 'SIGNUP_FEE',
