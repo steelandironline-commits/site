@@ -157,7 +157,8 @@ seller refunds frozen) → `RESPOND_DISPUTE` → admin `summary` (deterministic,
 - Status: `GET /solicitacoes?numeroConvenio&codigoConciliacaoSolicitacao` (0 aguardando, 1 paga,
   800/850 expirada/abandonada, 900 excluída). A "paid" webhook is confirmed only after this read says 1.
 - Needs `BB_CLIENT_ID`, `BB_CLIENT_SECRET`, `BB_DEVELOPER_APPLICATION_KEY` (sent as `gw-dev-app-key`),
-  `BB_PAY_CONVENIO` and the client certificate `BB_MTLS_CERT_BASE64` / `BB_MTLS_KEY_BASE64` (mTLS host).
+  `BB_PAY_CONVENIO` and the company's client certificate (mTLS host): `BB_MTLS_PFX_BASE64` +
+  `BB_MTLS_PFX_PASSPHRASE` (the e-CNPJ A1 exported as .pfx), or `BB_MTLS_CERT_BASE64` / `BB_MTLS_KEY_BASE64`.
   Optional `BB_PAY_OAUTH_SCOPES` (empty: no scope parameter). Until all are set, `pix: false` and the
   signup answers 503 without recording a charge.
 - Reference: Portal de Apoio ao Desenvolvedor BB, API BB Pay v2 (apis/41?versaoApi=2).

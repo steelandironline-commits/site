@@ -64,6 +64,9 @@ const schema = z.object({
   PROCESS_ROLE: z.enum(['web', 'worker']).default('web'),
   BB_MTLS_CERT_BASE64: optional,
   BB_MTLS_KEY_BASE64: optional,
+  /** Alternative to cert+key: the certificate exported as .pfx/.p12 (base64) and its password. */
+  BB_MTLS_PFX_BASE64: optional,
+  BB_MTLS_PFX_PASSPHRASE: optional,
   BB_PAY_ENABLED: bool(false),
   /** BB Pay API base (mTLS host) and OAuth scopes; defaults follow the BB Pay v2 documentation. */
   BB_PAY_API_BASE_URL: optional,
@@ -136,6 +139,13 @@ function ephemeralSecret() {
   return crypto.randomBytes(48).toString('base64url');
 }
 
+/** Client certificate for BB's mTLS hosts: a .pfx (+ password) or a PEM cert + key pair. */
+function mtlsFrom(e) {
+  if (e.BB_MTLS_PFX_BASE64) return { pfxBase64: e.BB_MTLS_PFX_BASE64, passphrase: e.BB_MTLS_PFX_PASSPHRASE || '' };
+  if (e.BB_MTLS_CERT_BASE64 && e.BB_MTLS_KEY_BASE64) return { certBase64: e.BB_MTLS_CERT_BASE64, keyBase64: e.BB_MTLS_KEY_BASE64 };
+  return null;
+}
+
 export function loadConfig(env = process.env) {
   const parsed = schema.safeParse(env);
   if (!parsed.success) {
@@ -192,7 +202,7 @@ export function loadConfig(env = process.env) {
         scopes: e.BB_OAUTH_SCOPES || 'cob.read cob.write pix.read pix.write',
         appKeyParam: e.BB_APP_KEY_PARAM || (sandbox ? 'gw-dev-app-key' : 'gw-app-key'),
         webhookSecret: e.BB_WEBHOOK_SECRET,
-        mtls: e.BB_MTLS_CERT_BASE64 && e.BB_MTLS_KEY_BASE64 ? { certBase64: e.BB_MTLS_CERT_BASE64, keyBase64: e.BB_MTLS_KEY_BASE64 } : null,
+        mtls: mtlsFrom(e),
         flags: {
           bbPay: e.BB_PAY_ENABLED,
           split: e.BB_SPLIT_ENABLED,
@@ -216,7 +226,7 @@ export function loadConfig(env = process.env) {
         scopes: e.BB_PAY_OAUTH_SCOPES || '',
         // The BB Pay documentation sends the application key as gw-dev-app-key.
         appKeyParam: e.BB_APP_KEY_PARAM || 'gw-dev-app-key',
-        mtls: e.BB_MTLS_CERT_BASE64 && e.BB_MTLS_KEY_BASE64 ? { certBase64: e.BB_MTLS_CERT_BASE64, keyBase64: e.BB_MTLS_KEY_BASE64 } : null,
+        mtls: mtlsFrom(e),
       };
     })(),
     embeddedWorker: e.EMBEDDED_WORKER,

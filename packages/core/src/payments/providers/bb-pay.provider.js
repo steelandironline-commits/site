@@ -86,7 +86,7 @@ export class BbPayPaymentProvider extends PaymentProvider {
       !c.clientId && 'BB_CLIENT_ID',
       !c.clientSecret && 'BB_CLIENT_SECRET',
       !c.appKey && 'BB_DEVELOPER_APPLICATION_KEY',
-      !c.mtls && 'BB_MTLS_CERT_BASE64/BB_MTLS_KEY_BASE64',
+      !c.mtls && 'BB_MTLS_PFX_BASE64 + BB_MTLS_PFX_PASSPHRASE (ou BB_MTLS_CERT_BASE64/BB_MTLS_KEY_BASE64)',
     ].filter(Boolean);
   }
 

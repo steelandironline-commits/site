@@ -64,6 +64,13 @@ describe('BB Pay webhook', () => {
     expect(() => loadConfig({ ...base, BB_WEBHOOK_SECRET: SECRET, BB_PAY_CONVENIO: '421.378' })).not.toThrow();
     expect(loadConfig({ ...base, BB_WEBHOOK_SECRET: SECRET, BB_PAY_CONVENIO: '421.378' }).bbPay.convenio).toBe('421378');
   });
+
+  it('accepts the company certificate as a .pfx with its password, or as a PEM pair', () => {
+    const base = { NODE_ENV: 'test', PAYMENT_PROVIDER: 'bb_pay' };
+    expect(loadConfig({ ...base, BB_MTLS_PFX_BASE64: 'cGZ4', BB_MTLS_PFX_PASSPHRASE: 'senha' }).bbPay.mtls).toEqual({ pfxBase64: 'cGZ4', passphrase: 'senha' });
+    expect(loadConfig({ ...base, BB_MTLS_CERT_BASE64: 'Y2VydA==', BB_MTLS_KEY_BASE64: 'a2V5' }).bbPay.mtls).toEqual({ certBase64: 'Y2VydA==', keyBase64: 'a2V5' });
+    expect(loadConfig(base).bbPay.mtls).toBeNull();
+  });
 });
 
 /** In-memory fake of the BB Pay v2 API (no live banking API is ever called). */
