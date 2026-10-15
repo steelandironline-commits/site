@@ -21,12 +21,28 @@ export const CHAPTERS = [
     palette: { top: '#1d8a8a', bottom: '#062a2e', sky: '#b4fff1', ground: '#0d3236', accent: '#2ad1b8' },
   },
   {
+    id: 'maquinas',
+    rail: 'Máquinas',
+    kicker: 'Tem máquina · aluguel de máquinas e equipamentos',
+    title: 'Precisa de munck? Tem quem alugue hoje.',
+    body: 'Munck, guindaste, plataforma, escavadeira e britadeira por hora, diária ou mês, com ou sem operador. Máquina parada encontra obra; obra encontra a máquina certa.',
+    palette: { top: '#b8862c', bottom: '#2a1b05', sky: '#ffe8b8', ground: '#33240a', accent: '#f2b134' },
+  },
+  {
     id: 'terminais',
     rail: 'Carga',
     kicker: 'Tem carga · terminais e transportadoras',
     title: 'A carga encontra o caminhão.',
     body: 'Terminais e indústrias publicam cargas. O TemPix entrega cada uma à transportadora certa, pela rota, capacidade e janela de coleta.',
     palette: { top: '#d0814a', bottom: '#3a1912', sky: '#ffd9b0', ground: '#3d1f17', accent: '#ffb35c' },
+  },
+  {
+    id: 'porto',
+    rail: 'Porto',
+    kicker: 'Tem navio · operações marítimas e portuárias',
+    title: 'Navios também precisam de quem resolva.',
+    body: 'O navio atraca com uma necessidade: peça, reparo, suprimento ou transporte. O TemPix leva a demanda a fornecedores capazes, e o comprador compara as cotações.',
+    palette: { top: '#1d6fb8', bottom: '#03182f', sky: '#cfe6ff', ground: '#062038', accent: '#4f9dff' },
   },
   {
     id: 'trajeto',

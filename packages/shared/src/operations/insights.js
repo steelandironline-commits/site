@@ -118,7 +118,9 @@ export function capabilitySummary(rawProfile, company = {}) {
 
   // Fleet.
   for (const v of p.fleet.vehicles) add('Frota', labelOf(VEHICLE_TYPES, v.type), [v.quantity ?? 1, v.payloadTons ? `${fmt(v.payloadTons)} t` : null].filter(Boolean).join(' · '));
-  if (p.trucker.truckType) add('Frota', labelOf(VEHICLE_TYPES, p.trucker.truckType), [p.trucker.quantity ?? 1, p.trucker.payloadTons ? `${fmt(p.trucker.payloadTons)} t` : null].filter(Boolean).join(' · '));
+  for (const truck of new Set([p.trucker.truckType, ...p.trucker.truckTypes].filter(Boolean))) {
+    add('Frota', labelOf(VEHICLE_TYPES, truck), [p.trucker.quantity ?? 1, p.trucker.payloadTons ? `${fmt(p.trucker.payloadTons)} t` : null].filter(Boolean).join(' · '));
+  }
   if (p.containers.transports) {
     for (const c of p.containers.types) add('Containers', labelOf(CONTAINER_TYPES, c), 'Sim');
   } else if (p.containers.transports === false) add('Containers', 'Transporta containers', 'Não');

@@ -252,7 +252,8 @@ export function profileSides(rawProfile) {
     p.maritime.services.length > 0 ||
     p.supplier.offered.length > 0 ||
     p.fleet.vehicles.length > 0 ||
-    Boolean(p.trucker.truckType);
+    Boolean(p.trucker.truckType) ||
+    p.trucker.truckTypes.length > 0;
   const buys = p.buyer.needs.length > 0 || p.buyer.requests.length > 0 || p.terminal.suppliersHired.length > 0;
   return { supplies, buys };
 }

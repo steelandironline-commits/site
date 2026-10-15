@@ -7,6 +7,8 @@ export const OPS_COPY = Object.freeze({
   yes: 'Sim',
   no: 'Não',
   more: 'Ver mais',
+  multiHint: 'Marque quantas quiser: quanto mais você marcar, mais oportunidades certas chegam.',
+  selected: (n) => (n === 1 ? '1 selecionada' : `${n} selecionadas`),
   less: 'Ver menos',
   addAnother: 'Adicionar outro',
   remove: 'Remover',

@@ -76,10 +76,15 @@ const ease = [0.22, 1, 0.36, 1];
 const reveal = { initial: { opacity: 0, height: 0 }, animate: { opacity: 1, height: 'auto' }, exit: { opacity: 0, height: 0 }, transition: { duration: 0.25, ease } };
 
 /* ----------------------------------------------------------- primitives */
-function Group({ label, hint, error, children }) {
+function Group({ label, hint, error, count, children }) {
   return (
     <fieldset className={o.group}>
-      {label && <legend className={o.legend}>{label}</legend>}
+      {label && (
+        <legend className={o.legend}>
+          {label}
+          {count > 0 && <span className={o.count}>{T.selected(count)}</span>}
+        </legend>
+      )}
       {hint && <p className={o.hint}>{hint}</p>}
       {children}
       {error && (
@@ -109,6 +114,7 @@ export function ChipGroup({ options, value, onChange, multiple = true, icons = f
           <button key={x.id} type="button" className={`${o.chip} ${on ? o.chipOn : ''}`} aria-pressed={on} onClick={() => toggle(x.id)}>
             {Icon ? <Icon size={16} aria-hidden="true" /> : on ? <Check size={13} aria-hidden="true" /> : null}
             <span>{x.label}</span>
+            {Icon && on && <Check size={14} className={o.tick} aria-hidden="true" />}
           </button>
         );
       })}
@@ -420,7 +426,7 @@ function FieldView({ f, profile, set, accountType, errors }) {
   switch (f.type) {
     case 'chips':
       return (
-        <Group label={f.label} hint={f.hint} error={error}>
+        <Group label={f.label} hint={f.hint || T.multiHint} error={error} count={(value || []).length}>
           <ChipGroup options={f.byAccount ? operationTypesFor(accountType) : f.options} value={value || []} onChange={(v) => set(f.path, v)} icons={f.byAccount} fold={f.byAccount ? 40 : 14} />
         </Group>
       );

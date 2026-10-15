@@ -6,6 +6,7 @@ import { CHAPTERS, HOLD, N, SPACING, levelFromProgress } from './chapters.js';
 import { ChapterCtx, WorldCtx, clamp01, damp, glowTex, lerp, rng } from './kit.jsx';
 import { CityIsland, DemandIsland, HiringIsland, PanelIsland, PixIsland, RouteIsland, TerminalIsland } from './islands.jsx';
 import { descentFrame } from './framing.js';
+import { MachineIsland, PortIsland } from './port.jsx';
 
 const AZ0 = Math.PI / 4;
 const AZ_STEP = 0.32;
@@ -13,14 +14,16 @@ const ELEV = 0.55;
 const OFFSETS = [
   [0, 0],
   [3, -2.5],
+  [-2, -2.5],
   [-2.5, 2],
+  [2.5, -1.5],
   [2.5, 3],
   [-2.5, -2],
   [2, -3],
   [0, 0],
 ];
-const FREEZE = [6, 13, 7.6, 8.4, 4.9, 6.6, 2];
-const ISLANDS = [CityIsland, DemandIsland, TerminalIsland, RouteIsland, HiringIsland, PixIsland, PanelIsland];
+const FREEZE = [6, 13, 4, 7.6, 9, 8.4, 4.9, 6.6, 2];
+const ISLANDS = [CityIsland, DemandIsland, MachineIsland, TerminalIsland, PortIsland, RouteIsland, HiringIsland, PixIsland, PanelIsland];
 
 export const islandCenter = (k) => [OFFSETS[k][0], -k * SPACING, OFFSETS[k][1]];
 

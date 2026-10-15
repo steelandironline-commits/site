@@ -189,7 +189,8 @@ export const operationalProfileSchema = z.object({
     .default({}),
   trucker: z
     .object({
-      truckType: oneOf(VEHICLE_TYPES).optional(),
+      truckType: oneOf(VEHICLE_TYPES).optional(), // legacy single choice
+      truckTypes: many(VEHICLE_TYPES, 16),
       quantity: int(100),
       payloadTons: num(500),
       portAccess: oneOf(PORT_ACCESS).optional(),

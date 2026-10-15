@@ -1,7 +1,7 @@
 /* Immersive opening: scrolling dives the camera through one island per chapter. */
 import { Component, Fragment, Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
-import { ArrowRight, Building2, Container, Landmark, LayoutDashboard, Radar, Route, UserCheck } from 'lucide-react';
+import { ArrowRight, Building2, Construction, Container, Landmark, LayoutDashboard, Radar, Route, Ship, UserCheck } from 'lucide-react';
 import { WhatsAppIcon } from '../../../components/brand/WhatsAppIcon.jsx';
 import { loadBRLIconImage } from '../../../components/brand/BRLIcon.jsx';
 import { Button } from '../../../components/ui/ui.jsx';
@@ -11,7 +11,7 @@ import { CHAPTERS, N, levelFromProgress, progressForChapter } from './chapters.j
 import s from './descent.module.css';
 
 const DescentScene = lazy(() => import('./DescentScene.jsx'));
-const ART = [Building2, Radar, Container, Route, UserCheck, Landmark, LayoutDashboard];
+const ART = [Building2, Radar, Construction, Container, Ship, Route, UserCheck, Landmark, LayoutDashboard];
 const ease = [0.22, 1, 0.36, 1];
 
 function webglAvailable() {
