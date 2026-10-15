@@ -27,6 +27,7 @@ import { notificationRoutes } from './routes/notifications.js';
 import { freightRoutes, workforceRoutes, eventRoutes } from './routes/domains.js';
 import { payRoutes, adminRoutes } from './routes/pay.js';
 import { socialRoutes } from './routes/social.js';
+import { intermediationRoutes } from './routes/intermediation.js';
 
 /** All business services come from the shared platform composition root. */
 export function buildServices(opts = {}) {
@@ -108,6 +109,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/events', eventRoutes(ctx));
   app.use('/api/pay', payRoutes(ctx));
   app.use('/api/social', socialRoutes(ctx));
+  app.use('/api/intermediation', intermediationRoutes(ctx));
   app.use('/api/admin', adminRoutes(ctx));
   app.use('/api', notFoundApi);
 

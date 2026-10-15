@@ -421,6 +421,10 @@ model Company {
   preferredIndustries   String[]  @default([])
   excludedIndustries    String[]  @default([])
   keywords              String[]  @default([])
+  /// Structured operational profile (types, objectives, equipment, fleet,
+  /// routes, ports, buyer needs...). Shape: @autopix/shared operationalProfileSchema.
+  operationalProfile          Json?
+  operationalProfileUpdatedAt DateTime?
   agentsPaused          Boolean   @default(false)
   payoutPixKey          String?
   payoutPixKeyType      String?

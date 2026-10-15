@@ -23,6 +23,7 @@ export const COMPANY_FIELDS = [
   'preferredIndustries',
   'excludedIndustries',
   'keywords',
+  'operationalProfile',
 ];
 
 // Fields whose change alters what the agents search for.
@@ -40,11 +41,14 @@ const SEARCH_FIELDS = new Set([
   'excludedIndustries',
   'keywords',
   'description',
+  'operationalProfile',
 ]);
 
 export function pickCompanyFields(data) {
   const out = {};
   for (const key of COMPANY_FIELDS) if (data[key] !== undefined) out[key] = data[key];
+  // The operational profile is stored whole (already validated) with its timestamp.
+  if (out.operationalProfile) out.operationalProfileUpdatedAt = new Date();
   return out;
 }
 
@@ -73,7 +77,8 @@ export class CompanyService {
       throw badRequest('O CNPJ é o login da empresa e não pode ser alterado.');
     }
     if (current.accountType === 'PERSON') delete patch.cnpj;
-    const changed = Object.keys(patch).filter((k) => JSON.stringify(patch[k]) !== JSON.stringify(current[k]));
+    const changed = Object.keys(patch).filter((k) => k !== 'operationalProfileUpdatedAt' && JSON.stringify(patch[k]) !== JSON.stringify(current[k]));
+    if (!changed.includes('operationalProfile')) delete patch.operationalProfileUpdatedAt;
     if (!changed.length) return { company: current, changed: [], searchRequeued: false };
 
     const affectsSearch = changed.some((k) => SEARCH_FIELDS.has(k));

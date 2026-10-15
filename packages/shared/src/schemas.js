@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { operationalProfileSchema } from './operations/profile.js';
 import { isValidCnpj, isValidCpf, onlyDigits } from './format.js';
 
 const trimmed = (max) => z.string().trim().max(max);
@@ -67,6 +68,7 @@ export const companyProfileSchema = z.object({
   preferredIndustries: tagList(),
   excludedIndustries: tagList(),
   keywords: tagList(40),
+  operationalProfile: operationalProfileSchema.optional(),
 });
 
 export const companyUpdateSchema = companyProfileSchema.partial();
@@ -111,7 +113,7 @@ export const collaboratorInviteSchema = z.object({
 });
 
 export const onboardingStepSchema = z.object({
-  step: z.coerce.number().int().min(0).max(20),
+  step: z.coerce.number().int().min(0).max(60),
   data: companyUpdateSchema,
   complete: z.boolean().optional(),
 });
