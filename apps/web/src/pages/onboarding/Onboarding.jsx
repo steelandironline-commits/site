@@ -57,7 +57,7 @@ const STEPS = [
 const PERSON_STEPS = [
   { key: 'start', title: 'Vamos começar.', subtitle: 'Profissional se cadastra grátis. Leva menos de um minuto.' },
   { key: 'work', title: 'Qual é o seu trabalho?', subtitle: 'Profissão e serviços que você faz. Assim chegam vagas e serviços certos para você.', fields: ['services', 'description'] },
-  { key: 'where', title: 'Onde você trabalha?', subtitle: 'Seu CEP e até quantos km você aceita ir para o trabalho.', fields: ['postalCode', 'serviceRadiusKm'] },
+  { key: 'where', title: 'Onde você mora?', subtitle: 'Seu CEP e até quantos km você aceita ir para o trabalho.', fields: ['postalCode', 'serviceRadiusKm'] },
   // Asked last, after the profession and the region.
   { key: 'contact', title: 'Como falar com você?', subtitle: 'Opcional. Usado só para avisos de vagas e serviços.', fields: ['phone'], sortGroup: 'onde' },
 ];
@@ -128,7 +128,7 @@ const EMPTY = {
 const ANALYSIS = ['Perfil comercial', 'Mercado', 'Segmentos', 'Região', 'Ticket', 'Sinais'];
 const PERSON_ANALYSIS = ['Perfil profissional', 'Região', 'Vagas', 'Serviços', 'Fretes'];
 /** Section names for pessoa física: the company wording does not apply to a worker. */
-const PERSON_GROUP_LABELS = { sobre: 'Sobre você', estrutura: 'Seus certificados', onde: 'Onde você trabalha' };
+const PERSON_GROUP_LABELS = { sobre: 'Sobre você', estrutura: 'Seus certificados', onde: 'Onde você mora' };
 const groupTitle = (group, accountType) => (accountType === 'PERSON' && PERSON_GROUP_LABELS[group]) || groupLabel(group);
 
 function toPayload(form, fields) {
