@@ -177,15 +177,17 @@ export default function Tenders() {
       </section>
 
       <p className={t.syncLine} role="status">
-        {data ? (
-          <>
-            <strong>{data.total.toLocaleString('pt-BR')}</strong> {data.total === 1 ? 'licitação' : 'licitações'} ·{' '}
-            {sync?.lastSuccessAt ? `atualizado ${relative(sync.lastSuccessAt)}` : 'primeira atualização em andamento'}
-            {sync?.running ? ' · atualizando agora…' : ''} · Fonte: PNCP
-          </>
-        ) : (
-          'Carregando…'
-        )}
+        <span>
+          {data ? (
+            <>
+              <strong>{data.total.toLocaleString('pt-BR')}</strong> {data.total === 1 ? 'licitação' : 'licitações'} ·{' '}
+              {sync?.lastSuccessAt ? `atualizado ${relative(sync.lastSuccessAt)}` : 'primeira atualização em andamento'}
+              {sync?.running ? ' · atualizando agora…' : ''} · Fonte: PNCP
+            </>
+          ) : (
+            'Carregando…'
+          )}
+        </span>
         <Button size="sm" variant="ghost" icon={RefreshCw} onClick={() => load(false)} loading={loading && page === 1}>
           Atualizar
         </Button>
