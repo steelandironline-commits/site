@@ -40,3 +40,9 @@ export function createMtlsFetch({ certBase64, keyBase64, pfxBase64, passphrase, 
       req.end();
     });
 }
+
+/** Safe one-line reason for a network/TLS failure (error code and message, never request data). */
+export function networkReason(err) {
+  const e = err?.cause || err;
+  return [e?.code, String(e?.message || err?.name || 'error').slice(0, 160)].filter(Boolean).join(' ');
+}

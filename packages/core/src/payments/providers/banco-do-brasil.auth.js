@@ -1,5 +1,6 @@
 import { FinancialError, withRetry } from '../errors.js';
 import { logger } from '../../logger.js';
+import { networkReason } from './http.js';
 
 /**
  * BancoDoBrasilAuthService — OAuth2 client_credentials against BB.
@@ -54,11 +55,15 @@ export class BancoDoBrasilAuthService {
             signal: AbortSignal.timeout(10_000),
           });
         } catch (err) {
-          throw new FinancialError('PROVIDER_UNAVAILABLE', { detail: `oauth network: ${err.name}`, retryable: true });
+          throw new FinancialError('PROVIDER_UNAVAILABLE', { detail: `oauth network: ${networkReason(err)}`, retryable: true });
         }
         if (res.status === 429) throw new FinancialError('RATE_LIMITED', { retryable: true, providerStatus: 429 });
         if (res.status >= 500) throw new FinancialError('PROVIDER_UNAVAILABLE', { retryable: true, providerStatus: res.status });
-        if (!res.ok) throw new FinancialError('PROVIDER_AUTH_FAILED', { providerStatus: res.status, detail: 'oauth rejected' });
+        if (!res.ok) {
+          // The bank's error code only (e.g. invalid_client, invalid_scope); never the request.
+          const body = await res.json().catch(() => ({}));
+          throw new FinancialError('PROVIDER_AUTH_FAILED', { providerStatus: res.status, detail: `oauth rejected: ${String(body?.error || body?.erro || '').slice(0, 60)}` });
+        }
         return res.json();
       },
       { retries: 3, sleep: this.sleep },

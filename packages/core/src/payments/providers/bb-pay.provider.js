@@ -1,8 +1,9 @@
+import tls from 'node:tls';
 import QRCode from 'qrcode';
 import { PaymentProvider, NO_CAPABILITIES } from '../PaymentProvider.js';
 import { FinancialError, withRetry } from '../errors.js';
 import { BancoDoBrasilAuthService } from './banco-do-brasil.auth.js';
-import { createMtlsFetch } from './http.js';
+import { createMtlsFetch, networkReason } from './http.js';
 import { safeEqual } from '../../security/tokens.js';
 import { logger } from '../../logger.js';
 
@@ -64,6 +65,18 @@ export class BbPayPaymentProvider extends PaymentProvider {
     super();
     this.cfg = bbPay;
     this.isSandbox = bbPay.environment !== 'production';
+    // Non-secret setup summary, so a misconfiguration shows in the logs at boot.
+    if (!fetchImpl) {
+      logger.info('bb pay configured', {
+        environment: bbPay.environment,
+        api: hostOf(bbPay.apiBaseUrl),
+        oauth: hostOf(bbPay.oauthUrl),
+        mtls: bbPay.mtls ? (bbPay.mtls.pfxBase64 ? 'pfx' : 'pem') : 'missing',
+        certificate: bbPay.mtls ? checkIdentity(bbPay.mtls) : null,
+        convenio: Boolean(bbPay.convenio),
+        scopes: bbPay.scopes || '(padrão do app)',
+      });
+    }
     this.fetch = fetchImpl || (bbPay.mtls ? createMtlsFetch(bbPay.mtls) : globalThis.fetch);
     this.now = now;
     this.sleep = sleep;
@@ -130,7 +143,7 @@ export class BbPayPaymentProvider extends PaymentProvider {
           signal: AbortSignal.timeout(15_000),
         });
       } catch (err) {
-        throw new FinancialError('PROVIDER_UNAVAILABLE', { detail: `${method} ${path}: ${err.name}`, retryable: true });
+        throw new FinancialError('PROVIDER_UNAVAILABLE', { detail: `${method} ${path}: ${networkReason(err)}`, retryable: true });
       }
       if (res.status === 401) {
         this.auth.invalidate();
@@ -170,7 +183,7 @@ export class BbPayPaymentProvider extends PaymentProvider {
       // FAILED; a request that did reach BB expires at its own deadline unpaid.
       res = await this.#call('POST', '/solicitacoes', { body, retry: false });
     } catch (err) {
-      throw new FinancialError('PIX_CREATE_FAILED', { detail: err.detail || err.code, providerStatus: err.providerStatus });
+      throw new FinancialError('PIX_CREATE_FAILED', { detail: [err.code, err.detail].filter(Boolean).join(': '), providerStatus: err.providerStatus });
     }
     const copyPaste = res?.informacoesPix?.textoQrCode;
     if (!res?.numeroSolicitacao || !copyPaste) throw new FinancialError('PIX_CREATE_FAILED', { detail: 'BB Pay response without numeroSolicitacao or textoQrCode' });
@@ -259,5 +272,23 @@ export class BbPayPaymentProvider extends PaymentProvider {
         },
       },
     ];
+  }
+}
+
+function hostOf(url) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
+}
+
+/** Opens the client certificate once (wrong password, damaged base64, unsupported .pfx) without any network call. */
+function checkIdentity(m) {
+  try {
+    tls.createSecureContext(m.pfxBase64 ? { pfx: Buffer.from(m.pfxBase64, 'base64'), passphrase: m.passphrase || '' } : { cert: Buffer.from(m.certBase64, 'base64'), key: Buffer.from(m.keyBase64, 'base64') });
+    return 'ok';
+  } catch (err) {
+    return `inválido: ${String(err.message).slice(0, 120)}`;
   }
 }

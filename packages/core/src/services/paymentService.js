@@ -125,7 +125,7 @@ export class PaymentService {
     } catch (err) {
       // Never expose raw bank/provider errors to the customer.
       const code = err instanceof FinancialError ? err.code : 'PIX_CREATE_FAILED';
-      logger.error('pix charge creation failed', { code, paymentId: payment.id, provider: provider.name });
+      logger.error('pix charge creation failed', { code, paymentId: payment.id, provider: provider.name, providerStatus: err.providerStatus, detail: err.detail ?? err.message });
       await this.prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED', failureCode: code } });
       if (err instanceof FinancialError && err.status < 500) throw err;
       throw unavailable('Não foi possível gerar o Pix agora. Tente novamente em instantes.');
