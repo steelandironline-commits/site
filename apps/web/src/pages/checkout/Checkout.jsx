@@ -208,7 +208,7 @@ export default function Checkout() {
         <section className={`${s.summary} ${oneTime ? `${s.summaryGold} gold-icons` : ''}`} aria-labelledby="summary-title">
           <p className="eyebrow">{oneTime ? 'Taxa de cadastro · empresa' : 'Assinatura'}</p>
           <h1 id="summary-title" className={s.planName}>
-            TEMPIX
+            Carteira
           </h1>
           <p className={`${s.planPrice} num`}>
             <BRLText>{formatCents(priceCents)}</BRLText>
