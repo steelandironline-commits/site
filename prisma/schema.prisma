@@ -1243,3 +1243,50 @@ model SocialComment {
 
   @@index([postId, createdAt])
 }
+
+/// Public procurement notices (licitações / contratações) from open official sources (PNCP).
+/// Shared by every company account; refreshed by the worker.
+model PublicTender {
+  id                String    @id @default(cuid())
+  source            String    @default("pncp")
+  externalId        String    @unique // numeroControlePNCP
+  agencyName        String
+  agencyCnpj        String?
+  sphere            String? // F federal, E estadual, M municipal, N não informado
+  unitName          String?
+  city              String?
+  cityIbge          String?
+  state             String?
+  object            String
+  modality          String?
+  modalityId        Int?
+  disputeMode       String?
+  situationId       Int?
+  situationName     String?
+  estimatedCents    BigInt?
+  proposalOpensAt   DateTime?
+  proposalClosesAt  DateTime?
+  publishedAt       DateTime?
+  sourceUpdatedAt   DateTime?
+  url               String
+  lastSeenAt        DateTime  @default(now())
+  /// Left the source's list of open notices before its deadline (suspended, revoked…).
+  leftOpenListAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([state, city])
+  @@index([proposalClosesAt])
+  @@index([publishedAt])
+}
+
+/// Bookkeeping for background syncs (one row per job): lease, last run, last result.
+model SyncState {
+  key           String    @id
+  leaseUntil    DateTime?
+  lastStartedAt DateTime?
+  lastSuccessAt DateTime?
+  lastError     String?
+  stats         Json?
+  updatedAt     DateTime  @updatedAt
+}

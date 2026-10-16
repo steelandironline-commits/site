@@ -102,6 +102,9 @@ const schema = z.object({
   SEARCH_PROVIDER: optional,
   SEARCH_API_KEY: optional,
   NEWS_SOURCE_ENABLED: bool(false),
+  // Licitações from the PNCP (public, no key). On by default; the worker syncs them.
+  TENDERS_SYNC_ENABLED: bool(true),
+  TENDERS_SYNC_MINUTES: z.coerce.number().int().min(10).max(1440).default(30),
   PUBLIC_BUSINESS_SOURCE_ENABLED: bool(false),
   EMAIL_PROVIDER: z
     .string()
@@ -234,6 +237,7 @@ export function loadConfig(env = process.env) {
       };
     })(),
     embeddedWorker: e.EMBEDDED_WORKER,
+    tenders: { syncEnabled: e.TENDERS_SYNC_ENABLED, syncMinutes: e.TENDERS_SYNC_MINUTES },
     search: {
       intervalMinutes: e.SEARCH_INTERVAL_MINUTES,
       scoreThreshold: e.OPPORTUNITY_SCORE_THRESHOLD,

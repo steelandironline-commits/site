@@ -8,6 +8,7 @@ import {
   Building2,
   Download,
   HardHat,
+  Landmark,
   RefreshCw,
   Truck,
   Wallet,
@@ -38,6 +39,7 @@ const NAV = [
   { to: '/app', label: 'Visão Geral', icon: LayoutDashboard, end: true },
   { to: '/app/radar', label: 'Radar', icon: Radar },
   { to: '/app/opportunities', label: 'Oportunidades', icon: Target },
+  { to: '/app/licitacoes', label: 'Licitações', icon: Landmark, companyOnly: true },
   { to: '/app/intermediacao', label: 'Intermediação', icon: Network },
   { to: '/app/social', label: 'Social', icon: MessageCircle },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
@@ -54,6 +56,8 @@ const MOBILE_TABS = NAV.filter((n) => ['/app', '/app/opportunities', '/app/socia
 const MORE = NAV.filter((n) => !MOBILE_TABS.includes(n));
 const ADMIN_NAV = { to: '/app/admin', label: 'Admin financeiro', icon: ShieldAlert };
 /** Professionals (pessoa física) see their profile where companies see "Empresa". */
+/** Items an account sees: licitações are for companies only. */
+const navFor = (items, me) => items.filter((i) => !i.companyOnly || me?.company?.accountType !== 'PERSON');
 const labelFor = (item, me) => (item.to === '/app/company' && me?.company?.accountType === 'PERSON' ? 'Meu perfil' : item.label);
 
 /** Deep pages get a native-style back header on mobile. */
@@ -182,7 +186,7 @@ export default function AppLayout() {
           <Logo />
         </Link>
         <nav className={s.sideNav}>
-          {(me?.user?.isPlatformAdmin ? [...NAV, ADMIN_NAV] : NAV).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon, end }) => (
+          {navFor(me?.user?.isPlatformAdmin ? [...NAV, ADMIN_NAV] : NAV, me).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => `${s.navItem} ${isActive ? s.navActive : ''}`}>
               {({ isActive }) => (
                 <>
@@ -280,7 +284,7 @@ export default function AppLayout() {
                   <X size={18} />
                 </button>
               </div>
-              {(me?.user?.isPlatformAdmin ? [...MORE, ADMIN_NAV] : MORE).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon }) => (
+              {navFor(me?.user?.isPlatformAdmin ? [...MORE, ADMIN_NAV] : MORE, me).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon }) => (
                 <NavLink key={to} to={to} className={({ isActive }) => `${s.sheetItem} ${isActive ? s.navActive : ''}`}>
                   <Icon size={18} aria-hidden="true" /> {label}
                 </NavLink>

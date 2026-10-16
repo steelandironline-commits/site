@@ -115,6 +115,17 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, reconcileMs = 
     if (!stopping) timers.push(setTimeout(reconcileLoop, reconcileMs));
   }
 
+  // Licitações: sweep the PNCP's open notices on a fixed cadence (lease-protected).
+  async function tenderLoop() {
+    if (stopping) return;
+    try {
+      await platform.tenders.syncOpen();
+    } catch (err) {
+      logger.error('tenders loop failed', { code: err.code || err.name });
+    }
+    if (!stopping) timers.push(setTimeout(tenderLoop, config.tenders.syncMinutes * 60_000));
+  }
+
   (async () => {
     await ensureAgents(prisma);
     await platform.commissions.ensureDefaults();
@@ -123,6 +134,7 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, reconcileMs = 
     pollLoop();
     eventLoop();
     reconcileLoop();
+    if (config.tenders?.syncEnabled && !config.isTest) timers.push(setTimeout(tenderLoop, 20_000));
   })().catch((err) => logger.error('worker boot failed', { err }));
 
   return {

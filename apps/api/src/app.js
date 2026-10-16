@@ -25,6 +25,7 @@ import { actionRoutes } from './routes/actions.js';
 import { whatsappRoutes, whatsappWebhookRoutes } from './routes/whatsapp.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { freightRoutes, workforceRoutes, eventRoutes } from './routes/domains.js';
+import { tenderRoutes } from './routes/tenders.js';
 import { payRoutes, adminRoutes } from './routes/pay.js';
 import { socialRoutes } from './routes/social.js';
 import { intermediationRoutes } from './routes/intermediation.js';
@@ -105,6 +106,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/whatsapp', whatsappRoutes(ctx));
   app.use('/api/notifications', notificationRoutes(ctx));
   app.use('/api/freight', freightRoutes(ctx));
+  app.use('/api/tenders', tenderRoutes(ctx));
   app.use('/api/workforce', workforceRoutes(ctx));
   app.use('/api/events', eventRoutes(ctx));
   app.use('/api/pay', payRoutes(ctx));

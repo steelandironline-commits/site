@@ -27,6 +27,7 @@ const TransactionDetail = lazy(() => import('./pages/app/TransactionDetail.jsx')
 const Admin = lazy(() => import('./pages/app/Admin.jsx'));
 const PaymentDetail = lazy(() => import('./pages/app/PaymentDetail.jsx'));
 const Freight = lazy(() => import('./pages/app/Freight.jsx'));
+const Tenders = lazy(() => import('./pages/app/Tenders.jsx'));
 const FreightMatchDetail = lazy(() => import('./pages/app/Freight.jsx').then((m) => ({ default: m.FreightMatchDetail })));
 const Workforce = lazy(() => import('./pages/app/Workforce.jsx'));
 const WorkforceMatchDetail = lazy(() => import('./pages/app/Workforce.jsx').then((m) => ({ default: m.WorkforceMatchDetail })));
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Overview />} />
             <Route path="radar" element={<RadarPage />} />
+            <Route path="licitacoes" element={<Tenders />} />
             <Route path="opportunities" element={<Opportunities />} />
             <Route path="opportunities/:id" element={<OpportunityDetail />} />
             <Route path="social" element={<Social />} />
