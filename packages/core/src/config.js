@@ -223,7 +223,8 @@ export function loadConfig(env = process.env) {
         appKey: e.BB_DEVELOPER_APPLICATION_KEY,
         apiBaseUrl: (e.BB_PAY_API_BASE_URL || (sandbox ? 'https://checkout.mtls.api.hm.bb.com.br/v2' : 'https://checkout.mtls.api.bb.com.br/v2')).replace(/\/$/, ''),
         oauthUrl: e.BB_OAUTH_URL || (sandbox ? 'https://oauth.sandbox.bb.com.br/oauth/token' : 'https://oauth.bb.com.br/oauth/token'),
-        scopes: e.BB_PAY_OAUTH_SCOPES || '',
+        // BB Pay v2: create (POST /solicitacoes) and read (GET /solicitacoes) payment requests.
+        scopes: e.BB_PAY_OAUTH_SCOPES || 'checkout.solicitacoes-requisicao checkout.solicitacoes-info',
         // The BB Pay documentation sends the application key as gw-dev-app-key.
         appKeyParam: e.BB_APP_KEY_PARAM || 'gw-dev-app-key',
         mtls: mtlsFrom(e),
