@@ -73,11 +73,13 @@ export class PncpClient {
         return { items: data.data || [], totalPages: data.totalPaginas || 0, total: data.totalRegistros || 0 };
       }
       const retryable = res.status === 0 || res.status === 429 || res.status >= 500;
-      if (!retryable || attempt >= 3) {
+      if (!retryable || attempt >= 4) {
         logger.warn('pncp request failed', { page, status: res.status, error: res.error });
         throw Object.assign(new Error(`PNCP ${res.status || res.error}`), { status: res.status });
       }
-      await this.sleep(2000 * 2 ** attempt);
+      // Rate limited: honour Retry-After, else back off for longer (15 s, 30 s, 60 s, 120 s).
+      const after = Number(res.headers?.get?.('retry-after'));
+      await this.sleep(Number.isFinite(after) && after > 0 ? Math.min(after, 300) * 1000 : (res.status === 429 ? 15_000 : 2000) * 2 ** attempt);
     }
   }
 }

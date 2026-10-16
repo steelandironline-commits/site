@@ -118,12 +118,15 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, reconcileMs = 
   // Licitações: sweep the PNCP's open notices on a fixed cadence (lease-protected).
   async function tenderLoop() {
     if (stopping) return;
+    let next = config.tenders.syncMinutes * 60_000;
     try {
-      await platform.tenders.syncOpen();
+      const r = await platform.tenders.syncOpen();
+      // Paused by the source's rate limit: pick it up again in 5 minutes.
+      if (r?.error) next = 5 * 60_000;
     } catch (err) {
       logger.error('tenders loop failed', { code: err.code || err.name });
     }
-    if (!stopping) timers.push(setTimeout(tenderLoop, config.tenders.syncMinutes * 60_000));
+    if (!stopping) timers.push(setTimeout(tenderLoop, next));
   }
 
   (async () => {

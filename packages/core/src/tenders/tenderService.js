@@ -53,15 +53,20 @@ export class TenderService {
    * Sweeps every page of open notices and upserts them. Notices that left the open
    * list before their deadline are marked (suspended, revoked…), never deleted.
    */
-  async syncOpen({ maxPages = 2000, delayMs = 250, leaseMs = 25 * 60 * 1000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  async syncOpen({ maxPages = 2000, delayMs = 1500, leaseMs = 60 * 60 * 1000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
     if (!(await this.#claim(leaseMs))) return { skipped: 'running elsewhere' };
-    const started = this.now();
+    // A sweep cut short (rate limit, restart) resumes where it stopped, within 6 hours.
+    const prev = (await this.prisma.syncState.findUnique({ where: { key: SYNC_KEY } }))?.stats || {};
+    const resume = prev.cursorPage > 1 && prev.sweepStartedAt && this.now().getTime() - new Date(prev.sweepStartedAt).getTime() < 6 * 60 * 60 * 1000;
+    const started = resume ? new Date(prev.sweepStartedAt) : this.now();
+    const firstPage = resume ? prev.cursorPage : 1;
     let pages = 0;
     let upserted = 0;
     let total = 0;
     let complete = false;
+    let page = firstPage;
     try {
-      for (let page = 1; page <= maxPages; page++) {
+      for (; page < firstPage + maxPages; page++) {
         const { items, totalPages, total: t } = await this.client.openPage(page);
         total = t;
         pages++;
@@ -79,16 +84,18 @@ export class TenderService {
             data: { leftOpenListAt: this.now() },
           })
         : { count: 0 };
-      const stats = { pages, upserted, total, complete, unlisted: unlisted.count, ms: this.now().getTime() - started.getTime() };
+      const stats = complete
+        ? { pages, upserted, total, complete, resumedFrom: resume ? firstPage : null, unlisted: unlisted.count, ms: this.now().getTime() - started.getTime() }
+        : { pages, upserted, total, complete, cursorPage: page, sweepStartedAt: started.toISOString() };
       await this.prisma.syncState.update({ where: { key: SYNC_KEY }, data: { leaseUntil: null, lastSuccessAt: this.now(), lastError: null, stats } });
       logger.info('tenders synced', stats);
       return stats;
     } catch (err) {
       await this.prisma.syncState
-        .update({ where: { key: SYNC_KEY }, data: { leaseUntil: null, lastError: String(err.message).slice(0, 200), stats: { pages, upserted, total } } })
+        .update({ where: { key: SYNC_KEY }, data: { leaseUntil: null, lastError: String(err.message).slice(0, 200), stats: { pages, upserted, total, cursorPage: page, sweepStartedAt: started.toISOString() } } })
         .catch(() => null);
-      logger.error('tenders sync failed', { pages, upserted, error: err.message });
-      return { error: err.message, pages, upserted };
+      logger.warn('tenders sync paused, will resume', { pages, upserted, nextPage: page, error: err.message });
+      return { error: err.message, pages, upserted, nextPage: page };
     }
   }
 

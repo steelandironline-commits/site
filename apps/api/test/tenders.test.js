@@ -63,11 +63,27 @@ describe.skipIf(!hasDb)('licitações (PNCP)', () => {
     await new TenderService({ prisma, client: fakeClient([[item(1)]]) }).syncOpen({ delayMs: 0 });
     // A partial sweep (page limit) does not mark the ones it did not reach.
     await prisma.publicTender.updateMany({ data: { lastSeenAt: new Date(now - 3600e3) } });
-    expect(await new TenderService({ prisma, client: fakeClient([[item(9)], [item(10)]]) }).syncOpen({ delayMs: 0, maxPages: 1 })).toMatchObject({ complete: false, unlisted: 0 });
+    expect(await new TenderService({ prisma, client: fakeClient([[item(9)], [item(10)]]) }).syncOpen({ delayMs: 0, maxPages: 1 })).toMatchObject({ complete: false, cursorPage: 2 });
     expect((await prisma.publicTender.findUnique({ where: { externalId: item(1).numeroControlePNCP } })).leftOpenListAt).toBeNull();
     const broken = { openPage: async () => { throw new Error('PNCP 503'); } };
     expect(await new TenderService({ prisma, client: broken }).syncOpen({ delayMs: 0 })).toMatchObject({ error: 'PNCP 503' });
     expect((await prisma.publicTender.findFirst()).leftOpenListAt).toBeNull();
+  });
+
+  it('a sweep stopped by the rate limit resumes on the next run from the same page', async () => {
+    const prisma = getPrisma();
+    await new TenderService({ prisma, client: fakeClient([[item(1)], [item(2)], [item(3)]]) }).syncOpen({ delayMs: 0 });
+    let calls = [];
+    const flaky = { openPage: async (p) => { calls.push(p); if (p === 2) throw new Error('PNCP 429'); return { items: [item(p === 1 ? 1 : 3)], totalPages: 3, total: 3 }; } };
+    expect(await new TenderService({ prisma, client: flaky }).syncOpen({ delayMs: 0 })).toMatchObject({ error: 'PNCP 429', nextPage: 2 });
+    calls = [];
+    // #2 is gone at the source now; the resumed sweep starts at page 2 and completes.
+    // (#2 left, so the source now has 2 pages: #1 and #3.)
+    const after = { openPage: async (p) => { calls.push(p); return { items: [item(3)], totalPages: 2, total: 2 }; } };
+    expect(await new TenderService({ prisma, client: after }).syncOpen({ delayMs: 0 })).toMatchObject({ complete: true, resumedFrom: 2, unlisted: 1 });
+    expect(calls).toEqual([2]);
+    expect((await prisma.publicTender.findUnique({ where: { externalId: item(2).numeroControlePNCP } })).leftOpenListAt).toBeTruthy();
+    expect((await prisma.publicTender.findUnique({ where: { externalId: item(1).numeroControlePNCP } })).leftOpenListAt).toBeNull();
   });
 
   it('lists them for a signed-in company with filters and the situation of each one', async () => {
