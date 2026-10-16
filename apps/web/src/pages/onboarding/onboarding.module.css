@@ -246,6 +246,20 @@
   color: var(--muted);
 }
 
+.readyFix {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+  text-align: left;
+}
+
+.readyLink {
+  justify-self: center;
+  font-size: var(--fs-13);
+  color: var(--primary);
+}
+
 /* Account type: professional (free) or company (one-time fee) */
 .typeChoice {
   display: grid;

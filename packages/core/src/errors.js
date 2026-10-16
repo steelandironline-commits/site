@@ -14,6 +14,6 @@ export const badRequest = (message = 'Requisição inválida.', details) => new 
 export const unauthorized = (message = 'Sua sessão expirou. Entre novamente.') => new AppError(401, 'UNAUTHORIZED', message);
 export const forbidden = (message = 'Você não tem permissão para esta ação.') => new AppError(403, 'FORBIDDEN', message);
 export const notFound = (message = 'Recurso não encontrado.') => new AppError(404, 'NOT_FOUND', message);
-export const conflict = (message = 'Conflito com o estado atual.') => new AppError(409, 'CONFLICT', message);
+export const conflict = (message = 'Conflito com o estado atual.', details) => new AppError(409, 'CONFLICT', message, details);
 export const gone = (message = 'Este link expirou.') => new AppError(410, 'GONE', message);
 export const unavailable = (message = 'Serviço indisponível no momento.') => new AppError(503, 'UNAVAILABLE', message);

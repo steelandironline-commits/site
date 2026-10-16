@@ -35,7 +35,7 @@ export class OnboardingService {
     await this.#purgeExpiredDrafts();
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing && existing.status !== 'PENDING_PAYMENT') {
-      throw conflict('Este e-mail já possui uma conta TemPix. Entre ou recupere sua senha.');
+      throw conflict('Este e-mail já possui uma conta TemPix. Use outro e-mail ou entre com a sua conta.', { field: 'email' });
     }
     // One login and one CNPJ per account. An unpaid draft holds them until its hour is up.
     const holder = loginId ? await this.prisma.user.findUnique({ where: { loginId } }) : null;
@@ -45,6 +45,7 @@ export class OnboardingService {
         accountType === 'COMPANY'
           ? 'Este CNPJ já tem cadastro no TemPix. Entre com ele ou recupere a senha.'
           : 'Este CPF já tem cadastro no TemPix. Entre com ele ou recupere a senha.',
+        { field: 'document' },
       );
     }
     const pendingExpiresAt = new Date(Date.now() + DRAFT_TTL_MS);

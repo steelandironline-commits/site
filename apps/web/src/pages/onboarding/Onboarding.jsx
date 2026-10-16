@@ -209,6 +209,9 @@ function Analysis({ onDone, items = ANALYSIS }) {
   );
 }
 
+/** Daily cost of the fee over a year, rounded up to whole cents ("menos de R$ 0,01" for tiny fees). */
+const perDay = (cents) => (Math.ceil(cents / 365) / 100).toFixed(2).replace('.', ',');
+
 function Ready({ companyName, accountType, onSave }) {
   const navigate = useNavigate();
   const { config } = useSession();
@@ -219,26 +222,35 @@ function Ready({ companyName, accountType, onSave }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
+  // Set when the server refuses the e-mail or document: which one, so it can be fixed here.
+  const [taken, setTaken] = useState(null);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailError, setEmailError] = useState(null);
+
+  const fail = (err, fallback) => {
+    setError(err.message || fallback);
+    setTaken(err.status === 409 ? err.details?.field || null : null);
+    setBusy(false);
+  };
 
   // The account is created here, when the Pix is requested; the Pix then has one hour.
-  const goToPix = async () => {
+  const goToPix = async (overrides) => {
     setBusy(true);
     setError(null);
     try {
-      await onSave();
+      await onSave(overrides);
       navigate('/checkout');
     } catch (err) {
-      setError(err.message || 'Não foi possível gerar o Pix agora. Tente novamente.');
-      setBusy(false);
+      fail(err, 'Não foi possível gerar o Pix agora. Tente novamente.');
     }
   };
 
   // Free accounts receive a single-use activation link at their email address.
-  const finish = async () => {
+  const finish = async (overrides) => {
     setBusy(true);
     setError(null);
     try {
-      await onSave();
+      await onSave(overrides);
       const res = await post('/api/onboarding/finish');
       if (res.alreadyActive) return navigate('/login', { replace: true });
       if (res.emailVerificationRequired) {
@@ -248,9 +260,18 @@ function Ready({ companyName, accountType, onSave }) {
       }
       if (res.token) navigate(`/activate/${res.token}`, { replace: true });
     } catch (err) {
-      setError(err.message || 'Não foi possível concluir agora. Tente novamente.');
-      setBusy(false);
+      fail(err, 'Não foi possível concluir agora. Tente novamente.');
     }
+  };
+
+  // The e-mail already has an account: sign up with another one without starting over.
+  const retryWithEmail = (e) => {
+    e.preventDefault();
+    const email = newEmail.trim();
+    if (!/^\S+@\S+\.\S+$/.test(email)) return setEmailError('E-mail inválido');
+    setEmailError(null);
+    setTaken(null);
+    (pay ? goToPix : finish)({ email });
   };
 
   let title = emailSent ? 'Confira seu e-mail para continuar.' : 'Confirme seu e-mail para ativar sua conta.';
@@ -268,8 +289,8 @@ function Ready({ companyName, accountType, onSave }) {
     foot = 'R$ 597,00/mês · Sem fidelidade · Cancele quando quiser';
   } else if (feeCents > 0) {
     title = 'Falta só a taxa única de cadastro.';
-    text = `${formatCents(feeCents)}, uma vez só. Sem mensalidade e sem renovação: depois disso, o TemPix só fica com ${commission} dos contratos concluídos e confirmados que a ${companyName || 'sua empresa'} fechar.`;
-    foot = `Menos de R$ ${(feeCents / 100 / 365).toFixed(2).replace('.', ',')} por dia no primeiro ano · nada de mensalidade depois`;
+    text = `${formatCents(feeCents)}, uma vez só. Sem mensalidade e sem renovação: depois disso, o TemPix só fica com ${commission}, e apenas sobre os contratos concluídos e confirmados que a ${companyName || 'sua empresa'} fechar.`;
+    foot = `Menos de R$ ${perDay(feeCents)} por dia no primeiro ano · nada de mensalidade depois`;
   }
 
   return (
@@ -280,11 +301,11 @@ function Ready({ companyName, accountType, onSave }) {
       <h1 className={s.readyTitle}>{title}</h1>
       <p className={s.readyText}><BRLText>{text}</BRLText></p>
       {pay ? (
-        <Button size="lg" iconRight={ArrowRight} onClick={goToPix} loading={busy}>
+        <Button size="lg" iconRight={ArrowRight} onClick={() => goToPix()} loading={busy}>
           {subscription ? 'PAGAR COM PIX' : `PAGAR ${formatCents(feeCents)} COM PIX`}
         </Button>
       ) : (
-        <Button size="lg" iconRight={ArrowRight} onClick={finish} loading={busy}>
+        <Button size="lg" iconRight={ArrowRight} onClick={() => finish()} loading={busy}>
           {emailSent ? 'REENVIAR LINK DE ATIVAÇÃO' : 'ENVIAR LINK DE ATIVAÇÃO'}
         </Button>
       )}
@@ -292,6 +313,26 @@ function Ready({ companyName, accountType, onSave }) {
         <p className={s.readySafe} role="alert">
           <BRLText>{error}</BRLText>
         </p>
+      )}
+      {taken === 'email' && (
+        <form className={s.readyFix} onSubmit={retryWithEmail} noValidate>
+          <Field label="Outro e-mail" error={emailError}>
+            {(a) => (
+              <Input {...a} type="email" inputMode="email" autoComplete="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="voce@empresa.com.br" />
+            )}
+          </Field>
+          <Button type="submit" variant="secondary" loading={busy} disabled={!newEmail.trim()}>
+            {pay ? 'Usar este e-mail e gerar o Pix' : 'Usar este e-mail'}
+          </Button>
+          <Link to="/login" className={s.readyLink}>
+            Já tenho conta: entrar
+          </Link>
+        </form>
+      )}
+      {taken === 'document' && (
+        <Link to="/login" className={s.readyLink}>
+          Entrar com o {accountType === 'PERSON' ? 'CPF' : 'CNPJ'}
+        </Link>
       )}
       <p className={s.readySafe}>
         <Lock size={13} aria-hidden="true" /> <BRLText>{foot}</BRLText>
@@ -351,7 +392,7 @@ export default function Onboarding() {
    * Pix (or the activation link, for free accounts): until then nothing is saved,
    * and the signup has one hour from here.
    */
-  const persistSignup = useCallback(async () => {
+  const persistSignup = useCallback(async (overrides = {}) => {
     const parsed = operationalProfileSchema.safeParse(profile);
     if (!parsed.success) throw new Error('Revise os campos das etapas anteriores.');
     let data = { operationalProfile: parsed.data };
@@ -362,10 +403,11 @@ export default function Onboarding() {
     await post('/api/onboarding/start', {
       accountType: account.accountType,
       name: account.name,
-      email: account.email,
+      email: overrides.email ?? account.email,
       document: account.document,
       ...(company ? { companyName: account.companyName } : {}),
     });
+    if (overrides.email) setAccount((a) => ({ ...a, email: overrides.email }));
     await put('/api/onboarding/step', { step: steps.length, data, complete: true });
     await refresh();
   }, [account, form, profile, steps, refresh]);

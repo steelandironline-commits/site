@@ -52,11 +52,21 @@ describe.skipIf(!hasDb)('login by CPF / CNPJ and collaborators', () => {
     const again = await signUp({ accountType: 'COMPANY', document: cnpj });
     expect(again.start.status).toBe(409);
     expect(again.start.body.error.message).toContain('CNPJ');
+    expect(again.start.body.error.details).toEqual({ field: 'document' });
 
     const cpf = testCpf();
     await signUp({ accountType: 'PERSON', document: cpf });
     const dup = await signUp({ accountType: 'PERSON', document: cpf });
     expect(dup.start.status).toBe(409);
+  });
+
+  it('an e-mail that already has an account is refused with the field, so the signup can use another one', async () => {
+    const { email } = await signUp({ accountType: 'COMPANY', document: testCnpj() });
+    const taken = await client(ctx.app).post('/api/onboarding/start', { accountType: 'COMPANY', name: 'Bia Lima', email, companyName: 'Outra Ltda', document: testCnpj() });
+    expect(taken.status).toBe(409);
+    expect(taken.body.error.details).toEqual({ field: 'email' });
+    const other = await signUp({ accountType: 'COMPANY', document: testCnpj() });
+    expect(other.start.status).toBe(201);
   });
 
   it('an unfinished draft holds the CNPJ for one hour, then frees it', async () => {
