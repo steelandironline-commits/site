@@ -360,6 +360,14 @@
   letter-spacing: -0.03em;
 }
 
+.pageTitleBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.1rem);
+  letter-spacing: -0.03em;
+}
+
 .pageSub {
   margin-top: 6px;
   color: var(--muted);

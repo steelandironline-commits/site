@@ -7,6 +7,7 @@ import { useAction } from '../../lib/actions.js';
 import { api } from '../../lib/api.js';
 import { fmtDateTime } from '../../lib/time.js';
 import { BRLText } from '../../components/brand/BRLIcon.jsx';
+import { LogoMark } from '../../components/brand/Logo.jsx';
 import { MetricCard } from '../../components/cards/Cards.jsx';
 import { Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, Select, SkeletonCard } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
@@ -36,7 +37,7 @@ const TABS = [
 
 const parseMoney = (v) => Math.round(Number(String(v).replace(/\./g, '').replace(',', '.')) * 100) || 0;
 
-/** Partner/sandbox strip shown on every TemPix Pay screen. */
+/** Partner/sandbox strip shown on every Carteira screen. */
 export function PartnerNote({ caps, sandbox }) {
   const disabled = caps?.provider === 'none';
   return (
@@ -249,7 +250,7 @@ export default function Pay() {
   const list = useApi(tab === 'settings' ? null : `/api/pay/transactions?view=${tab}`);
 
   useEffect(() => {
-    document.title = 'TemPix Pay — TemPix';
+    document.title = 'Carteira — TemPix';
   }, []);
   useEffect(() => {
     if (stream.latest?.type === 'PAYMENT') {
@@ -276,7 +277,9 @@ export default function Pay() {
     <>
       <header className={s.pageHead}>
         <div>
-          <h1 className={s.pageTitle}>TemPix Pay</h1>
+          <h1 className={s.pageTitleBrand}>
+            <LogoMark size={26} /> Carteira
+          </h1>
           <p className={s.pageSub}>Cobranças, recebimentos e pagamentos dos seus negócios.</p>
         </div>
         <Button icon={Plus} onClick={() => setShowNew((v) => !v)} aria-expanded={showNew}>
@@ -298,7 +301,7 @@ export default function Pay() {
         </div>
       )}
 
-      <nav className={`${s.filters} ${s.section}`} aria-label="Seções do TemPix Pay">
+      <nav className={`${s.filters} ${s.section}`} aria-label="Seções da Carteira">
         {TABS.map(([k, label]) => (
           <button key={k} type="button" className={`${s.chip} ${tab === k ? s.chipActive : ''}`} aria-pressed={tab === k} onClick={() => setParams(k === 'all' ? {} : { tab: k })}>
             {label}
