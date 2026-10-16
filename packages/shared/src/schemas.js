@@ -106,6 +106,15 @@ export const onboardingStartSchema = z
   })
   .transform((v) => ({ ...v, document: onlyDigits(v.document) }));
 
+/** First step of the signup: is this e-mail / document still free? */
+export const onboardingCheckSchema = z
+  .object({
+    accountType: z.enum(['COMPANY', 'PERSON']).default('COMPANY'),
+    email: emailSchema,
+    document: z.string().trim().max(24),
+  })
+  .transform((v) => ({ ...v, document: onlyDigits(v.document) }));
+
 /** A collaborator joins a company account and logs in with their own CPF. */
 export const collaboratorInviteSchema = z.object({
   name: trimmed(120).min(2, 'Informe o nome'),

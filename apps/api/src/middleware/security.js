@@ -35,6 +35,8 @@ export function buildLimiters(config) {
     login: rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, skip, message: message('Muitas tentativas de login. Tente novamente em alguns minutos.') }),
     sensitive: rateLimit({ windowMs: 15 * 60_000, limit: 8, standardHeaders: 'draft-7', legacyHeaders: false, skip, message: message('Muitas tentativas. Tente novamente mais tarde.') }),
     onboarding: rateLimit({ windowMs: 60 * 60_000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false, skip, message: message('Muitos cadastros a partir desta rede.') }),
+    // Checking an e-mail/document on the first signup step; bounded to limit account probing.
+    onboardingCheck: rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false, skip, message: message('Muitas verificações. Aguarde alguns minutos.') }),
     payments: rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: 'draft-7', legacyHeaders: false, skip, message: message('Muitas requisições de pagamento.') }),
   };
 }

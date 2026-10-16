@@ -356,6 +356,7 @@ export default function Onboarding() {
   const [errors, setErrors] = useState({});
   const [error, setError] = useState(null);
   const [booting, setBooting] = useState(true);
+  const [checking, setChecking] = useState(false);
   const [phase, setPhase] = useState('form'); // form | analysis | ready
   const headingRef = useRef(null);
 
@@ -417,6 +418,19 @@ export default function Onboarding() {
     setErrors(v);
     setError(null);
     if (Object.keys(v).length) return;
+    // First step: an e-mail or CNPJ/CPF that already has an account is refused right away.
+    if (current.key === 'start') {
+      setChecking(true);
+      try {
+        const res = await post('/api/onboarding/check', { accountType: account.accountType, email: account.email, document: account.document });
+        if (!res.available) return setErrors(res.taken);
+      } catch (err) {
+        // Offline or rate limited: say so; the final step checks again anyway.
+        if (err.status !== 0) return setError(err.message);
+      } finally {
+        setChecking(false);
+      }
+    }
     // The last step only opens the review; the account is created when the person asks for the Pix.
     if (step === steps.length - 1) return setPhase('analysis');
     setDir(1);
@@ -658,7 +672,7 @@ export default function Onboarding() {
                 ) : (
                   <span />
                 )}
-                <Button type="submit" iconRight={ArrowRight} size="lg">
+                <Button type="submit" iconRight={ArrowRight} size="lg" loading={checking}>
                   {step === steps.length - 1 ? 'CONCLUIR' : 'CONTINUAR'}
                 </Button>
               </footer>

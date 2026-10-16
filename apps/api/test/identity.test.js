@@ -69,6 +69,24 @@ describe.skipIf(!hasDb)('login by CPF / CNPJ and collaborators', () => {
     expect(other.start.status).toBe(201);
   });
 
+  it('first step: tells right away that the e-mail or the CNPJ/CPF already has an account', async () => {
+    const cnpj = testCnpj();
+    const { email } = await signUp({ accountType: 'COMPANY', document: cnpj });
+    const check = (body) => client(ctx.app).post('/api/onboarding/check', body);
+
+    const both = await check({ accountType: 'COMPANY', email, document: formatCnpj(cnpj) });
+    expect(both.status).toBe(200);
+    expect(both.body.available).toBe(false);
+    expect(both.body.taken.email).toContain('e-mail');
+    expect(both.body.taken.document).toContain('CNPJ');
+
+    const free = await check({ accountType: 'COMPANY', email: 'nova@ex.example', document: testCnpj() });
+    expect(free.body).toEqual({ available: true, taken: {} });
+    // Nothing is saved by the check.
+    expect(await ctx.prisma.user.findUnique({ where: { email: 'nova@ex.example' } })).toBeNull();
+    expect((await check({ accountType: 'PERSON', email: 'x' })).status).toBe(400);
+  });
+
   it('an unfinished draft holds the CNPJ for one hour, then frees it', async () => {
     const cnpj = testCnpj();
     const prisma = getPrisma();

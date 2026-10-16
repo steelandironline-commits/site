@@ -33,21 +33,9 @@ export class OnboardingService {
     const accountName = accountType === 'PERSON' ? name : companyName;
     const loginId = document; // CNPJ (company) or CPF (person), digits only
     await this.#purgeExpiredDrafts();
-    const existing = await this.prisma.user.findUnique({ where: { email } });
-    if (existing && existing.status !== 'PENDING_PAYMENT') {
-      throw conflict('Este e-mail já possui uma conta TemPix. Use outro e-mail ou entre com a sua conta.', { field: 'email' });
-    }
-    // One login and one CNPJ per account. An unpaid draft holds them until its hour is up.
-    const holder = loginId ? await this.prisma.user.findUnique({ where: { loginId } }) : null;
-    const companyHolder = accountType === 'COMPANY' && loginId ? await this.prisma.company.findUnique({ where: { cnpj: loginId } }) : null;
-    if ((holder && holder.id !== existing?.id) || (companyHolder && companyHolder.id !== existing?.companyId)) {
-      throw conflict(
-        accountType === 'COMPANY'
-          ? 'Este CNPJ já tem cadastro no TemPix. Entre com ele ou recupere a senha.'
-          : 'Este CPF já tem cadastro no TemPix. Entre com ele ou recupere a senha.',
-        { field: 'document' },
-      );
-    }
+    const { existing, taken } = await this.#availability({ email, accountType, loginId });
+    if (taken.email) throw conflict(taken.email, { field: 'email' });
+    if (taken.document) throw conflict(taken.document, { field: 'document' });
     const pendingExpiresAt = new Date(Date.now() + DRAFT_TTL_MS);
 
     return this.prisma.$transaction(async (tx) => {
@@ -70,6 +58,36 @@ export class OnboardingService {
       const { token, session } = await this.auth.createSession(user.id, { scope: 'ONBOARDING', ...meta }, tx);
       return { token, session, user };
     });
+  }
+
+  /** First signup step: which of the e-mail and the CNPJ/CPF already have an account (message per field). */
+  async check({ email, accountType, document }) {
+    await this.#purgeExpiredDrafts();
+    const { taken } = await this.#availability({ email, accountType, loginId: document });
+    return { available: !taken.email && !taken.document, taken };
+  }
+
+  /**
+   * One account per e-mail, per CPF and per CNPJ. An unpaid draft holds its CPF/CNPJ
+   * until its hour is up; the same e-mail may restart its own draft.
+   */
+  async #availability({ email, accountType, loginId }) {
+    const taken = {};
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing && existing.status !== 'PENDING_PAYMENT') {
+      taken.email = 'Já existe um cadastro com este e-mail. Use outro e-mail ou entre com a sua conta.';
+    }
+    const holder = loginId ? await this.prisma.user.findUnique({ where: { loginId } }) : null;
+    const companyHolder = accountType === 'COMPANY' && loginId ? await this.prisma.company.findUnique({ where: { cnpj: loginId } }) : null;
+    // Only the e-mail's own unpaid draft may reuse its CPF/CNPJ.
+    const draft = existing?.status === 'PENDING_PAYMENT' ? existing : null;
+    if ((holder && holder.id !== draft?.id) || (companyHolder && companyHolder.id !== draft?.companyId)) {
+      taken.document =
+        accountType === 'COMPANY'
+          ? 'Este CNPJ já tem cadastro no TemPix. Entre com ele ou recupere a senha.'
+          : 'Este CPF já tem cadastro no TemPix. Entre com ele ou recupere a senha.';
+    }
+    return { existing, taken };
   }
 
   /**
