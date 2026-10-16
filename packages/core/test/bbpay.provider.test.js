@@ -87,7 +87,14 @@ function fakeBbPay() {
       if (!b.geral?.numeroConvenio) return res(400, { erros: [{ codigo: '5923577', mensagem: 'O número do convênio não foi informado. (5923577-052)' }] });
       const numero = state.next++;
       state.requests.set(numero, { ...b.geral, numeroSolicitacao: numero, codigoEstadoSolicitacao: 0 });
-      return res(201, { numeroSolicitacao: numero, timestampCriacaoSolicitacao: '2026-10-15T10:00:00', urlSolicitacao: `https://bbpay.apps.bb.com.br/m/#/${numero}`, informacoesPix: { textoQrCode: `00020126BBPAY${numero}`, txId: `TX${numero}` } });
+      const pix = { textoQrCode: `00020126BBPAY${numero}`, txId: `TX${numero}` };
+      return res(201, { numeroSolicitacao: numero, timestampCriacaoSolicitacao: '2026-10-15T10:00:00', urlSolicitacao: `https://bbpay.apps.bb.com.br/m/#/${numero}`, ...(state.pixOnlyOnRead ? {} : { informacoesPix: pix }) });
+    }
+    const one = u.pathname.match(/^\/v2\/solicitacoes\/(\d+)$/);
+    if (opts.method === 'GET' && one) {
+      const r = state.requests.get(Number(one[1]));
+      if (!r) return res(404, { erros: [{ codigo: '404', mensagem: 'não encontrada' }] });
+      return res(200, { ...r, informacoesPix: { textoQrCode: `00020126BBPAY${r.numeroSolicitacao}`, txId: `TX${r.numeroSolicitacao}` } });
     }
     if (opts.method === 'GET' && u.pathname === '/v2/solicitacoes') {
       const list = [...state.requests.values()].filter((r) => r.codigoConciliacaoSolicitacao === u.searchParams.get('codigoConciliacaoSolicitacao'));
@@ -137,6 +144,16 @@ describe('BB Pay payment requests', () => {
     expect(charge.copyPaste).toBe('00020126BBPAY9001');
     expect(charge.qrCodeBase64.length).toBeGreaterThan(100);
     expect(charge.expiresAt).toEqual(deadline);
+  });
+
+  it('reads the Pix text back from the bank when the creation response does not carry it', async () => {
+    const bb = fakeBbPay();
+    bb.state.pixOnlyOnRead = true;
+    const p = new BbPayPaymentProvider({ bbPay: READY, fetchImpl: bb.fetchImpl, sleep: async () => {} });
+    const charge = await p.createPixCharge({ paymentId: 'cm9pay05', amountCents: 100, description: 'Taxa', expiresAt: new Date(Date.now() + 3600e3) });
+    expect(charge.copyPaste).toBe(`00020126BBPAY${charge.metadata.numeroSolicitacao}`);
+    const read = bb.state.calls.find((c) => c.method === 'GET' && /\/v2\/solicitacoes\/\d+$/.test(c.path));
+    expect(read.query.numeroConvenio).toBe('421378');
   });
 
   it('reads the state back from the bank, and confirms a webhook only when the bank says it is paid', async () => {

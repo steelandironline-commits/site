@@ -187,8 +187,26 @@ export class BbPayPaymentProvider extends PaymentProvider {
     } catch (err) {
       throw new FinancialError('PIX_CREATE_FAILED', { detail: [err.code, err.detail].filter(Boolean).join(': '), providerStatus: err.providerStatus });
     }
-    const copyPaste = res?.informacoesPix?.textoQrCode;
-    if (!res?.numeroSolicitacao || !copyPaste) throw new FinancialError('PIX_CREATE_FAILED', { detail: 'BB Pay response without numeroSolicitacao or textoQrCode' });
+    let copyPaste = res?.informacoesPix?.textoQrCode;
+    // The request exists at the bank but the Pix text may not come in the creation
+    // response: read the request back (GET /solicitacoes/{numero}) a few times.
+    for (let i = 0; res?.numeroSolicitacao && !copyPaste && i < 3; i++) {
+      if (i) await (this.sleep || ((ms) => new Promise((r) => setTimeout(r, ms))))(800);
+      const full = await this.#call('GET', `/solicitacoes/${encodeURIComponent(res.numeroSolicitacao)}`, { query: { numeroConvenio: this.cfg.convenio } }).catch(() => null);
+      copyPaste = full?.informacoesPix?.textoQrCode;
+      if (full?.urlSolicitacao && !res.urlSolicitacao) res.urlSolicitacao = full.urlSolicitacao;
+      if (full?.informacoesPix?.txId) res.informacoesPix = { ...res.informacoesPix, txId: full.informacoesPix.txId };
+    }
+    if (!res?.numeroSolicitacao || !copyPaste) {
+      // Shape only (field names and presence), never values.
+      logger.warn('bb pay response without pix', {
+        keys: Object.keys(res || {}),
+        numeroSolicitacao: Boolean(res?.numeroSolicitacao),
+        informacoesPix: res?.informacoesPix ? Object.keys(res.informacoesPix) : null,
+        urlSolicitacao: Boolean(res?.urlSolicitacao),
+      });
+      throw new FinancialError('PIX_CREATE_FAILED', { detail: 'BB Pay response without numeroSolicitacao or textoQrCode' });
+    }
     const png = await QRCode.toDataURL(copyPaste, { margin: 1, width: 320, errorCorrectionLevel: 'M' });
     return {
       providerPaymentId: providerIdFor(res.numeroSolicitacao, conciliacao),
