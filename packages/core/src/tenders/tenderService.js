@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { tenderStatus } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { logger } from '../logger.js';
@@ -5,6 +7,7 @@ import { PncpClient, toTender } from './pncpClient.js';
 
 const SYNC_KEY = 'pncp-open';
 const DAY = 24 * 60 * 60 * 1000;
+const UPSERT_BATCH = 500; // rows per INSERT; a page of the PNCP list has 50
 const SELECT = {
   id: true,
   agencyName: true,
@@ -24,6 +27,10 @@ const SELECT = {
   url: true,
   leftOpenListAt: true,
 };
+
+// Dates are bound as instants: AT TIME ZONE 'UTC' stores their UTC wall clock, as Prisma's own writes do,
+// whatever the database's timezone is (a plain ::timestamp cast would shift them to local time).
+const utc = (d) => Prisma.sql`${d}::timestamptz AT TIME ZONE 'UTC'`;
 
 /**
  * Licitações for companies: open public procurement notices from the PNCP,
@@ -99,20 +106,59 @@ export class TenderService {
     }
   }
 
+  /**
+   * Writes a page of notices with one INSERT … ON CONFLICT per batch (one statement for a page).
+   * New notices are inserted; known ones take every column of the listing, lastSeenAt = seenAt
+   * and leftOpenListAt is reset.
+   */
   async #upsert(items, seenAt) {
-    let n = 0;
     const rows = items.filter((i) => i?.numeroControlePNCP).map(toTender);
-    await this.prisma.$transaction(
-      rows.map((row) =>
-        this.prisma.publicTender.upsert({
-          where: { externalId: row.externalId },
-          create: { ...row, lastSeenAt: seenAt },
-          update: { ...row, lastSeenAt: seenAt, leftOpenListAt: null },
-        }),
+    // A notice listed twice in one page is written once, with its last listing (one statement cannot touch a row twice).
+    const unique = [...new Map(rows.map((row) => [row.externalId, row])).values()];
+    if (unique.length) {
+      const stamp = new Date(); // createdAt/updatedAt of the page, set here as Prisma's @updatedAt would
+      const statements = [];
+      for (let i = 0; i < unique.length; i += UPSERT_BATCH) statements.push(this.#upsertBatch(unique.slice(i, i + UPSERT_BATCH), seenAt, stamp));
+      await this.prisma.$transaction(statements);
+    }
+    return rows.length;
+  }
+
+  #upsertBatch(rows, seenAt, stamp) {
+    const values = Prisma.join(
+      rows.map(
+        (r) =>
+          Prisma.sql`(${randomUUID()}, ${r.source}, ${r.externalId}, ${r.agencyName}, ${r.agencyCnpj}, ${r.sphere}, ${r.unitName}, ${r.city}, ${r.cityIbge}, ${r.state}, ${r.object}, ${r.modality}, ${r.modalityId}::integer, ${r.disputeMode}, ${r.situationId}::integer, ${r.situationName}, ${r.estimatedCents}::bigint, ${utc(r.proposalOpensAt)}, ${utc(r.proposalClosesAt)}, ${utc(r.publishedAt)}, ${utc(r.sourceUpdatedAt)}, ${r.url}, ${utc(seenAt)}, NULL::timestamp, ${utc(stamp)}, ${utc(stamp)})`,
       ),
     );
-    n += rows.length;
-    return n;
+    return this.prisma.$executeRaw(Prisma.sql`
+      INSERT INTO "PublicTender" ("id", "source", "externalId", "agencyName", "agencyCnpj", "sphere", "unitName", "city", "cityIbge", "state", "object", "modality", "modalityId", "disputeMode", "situationId", "situationName", "estimatedCents", "proposalOpensAt", "proposalClosesAt", "publishedAt", "sourceUpdatedAt", "url", "lastSeenAt", "leftOpenListAt", "createdAt", "updatedAt")
+      VALUES ${values}
+      ON CONFLICT ("externalId") DO UPDATE SET
+        "source" = EXCLUDED."source",
+        "agencyName" = EXCLUDED."agencyName",
+        "agencyCnpj" = EXCLUDED."agencyCnpj",
+        "sphere" = EXCLUDED."sphere",
+        "unitName" = EXCLUDED."unitName",
+        "city" = EXCLUDED."city",
+        "cityIbge" = EXCLUDED."cityIbge",
+        "state" = EXCLUDED."state",
+        "object" = EXCLUDED."object",
+        "modality" = EXCLUDED."modality",
+        "modalityId" = EXCLUDED."modalityId",
+        "disputeMode" = EXCLUDED."disputeMode",
+        "situationId" = EXCLUDED."situationId",
+        "situationName" = EXCLUDED."situationName",
+        "estimatedCents" = EXCLUDED."estimatedCents",
+        "proposalOpensAt" = EXCLUDED."proposalOpensAt",
+        "proposalClosesAt" = EXCLUDED."proposalClosesAt",
+        "publishedAt" = EXCLUDED."publishedAt",
+        "sourceUpdatedAt" = EXCLUDED."sourceUpdatedAt",
+        "url" = EXCLUDED."url",
+        "lastSeenAt" = EXCLUDED."lastSeenAt",
+        "leftOpenListAt" = NULL,
+        "updatedAt" = EXCLUDED."updatedAt"
+    `);
   }
 
   // ------------------------------------------------------------------ read

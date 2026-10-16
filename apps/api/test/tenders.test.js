@@ -86,6 +86,34 @@ describe.skipIf(!hasDb)('licitações (PNCP)', () => {
     expect((await prisma.publicTender.findUnique({ where: { externalId: item(1).numeroControlePNCP } })).leftOpenListAt).toBeNull();
   });
 
+  it('writes a page that lists a notice twice, and a notice with no value or dates', async () => {
+    const prisma = getPrisma();
+    const bare = item(2, { valorTotalEstimado: null, dataAberturaProposta: null, dataEncerramentoProposta: null, orgaoEntidade: {}, unidadeOrgao: {}, objetoCompra: null, situacaoCompraId: null });
+    const pages = [[item(1), bare, item(1, { objetoCompra: 'Manutenção predial lote 1 (última listagem)' })]];
+    expect(await new TenderService({ prisma, client: fakeClient(pages) }).syncOpen({ delayMs: 0 })).toMatchObject({ pages: 1, upserted: 3, unlisted: 0 });
+    expect(await prisma.publicTender.count()).toBe(2);
+    // The notice listed twice is written once, with its last listing.
+    expect(await prisma.publicTender.findUnique({ where: { externalId: item(1).numeroControlePNCP } })).toMatchObject({ object: 'Manutenção predial lote 1 (última listagem)', estimatedCents: 100000n });
+    expect(await prisma.publicTender.findUnique({ where: { externalId: bare.numeroControlePNCP } })).toMatchObject({
+      agencyName: 'Órgão público',
+      object: 'Objeto não informado',
+      estimatedCents: null,
+      proposalOpensAt: null,
+      proposalClosesAt: null,
+      publishedAt: null,
+      sourceUpdatedAt: null,
+      situationId: null,
+      leftOpenListAt: null,
+    });
+
+    // Next sweep: #2 now has a value and dates, #1 has none any more; nothing from the earlier listing is kept.
+    const next = new TenderService({ prisma, client: fakeClient([[item(1, { valorTotalEstimado: null }), item(2)]]) });
+    expect(await next.syncOpen({ delayMs: 0 })).toMatchObject({ upserted: 2, unlisted: 0 });
+    expect(await prisma.publicTender.findUnique({ where: { externalId: item(1).numeroControlePNCP } })).toMatchObject({ estimatedCents: null });
+    expect(await prisma.publicTender.findUnique({ where: { externalId: item(2).numeroControlePNCP } })).toMatchObject({ agencyName: 'MUNICIPIO DE TAIO', object: 'Manutenção predial lote 2', estimatedCents: 200000n });
+    expect((await prisma.publicTender.findUnique({ where: { externalId: item(2).numeroControlePNCP } })).proposalClosesAt).toBeInstanceOf(Date);
+  });
+
   it('lists them for a signed-in company with filters and the situation of each one', async () => {
     const prisma = getPrisma();
     await new TenderService({
