@@ -5,6 +5,7 @@ export { logger } from './logger.js';
 export { generateToken, hashToken, safeEqual, hmacHex } from './security/tokens.js';
 export { hashPassword, verifyPassword } from './security/password.js';
 export { EmailService } from './email/emailService.js';
+export { CepService } from './geo/cepService.js';
 export { ACTIVITY_CHANNEL } from './realtime/channel.js';
 
 export { ActivityService, ACTIVITY_SELECT } from './services/activityService.js';

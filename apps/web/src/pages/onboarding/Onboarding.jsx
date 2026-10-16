@@ -57,7 +57,7 @@ const STEPS = [
 const PERSON_STEPS = [
   { key: 'start', title: 'Vamos começar.', subtitle: 'Profissional se cadastra grátis. Leva menos de um minuto.' },
   { key: 'work', title: 'Qual é o seu trabalho?', subtitle: 'Profissão e serviços que você faz. Assim chegam vagas e serviços certos para você.', fields: ['services', 'description'] },
-  { key: 'where', title: 'Onde você mora?', subtitle: 'Seu CEP e até quantos km você aceita ir para o trabalho.', fields: ['postalCode', 'serviceRadiusKm'] },
+  { key: 'where', title: 'Onde você mora?', subtitle: 'Seu CEP e até quantos km você aceita ir para o trabalho.', fields: ['postalCode', 'city', 'state', 'serviceRadiusKm'] },
   // Asked last, after the profession and the region.
   { key: 'contact', title: 'Como falar com você?', subtitle: 'Opcional. Usado só para avisos de vagas e serviços.', fields: ['phone'], sortGroup: 'onde' },
 ];

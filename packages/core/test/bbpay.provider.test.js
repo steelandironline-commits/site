@@ -215,3 +215,17 @@ describe('BB Pay payment requests', () => {
     }
   });
 });
+
+describe('BB Pay returns permission', () => {
+  it('checks the devoluções permission by asking only for a token', async () => {
+    const bb = fakeBbPay();
+    const p = new BbPayPaymentProvider({ bbPay: READY, fetchImpl: bb.fetchImpl });
+    expect(await p.checkRefundPermission()).toEqual({ ok: true });
+    expect(bb.state.calls.map((c) => c.path)).toEqual(['/oauth/token']);
+    const denied = new BbPayPaymentProvider({
+      bbPay: READY,
+      fetchImpl: async (url) => (new URL(url).pathname === '/oauth/token' ? { ok: false, status: 400, json: async () => ({ error: 'invalid_scope' }) } : { ok: false, status: 404, json: async () => ({}) }),
+    });
+    expect(await denied.checkRefundPermission()).toMatchObject({ ok: false, reason: expect.stringContaining('invalid_scope') });
+  });
+});

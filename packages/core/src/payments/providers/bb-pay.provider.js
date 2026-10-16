@@ -253,6 +253,22 @@ export class BbPayPaymentProvider extends PaymentProvider {
   }
 
   /**
+   * Whether the app may return payments (OAuth token for checkout.devolucoes-requisicao).
+   * Asks only for a token: nothing is created or changed at the bank.
+   */
+  async checkRefundPermission() {
+    if (!this.apiReady) return { ok: false, reason: `missing: ${this.missing.join(', ')}` };
+    try {
+      await this.refundAuth.getToken();
+      logger.info('bb pay refund permission', { ok: true });
+      return { ok: true };
+    } catch (err) {
+      logger.warn('bb pay refund permission', { ok: false, code: err.code, detail: err.detail, providerStatus: err.providerStatus });
+      return { ok: false, reason: err.detail || err.code };
+    }
+  }
+
+  /**
    * Gives a received payment back to whoever paid it (POST /devolucoes).
    * Used when a signup fee comes from an account other than the company's CNPJ.
    */

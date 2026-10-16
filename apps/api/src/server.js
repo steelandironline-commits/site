@@ -26,6 +26,13 @@ async function main() {
 
   const worker = config.embeddedWorker ? startWorker() : null;
 
+  // BB Pay: say at boot whether returns (devoluções) are allowed for this app.
+  if (config.payment.provider === 'bb_pay') {
+    Promise.resolve()
+      .then(() => services.payments.provider().checkRefundPermission?.())
+      .catch((err) => logger.warn('bb pay refund permission check failed', { code: err.code || err.name }));
+  }
+
   const shutdown = async (signal) => {
     logger.info('shutting down', { signal });
     server.close();

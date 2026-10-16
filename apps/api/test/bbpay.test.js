@@ -113,6 +113,26 @@ describe.skipIf(!hasDb)('BB Pay webhook route', () => {
     const seen = await c.get(`/api/payments/${payment.id}`);
     expect(seen.body.payment.checkoutState).toBe('PAYER_MISMATCH');
 
+    // The bank refused the automatic return (no permission yet): the worker tries again
+    // once an hour, and closes the issue when the bank accepts it.
+    const payments = ctx.services.payments;
+    const firstTry = await prisma.reconciliationIssue.findUnique({ where: { id: issue.id } });
+    expect(firstTry.details.lastReturnAttemptAt).toBeTruthy();
+    expect(await payments.retryPayerReturns()).toMatchObject({ pending: 1, returned: 0 }); // within the hour: no new call
+    const realFactory = payments.providerFactory;
+    const returned = [];
+    payments.providerFactory = (name, cfg) => Object.assign(Object.create(realFactory(name, cfg)), { returnPayment: async (a) => (returned.push(a), { providerRefundId: '70001' }) });
+    try {
+      expect(await payments.retryPayerReturns({ now: new Date(Date.now() + 61 * 60 * 1000) })).toMatchObject({ returned: 1 });
+    } finally {
+      payments.providerFactory = realFactory;
+    }
+    expect(returned).toEqual([expect.objectContaining({ numeroPagamento: 123456, amountCents: 20000 })]);
+    expect(await prisma.reconciliationIssue.findUnique({ where: { id: issue.id } })).toMatchObject({ status: 'AUTO_REPAIRED' });
+    expect((await prisma.payment.findUnique({ where: { id: payment.id } })).failureCode).toBe('PAYER_MISMATCH_RETURNED');
+    // Still shown as refused (and returned) on the checkout.
+    expect((await c.get(`/api/payments/${payment.id}`)).body.payment.checkoutState).toBe('PAYER_MISMATCH');
+
     // Another company's CNPJ is refused the same way.
     const other = await signupWithCharge(ctx, { email: 'outra@empresa.example', numero: 779 });
     await request(ctx.app).post(URL).send(event(779, 200.0, 1, 'TPconc779', paidBy('CNPJ', testCnpj())));

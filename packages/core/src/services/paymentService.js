@@ -507,26 +507,66 @@ export class PaymentService {
   /**
    * Returns a refused signup fee to whoever paid it. If the bank does not accept the
    * return (e.g. the app has no permission for devoluções yet), the issue stays open
-   * for a person to return it in the bank's portal.
+   * and the worker tries again (retryPayerReturns) until it goes through.
    */
-  async #giveBack(paymentId, { provider, numeroPagamento, amountCents }) {
+  async #giveBack(paymentId, { provider }) {
     const issue = await this.prisma.reconciliationIssue.findFirst({ where: { paymentId, kind: 'PAYER_MISMATCH', status: { in: ['OPEN', 'ACKNOWLEDGED'] } } });
+    if (issue) await this.#returnFor(issue, provider);
+  }
+
+  async #returnFor(issue, provider) {
+    const d = issue.details || {};
+    const attemptAt = new Date();
     try {
-      const p = this.provider(provider);
-      if (typeof p.returnPayment !== 'function') throw new Error('provider cannot return payments');
-      const { providerRefundId } = await p.returnPayment({ numeroPagamento, amountCents, reason: 'TemPix: Pix recusado, pago por conta diferente do CNPJ cadastrado' });
-      await this.prisma.payment.update({ where: { id: paymentId }, data: { failureCode: 'PAYER_MISMATCH_RETURNED' } });
-      if (issue) {
-        await this.prisma.reconciliationIssue.update({
-          where: { id: issue.id },
-          data: { status: 'AUTO_REPAIRED', resolvedAt: new Date(), resolutionNote: `Devolvido automaticamente a quem pagou${providerRefundId ? ` (devolução ${providerRefundId})` : ''}.` },
-        });
-      }
-      logger.info('payer mismatch: payment returned', { paymentId, providerRefundId });
+      const p = this.provider(provider || d.provider);
+      if (typeof p.returnPayment !== 'function') throw Object.assign(new Error('provider cannot return payments'), { code: 'REFUND_UNSUPPORTED' });
+      const { providerRefundId } = await p.returnPayment({ numeroPagamento: d.numeroPagamento, amountCents: d.amountCents, reason: 'TemPix: Pix recusado, pago por conta diferente do CNPJ cadastrado' });
+      if (issue.paymentId) await this.prisma.payment.updateMany({ where: { id: issue.paymentId }, data: { failureCode: 'PAYER_MISMATCH_RETURNED' } });
+      await this.prisma.reconciliationIssue.update({
+        where: { id: issue.id },
+        data: {
+          status: 'AUTO_REPAIRED',
+          resolvedAt: attemptAt,
+          details: { ...d, returnedAt: attemptAt.toISOString(), providerRefundId: providerRefundId ?? null },
+          resolutionNote: `Devolvido automaticamente a quem pagou${providerRefundId ? ` (devolução ${providerRefundId})` : ''}.`,
+        },
+      });
+      logger.info('payer mismatch: payment returned', { issueId: issue.id, providerRefundId });
+      return true;
     } catch (err) {
-      logger.error('payer mismatch: automatic return failed, return it in the bank portal', { paymentId, code: err.code || err.name, detail: err.detail, providerStatus: err.providerStatus });
-      if (issue) await this.prisma.reconciliationIssue.update({ where: { id: issue.id }, data: { resolutionNote: 'Devolução automática não aceita pelo banco: devolver manualmente no portal do BB.' } }).catch(() => null);
+      logger.error('payer mismatch: automatic return failed, will retry', { issueId: issue.id, code: err.code || err.name, detail: err.detail, providerStatus: err.providerStatus });
+      await this.prisma.reconciliationIssue
+        .update({
+          where: { id: issue.id },
+          data: {
+            details: { ...d, lastReturnAttemptAt: attemptAt.toISOString(), returnAttempts: (d.returnAttempts || 0) + 1, lastReturnError: String(err.code || err.name).slice(0, 60) },
+            resolutionNote: 'Devolução automática ainda não aceita pelo banco: o sistema tenta de novo a cada hora. Se preferir, devolva no portal do BB e marque como resolvido.',
+          },
+        })
+        .catch(() => null);
+      return false;
     }
+  }
+
+  /**
+   * Worker: tries again, once an hour, the returns the bank did not accept yet (for
+   * example before the app had the devoluções permission). Pix returns are possible
+   * for 90 days; after 85 the issue is left to a person.
+   */
+  async retryPayerReturns({ now = new Date(), everyMs = 60 * 60 * 1000 } = {}) {
+    const issues = await this.prisma.reconciliationIssue.findMany({
+      where: { kind: 'PAYER_MISMATCH', status: { in: ['OPEN', 'ACKNOWLEDGED'] }, createdAt: { gt: new Date(now.getTime() - 85 * 24 * 60 * 60 * 1000) } },
+      orderBy: { createdAt: 'asc' },
+      take: 20,
+    });
+    let returned = 0;
+    for (const issue of issues) {
+      const d = issue.details || {};
+      if (!d.numeroPagamento || !d.amountCents) continue;
+      if (d.lastReturnAttemptAt && now.getTime() - new Date(d.lastReturnAttemptAt).getTime() < everyMs) continue;
+      if (await this.#returnFor(issue, d.provider)) returned++;
+    }
+    return { pending: issues.length, returned };
   }
 
   async #flag(tx, payment, kind, details, providerStatus) {
@@ -612,7 +652,7 @@ export class PaymentService {
           if (!(payer.type === 'CNPJ' && payment.company.cnpj && payer.document === payment.company.cnpj)) {
             await tx.payment.update({ where: { id: payment.id }, data: { status: 'FAILED', failureCode: 'PAYER_MISMATCH' } });
             // Only the payer's document type is kept, never the number.
-            const details = { reason: 'Pix de conta diferente do CNPJ cadastrado', payerType: payer.type, amountCents: payment.amountCents, providerPaymentId, numeroPagamento: payload?.numeroPagamento ?? null };
+            const details = { reason: 'Pix de conta diferente do CNPJ cadastrado', payerType: payer.type, amountCents: payment.amountCents, provider, providerPaymentId, numeroPagamento: payload?.numeroPagamento ?? null };
             await this.#flag(tx, payment, 'PAYER_MISMATCH', details, status);
             await this.events.activity.record(
               {
@@ -628,7 +668,7 @@ export class PaymentService {
             );
             await this.audit?.log({ action: 'PAYMENT_REJECTED_PAYER', source: 'SYSTEM', companyId: payment.companyId, paymentId: payment.id, metadata: { provider, providerEventId, payerType: payer.type, amountCents: payment.amountCents } }, tx);
             await finish('FLAGGED', { paymentId: payment.id, error: 'payer_mismatch' });
-            return { flagged: 'payer_mismatch', paymentId: payment.id, giveBack: { provider, numeroPagamento: payload?.numeroPagamento ?? null, amountCents: payment.amountCents } };
+            return { flagged: 'payer_mismatch', paymentId: payment.id, giveBack: { provider } };
           }
         }
 

@@ -106,6 +106,9 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, reconcileMs = 
     try {
       const r = await platform.reconciliation.run();
       if (r.repaired || r.flagged || r.errors) logger.info('reconciliation run', r);
+      // Signup fees paid from another account: keep trying to give them back.
+      const back = await platform.payments.retryPayerReturns();
+      if (back.returned) logger.info('payer mismatch returns', back);
     } catch (err) {
       logger.error('reconciliation failed', { code: err.code || err.name });
     }
