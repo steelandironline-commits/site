@@ -11,7 +11,6 @@ import {
   Landmark,
   RefreshCw,
   Truck,
-  Wallet,
   Cpu,
   CreditCard,
   LayoutDashboard,
@@ -28,12 +27,17 @@ import {
 import { SUBSCRIPTION_STATUS_LABELS } from '@autopix/shared';
 import { useSession } from '../../lib/session.jsx';
 import { useActivityStream } from '../../lib/activityStream.js';
-import { Logo } from '../../components/brand/Logo.jsx';
+import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
 import { Button, DemoBadge, SkeletonCard } from '../../components/ui/ui.jsx';
 import { useInstallPrompt, useServiceWorkerUpdate } from '../../lib/pwa.js';
 import { safeStorage, useIsMobile } from '../../lib/hooks.js';
 import { PageLoader } from '../PageLoader.jsx';
 import s from './app.module.css';
+
+/** The TemPix symbol, used as the icon of the Carteira shortcut. */
+function TemPixSymbol({ size = 17 }) {
+  return <LogoMark size={size} />;
+}
 
 const NAV = [
   { to: '/app', label: 'Visão Geral', icon: LayoutDashboard, end: true },
@@ -43,7 +47,7 @@ const NAV = [
   { to: '/app/intermediacao', label: 'Intermediação', icon: Network },
   { to: '/app/social', label: 'Social', icon: MessageCircle },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
-  { to: '/app/pay', label: 'Carteira', icon: Wallet },
+  { to: '/app/pay', label: 'Carteira', icon: TemPixSymbol },
   { to: '/app/freight', label: 'Cargas', icon: Truck },
   { to: '/app/workforce', label: 'Equipes', icon: HardHat },
   { to: '/app/agents', label: 'Agentes', icon: Cpu },
