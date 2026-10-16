@@ -43,7 +43,7 @@ const NAV = [
   { to: '/app/intermediacao', label: 'Intermediação', icon: Network },
   { to: '/app/social', label: 'Social', icon: MessageCircle },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
-  { to: '/app/pay', label: 'TemPix Pay', icon: Wallet },
+  { to: '/app/pay', label: 'Carteira', icon: Wallet },
   { to: '/app/freight', label: 'Cargas', icon: Truck },
   { to: '/app/workforce', label: 'Equipes', icon: HardHat },
   { to: '/app/agents', label: 'Agentes', icon: Cpu },
@@ -63,8 +63,8 @@ const labelFor = (item, me) => (item.to === '/app/company' && me?.company?.accou
 /** Deep pages get a native-style back header on mobile. */
 const BACK = [
   [/^\/app\/opportunities\/[^/]+$/, '/app/opportunities', 'Oportunidades'],
-  [/^\/app\/payments\/[^/]+$/, '/app/pay', 'TemPix Pay'],
-  [/^\/app\/pay\/transactions\/[^/]+$/, '/app/pay', 'TemPix Pay'],
+  [/^\/app\/payments\/[^/]+$/, '/app/pay', 'Carteira'],
+  [/^\/app\/pay\/transactions\/[^/]+$/, '/app/pay', 'Carteira'],
   [/^\/app\/freight\/matches\/[^/]+$/, '/app/freight', 'Cargas'],
   [/^\/app\/workforce\/matches\/[^/]+$/, '/app/workforce', 'Equipes'],
   [/^\/app\/confirm\/[^/]+$/, '/app', 'Painel'],
