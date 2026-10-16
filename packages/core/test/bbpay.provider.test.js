@@ -63,6 +63,8 @@ describe('BB Pay webhook', () => {
     expect(() => loadConfig(base)).toThrow(/BB_PAY_CONVENIO/);
     expect(() => loadConfig({ ...base, BB_WEBHOOK_SECRET: SECRET, BB_PAY_CONVENIO: '421.378' })).not.toThrow();
     expect(loadConfig({ ...base, BB_WEBHOOK_SECRET: SECRET, BB_PAY_CONVENIO: '421.378' }).bbPay.convenio).toBe('421378');
+    // Pasted straight from the portal's convênio field: only the number counts.
+    expect(loadConfig({ ...base, BB_WEBHOOK_SECRET: SECRET, BB_PAY_CONVENIO: '421378 - 36 937 554 GUTEMBERG BISP' }).bbPay.convenio).toBe('421378');
   });
 
   it('accepts the company certificate as a .pfx with its password, or as a PEM pair', () => {

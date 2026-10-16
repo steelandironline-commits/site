@@ -72,10 +72,12 @@ const schema = z.object({
   BB_PAY_API_BASE_URL: optional,
   BB_PAY_OAUTH_SCOPES: optional,
   /** BB Pay convênio number (not a secret): webhooks for any other convênio are refused. */
+  // Only the convênio number: the portal shows "421378 - <conta> <nome>", and pasting
+  // all of it must not glue the account digits onto the number.
   BB_PAY_CONVENIO: z
     .string()
     .optional()
-    .transform((v) => (v ? v.replace(/\D/g, '') : undefined)),
+    .transform((v) => (v ? v.trim().split(/\s/)[0].replace(/\D/g, '') || undefined : undefined)),
   BB_SPLIT_ENABLED: bool(false),
   BB_PAYOUT_ENABLED: bool(false),
   BB_PROTECTED_PAYMENT_ENABLED: bool(false),

@@ -72,7 +72,8 @@ export class BbPayPaymentProvider extends PaymentProvider {
         oauth: hostOf(bbPay.oauthUrl),
         mtls: bbPay.mtls ? (bbPay.mtls.pfxBase64 ? 'pfx' : 'pem') : 'missing',
         certificate: bbPay.mtls ? checkIdentity(bbPay.mtls) : null,
-        convenio: Boolean(bbPay.convenio),
+        // The convênio number is an identifier (it comes in every webhook), not a secret.
+        convenio: bbPay.convenio || null,
         scopes: bbPay.scopes || '(padrão do app)',
       });
     }
