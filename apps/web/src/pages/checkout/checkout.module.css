@@ -351,6 +351,24 @@
   color: var(--text-2);
 }
 
+/* Signup fee: only the company's own CNPJ may pay */
+.howto .payerRule {
+  align-items: flex-start;
+  color: var(--text);
+}
+
+.howto .payerRule svg {
+  margin-top: 2px;
+  color: var(--amber, #e5a53b);
+}
+
+.wrongPayer {
+  max-width: 300px;
+  text-align: center;
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+
 .devBox {
   display: flex;
   flex-direction: column;

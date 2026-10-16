@@ -147,6 +147,9 @@ export function checkoutState(payment) {
       return 'CANCELLED';
     case 'REFUNDED':
       return 'REFUNDED';
+    case 'FAILED':
+      // Paid from an account other than the company's CNPJ: refused and given back.
+      return String(payment.failureCode || '').startsWith('PAYER_MISMATCH') ? 'PAYER_MISMATCH' : 'ERROR';
     default:
       return 'ERROR';
   }

@@ -496,6 +496,39 @@ export class PaymentService {
     return { received: true, results };
   }
 
+  #knowsPayer(providerName) {
+    try {
+      return this.provider(providerName).has('payerIdentity');
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Returns a refused signup fee to whoever paid it. If the bank does not accept the
+   * return (e.g. the app has no permission for devoluções yet), the issue stays open
+   * for a person to return it in the bank's portal.
+   */
+  async #giveBack(paymentId, { provider, numeroPagamento, amountCents }) {
+    const issue = await this.prisma.reconciliationIssue.findFirst({ where: { paymentId, kind: 'PAYER_MISMATCH', status: { in: ['OPEN', 'ACKNOWLEDGED'] } } });
+    try {
+      const p = this.provider(provider);
+      if (typeof p.returnPayment !== 'function') throw new Error('provider cannot return payments');
+      const { providerRefundId } = await p.returnPayment({ numeroPagamento, amountCents, reason: 'TemPix: Pix recusado, pago por conta diferente do CNPJ cadastrado' });
+      await this.prisma.payment.update({ where: { id: paymentId }, data: { failureCode: 'PAYER_MISMATCH_RETURNED' } });
+      if (issue) {
+        await this.prisma.reconciliationIssue.update({
+          where: { id: issue.id },
+          data: { status: 'AUTO_REPAIRED', resolvedAt: new Date(), resolutionNote: `Devolvido automaticamente a quem pagou${providerRefundId ? ` (devolução ${providerRefundId})` : ''}.` },
+        });
+      }
+      logger.info('payer mismatch: payment returned', { paymentId, providerRefundId });
+    } catch (err) {
+      logger.error('payer mismatch: automatic return failed, return it in the bank portal', { paymentId, code: err.code || err.name, detail: err.detail, providerStatus: err.providerStatus });
+      if (issue) await this.prisma.reconciliationIssue.update({ where: { id: issue.id }, data: { resolutionNote: 'Devolução automática não aceita pelo banco: devolver manualmente no portal do BB.' } }).catch(() => null);
+    }
+  }
+
   async #flag(tx, payment, kind, details, providerStatus) {
     const open = await tx.reconciliationIssue.findFirst({ where: { paymentId: payment.id, kind, status: { in: ['OPEN', 'ACKNOWLEDGED'] } } });
     if (!open) await tx.reconciliationIssue.create({ data: { paymentId: payment.id, kind, localStatus: payment.status, providerStatus, details } });
@@ -508,7 +541,7 @@ export class PaymentService {
    * apply → hand off to subscription / TemPix Pay transaction → domain
    * events → mark event processed. Ambiguities are FLAGGED, never guessed.
    */
-  async applyEvent({ provider, providerEventId, providerPaymentId, type, status, paidAt, amountCents = null, kind = 'payment', refundProviderId, payload, payloadHash }) {
+  async applyEvent({ provider, providerEventId, providerPaymentId, type, status, paidAt, amountCents = null, kind = 'payment', refundProviderId, payload, payloadHash, payer = null }) {
     const outcome = await this.prisma.$transaction(async (tx) => {
       const inserted = await tx.paymentEvent.createMany({
         data: [
@@ -568,6 +601,37 @@ export class PaymentService {
           await finish('FLAGGED', { paymentId: payment.id, error: 'amount_mismatch' });
           return { flagged: 'amount_mismatch', paymentId: payment.id };
         }
+        // A company's signup fee is accepted only from the company's own CNPJ (anti-fraud).
+        // The bank cannot stop a Pix from another account, so it is refused here and given back.
+        if (payment.kind === 'SIGNUP_FEE' && payment.company.accountType === 'COMPANY' && this.#knowsPayer(provider)) {
+          if (!payer) {
+            // e.g. the status poll: it says "paid" but not by whom. The bank's webhook decides.
+            await finish('IGNORED', { paymentId: payment.id, error: 'awaiting_payer_identity' });
+            return { awaitingPayer: true, paymentId: payment.id };
+          }
+          if (!(payer.type === 'CNPJ' && payment.company.cnpj && payer.document === payment.company.cnpj)) {
+            await tx.payment.update({ where: { id: payment.id }, data: { status: 'FAILED', failureCode: 'PAYER_MISMATCH' } });
+            // Only the payer's document type is kept, never the number.
+            const details = { reason: 'Pix de conta diferente do CNPJ cadastrado', payerType: payer.type, amountCents: payment.amountCents, providerPaymentId, numeroPagamento: payload?.numeroPagamento ?? null };
+            await this.#flag(tx, payment, 'PAYER_MISMATCH', details, status);
+            await this.events.activity.record(
+              {
+                companyId: payment.companyId,
+                type: 'PAYMENT',
+                title: 'Pix recusado: outra conta',
+                description: `Pix de ${formatCents(payment.amountCents)} veio de uma conta que não é a do CNPJ cadastrado. O valor é devolvido a quem pagou.`,
+                source: provider,
+                severity: 'WARNING',
+                metadata: { paymentId: payment.id },
+              },
+              tx,
+            );
+            await this.audit?.log({ action: 'PAYMENT_REJECTED_PAYER', source: 'SYSTEM', companyId: payment.companyId, paymentId: payment.id, metadata: { provider, providerEventId, payerType: payer.type, amountCents: payment.amountCents } }, tx);
+            await finish('FLAGGED', { paymentId: payment.id, error: 'payer_mismatch' });
+            return { flagged: 'payer_mismatch', paymentId: payment.id, giveBack: { provider, numeroPagamento: payload?.numeroPagamento ?? null, amountCents: payment.amountCents } };
+          }
+        }
+
         const now = new Date();
         let activation = null;
 
@@ -730,8 +794,9 @@ export class PaymentService {
         });
       }
     }
+    if (outcome.giveBack) await this.#giveBack(outcome.paymentId, outcome.giveBack);
     this.events.kick?.();
-    const { activation, ...safe } = outcome;
+    const { activation, giveBack, ...safe } = outcome;
     return { ...safe, activationIssued: Boolean(activation) };
   }
 

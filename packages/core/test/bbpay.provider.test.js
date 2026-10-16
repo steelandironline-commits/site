@@ -34,6 +34,18 @@ describe('BB Pay webhook', () => {
     expect(JSON.stringify(ev.payload)).not.toMatch(/NOME DO PAGADOR|5544562701/);
   });
 
+  it('tells who paid (to check the CNPJ), zero-padded, outside the stored payload', async () => {
+    const cnpj = { ...sample(), dadosEvento: { ...sample().dadosEvento, tipoDocumentoPagador: 2, numeroDocumentoPagador: 1234567000189 } };
+    const [ev] = await provider().handleWebhook({ query: { token: SECRET }, body: cnpj });
+    expect(ev.payer).toEqual({ type: 'CNPJ', document: '01234567000189' });
+    expect(JSON.stringify(ev.payload)).not.toContain('1234567000189');
+    const cpf = { ...sample(), dadosEvento: { ...sample().dadosEvento, tipoDocumentoPagador: 1, numeroDocumentoPagador: 5544562701 } };
+    expect((await provider().handleWebhook({ query: { token: SECRET }, body: cpf }))[0].payer).toEqual({ type: 'CPF', document: '05544562701' });
+    // No type: unknown payer, never guessed.
+    expect((await provider().handleWebhook({ query: { token: SECRET }, body: sample() }))[0].payer).toBeNull();
+    expect(provider().has('payerIdentity')).toBe(true);
+  });
+
   it('maps returned, unauthorized and contested events', async () => {
     const status = async (c) => (await provider().handleWebhook({ query: { token: SECRET }, body: sample({ codigoEvento: c }) }))[0].status;
     expect(await status(2)).toBe('REFUNDED');
@@ -82,7 +94,14 @@ function fakeBbPay() {
   const fetchImpl = async (url, opts = {}) => {
     const u = new URL(url);
     state.calls.push({ method: opts.method, path: u.pathname, query: Object.fromEntries(u.searchParams), body: opts.body && String(opts.body).startsWith('{') ? JSON.parse(opts.body) : opts.body ?? null });
-    if (u.pathname === '/oauth/token') return res(200, { access_token: 'tok', expires_in: 600 });
+    if (u.pathname === '/oauth/token') {
+      const scope = new URLSearchParams(String(opts.body || '')).get('scope') || '';
+      return res(200, { access_token: scope.includes('devolucoes') ? 'tok-refund' : 'tok', expires_in: 600 });
+    }
+    if (opts.method === 'POST' && u.pathname === '/v2/devolucoes') {
+      if (opts.headers?.Authorization !== 'Bearer tok-refund') return res(403, { erros: [{ codigo: '403', mensagem: 'escopo' }] });
+      return res(201, { numeroPagamentoSolicitacao: 70001 });
+    }
     if (opts.method === 'POST' && u.pathname === '/v2/solicitacoes') {
       const b = JSON.parse(opts.body);
       // Like the bank: the convênio must come inside "geral".
@@ -173,6 +192,17 @@ describe('BB Pay payment requests', () => {
     expect(st).toMatchObject({ status: 'CONFIRMED', amountCents: 20000 });
     const [ev] = await p.handleWebhook({ query: { token: SECRET }, body: paidEvent });
     expect(ev).toMatchObject({ providerPaymentId: '9001:TPcm9pay02', status: 'CONFIRMED', amountCents: 20000 });
+  });
+
+  it('gives a payment back through POST /devolucoes with its own token', async () => {
+    const bb = fakeBbPay();
+    const p = new BbPayPaymentProvider({ bbPay: READY, fetchImpl: bb.fetchImpl });
+    const out = await p.returnPayment({ numeroPagamento: '555', amountCents: 100, reason: 'Pix de outra conta' });
+    expect(out).toEqual({ providerRefundId: '70001' });
+    const call = bb.state.calls.find((c) => c.path === '/v2/devolucoes');
+    expect(call.body).toEqual({ numeroPagamento: 555, numeroConvenio: 421378, valorDevolucao: 1, textoMotivoDevolucao: 'Pix de outra conta' });
+    const tokenCall = bb.state.calls.filter((c) => c.path === '/oauth/token').pop();
+    expect(new URLSearchParams(tokenCall.body).get('scope')).toBe('checkout.devolucoes-requisicao');
   });
 
   it('maps expired, abandoned and deleted requests', async () => {

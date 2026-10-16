@@ -22,6 +22,8 @@ export const NO_CAPABILITIES = Object.freeze({
   bbPayRedirect: false,
   recurringPix: false,
   protectedFlow: false,
+  /** The confirmation tells who paid (CPF/CNPJ), so a payment can be matched to the account's document. */
+  payerIdentity: false,
 });
 
 export class PaymentProvider {

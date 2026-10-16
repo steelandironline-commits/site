@@ -227,6 +227,7 @@ export function loadConfig(env = process.env) {
         oauthUrl: e.BB_OAUTH_URL || (sandbox ? 'https://oauth.sandbox.bb.com.br/oauth/token' : 'https://oauth.bb.com.br/oauth/token'),
         // BB Pay v2: create (POST /solicitacoes) and read (GET /solicitacoes) payment requests.
         scopes: e.BB_PAY_OAUTH_SCOPES || 'checkout.solicitacoes-requisicao checkout.solicitacoes-info',
+        refundScopes: 'checkout.devolucoes-requisicao',
         // The BB Pay documentation sends the application key as gw-dev-app-key.
         appKeyParam: e.BB_APP_KEY_PARAM || 'gw-dev-app-key',
         mtls: mtlsFrom(e),

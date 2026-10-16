@@ -89,6 +89,17 @@ export class BbPayPaymentProvider extends PaymentProvider {
       now,
       sleep,
     });
+    // Returns (devoluções) use their own token: if the app has no permission for
+    // them yet, creating and reading Pix keeps working.
+    this.refundAuth = new BancoDoBrasilAuthService({
+      clientId: bbPay.clientId,
+      clientSecret: bbPay.clientSecret,
+      oauthUrl: bbPay.oauthUrl,
+      scopes: bbPay.refundScopes || 'checkout.devolucoes-requisicao',
+      fetchImpl: this.fetch,
+      now,
+      sleep,
+    });
   }
 
   /** What is missing to talk to the BB Pay API (empty when ready). */
@@ -118,22 +129,23 @@ export class BbPayPaymentProvider extends PaymentProvider {
       reasons.paymentStatus = why;
     }
     for (const k of Object.keys(NO_CAPABILITIES)) {
-      if (!['pix', 'pixWebhook', 'paymentStatus'].includes(k) && !reasons[k]) reasons[k] = 'Não disponível pelo BB Pay nesta versão.';
+      if (!['pix', 'pixWebhook', 'paymentStatus', 'payerIdentity'].includes(k) && !reasons[k]) reasons[k] = 'Não disponível pelo BB Pay nesta versão.';
     }
     return {
-      capabilities: { ...NO_CAPABILITIES, pix: this.apiReady, paymentStatus: this.apiReady, pixWebhook: webhookReady },
+      // The payment webhook carries the payer's CPF/CNPJ (tipoDocumentoPagador / numeroDocumentoPagador).
+      capabilities: { ...NO_CAPABILITIES, pix: this.apiReady, paymentStatus: this.apiReady, pixWebhook: webhookReady, payerIdentity: webhookReady },
       reasons,
     };
   }
 
   // ------------------------------------------------------------------ http
 
-  async #call(method, path, { query = {}, body, retry = true } = {}) {
+  async #call(method, path, { query = {}, body, retry = true, auth = this.auth } = {}) {
     if (!this.apiReady) throw new FinancialError('PROVIDER_AUTH_FAILED', { detail: `missing: ${this.missing.join(', ')}` });
     const qs = new URLSearchParams({ ...query, [this.cfg.appKeyParam]: this.cfg.appKey }).toString();
     const url = `${this.cfg.apiBaseUrl}${path}?${qs}`;
     const exec = async () => {
-      const token = await this.auth.getToken();
+      const token = await auth.getToken();
       let res;
       try {
         res = await this.fetch(url, {
@@ -146,7 +158,7 @@ export class BbPayPaymentProvider extends PaymentProvider {
         throw new FinancialError('PROVIDER_UNAVAILABLE', { detail: `${method} ${path}: ${networkReason(err)}`, retryable: true });
       }
       if (res.status === 401) {
-        this.auth.invalidate();
+        auth.invalidate();
         throw new FinancialError('PROVIDER_AUTH_FAILED', { providerStatus: 401, retryable: true });
       }
       if (res.status === 429) throw new FinancialError('RATE_LIMITED', { providerStatus: 429, retryable: true });
@@ -240,6 +252,25 @@ export class BbPayPaymentProvider extends PaymentProvider {
     };
   }
 
+  /**
+   * Gives a received payment back to whoever paid it (POST /devolucoes).
+   * Used when a signup fee comes from an account other than the company's CNPJ.
+   */
+  async returnPayment({ numeroPagamento, amountCents, reason }) {
+    if (!numeroPagamento) throw new FinancialError('REFUND_FAILED', { detail: 'numeroPagamento ausente' });
+    const res = await this.#call('POST', '/devolucoes', {
+      auth: this.refundAuth,
+      retry: false,
+      body: {
+        numeroPagamento: Number(numeroPagamento),
+        numeroConvenio: Number(this.cfg.convenio),
+        valorDevolucao: Number((amountCents / 100).toFixed(2)),
+        textoMotivoDevolucao: String(reason || 'Pagamento devolvido').slice(0, 140),
+      },
+    });
+    return { providerRefundId: res?.numeroPagamentoSolicitacao != null ? String(res.numeroPagamentoSolicitacao) : null };
+  }
+
   // --------------------------------------------------------------- webhook
 
   validateWebhook({ query = {}, headers = {} }) {
@@ -281,6 +312,8 @@ export class BbPayPaymentProvider extends PaymentProvider {
         status,
         paidAt: status === 'CONFIRMED' ? brTime(d.timestampPagamento) : null,
         amountCents: toCents(d.valorOriginal),
+        // Who paid, only to check it against the account's CNPJ: never stored (not in payload).
+        payer: payerOf(d),
         // Never the payer's name or document: only what reconciliation needs.
         payload: {
           codigoEvento: Number(body.codigoEvento),
@@ -312,4 +345,13 @@ function checkIdentity(m) {
   } catch (err) {
     return `inválido: ${String(err.message).slice(0, 120)}`;
   }
+}
+
+/** The payer's document from a BB Pay event, zero-padded (the bank sends it as a number). */
+function payerOf(d) {
+  if (d?.numeroDocumentoPagador == null || d.numeroDocumentoPagador === '') return null;
+  const type = Number(d.tipoDocumentoPagador) === 2 ? 'CNPJ' : Number(d.tipoDocumentoPagador) === 1 ? 'CPF' : null;
+  if (!type) return null;
+  const digits = String(d.numeroDocumentoPagador).replace(/\D/g, '');
+  return { type, document: digits.padStart(type === 'CNPJ' ? 14 : 11, '0') };
 }

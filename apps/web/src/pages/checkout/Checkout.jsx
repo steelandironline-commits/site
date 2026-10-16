@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Check, Clock, Copy, FlaskConical, Lock, QrCode, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react';
-import { PLAN, PRICING, formatCents } from '@autopix/shared';
+import { AlertTriangle, ArrowLeft, Building2, Check, Clock, Copy, FlaskConical, Lock, QrCode, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react';
+import { PLAN, PRICING, formatCents, formatCnpj } from '@autopix/shared';
 import { api, post } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { useVisibleInterval } from '../../lib/hooks.js';
@@ -55,6 +55,8 @@ export default function Checkout() {
   const [copied, setCopied] = useState(false);
   const [phase, setPhase] = useState('pending'); // pending | confirmed | activating | email-sent
   const [simulating, setSimulating] = useState(false);
+  // The signup fee is accepted only from the company's own CNPJ.
+  const [companyCnpj, setCompanyCnpj] = useState(null);
   const activating = useRef(false);
   const countdown = useCountdown(payment?.expiresAt);
   const isRenewal = me?.scope === 'FULL';
@@ -92,6 +94,7 @@ export default function Checkout() {
     (async () => {
       try {
         const st = me.scope === 'ONBOARDING' ? await api('/api/onboarding') : null;
+        setCompanyCnpj(st?.company?.cnpj || me.company?.cnpj || null);
         if (st && !st.company.onboardingCompletedAt) {
           navigate('/onboarding', { replace: true });
           return;
@@ -180,6 +183,8 @@ export default function Checkout() {
   };
 
   const expired = payment?.status === 'EXPIRED' || (payment?.status === 'PENDING' && countdown?.ms === 0);
+  const wrongPayer = payment?.checkoutState === 'PAYER_MISMATCH';
+  const cnpjOnly = payment?.kind === 'SIGNUP_FEE' && payment?.provider === 'bb_pay';
   const confirmed = phase !== 'pending';
   // Commission model: a one-time company signup fee instead of a monthly plan.
   const oneTime = config?.billing?.model !== 'subscription';
@@ -254,9 +259,9 @@ export default function Checkout() {
                   <h2 id="pix-title" className={s.pixTitle}>
                     <QrCode size={18} aria-hidden="true" /> Pague com Pix
                   </h2>
-                  <span className={`${s.status} ${expired || unavailable ? s.statusExpired : ''}`}>
+                  <span className={`${s.status} ${expired || unavailable || wrongPayer ? s.statusExpired : ''}`}>
                     <span className={s.statusDot} aria-hidden="true" />
-                    {expired ? 'COBRANÇA EXPIRADA' : unavailable ? 'PIX INDISPONÍVEL' : 'AGUARDANDO PAGAMENTO'}
+                    {wrongPayer ? 'PIX RECUSADO' : expired ? 'COBRANÇA EXPIRADA' : unavailable ? 'PIX INDISPONÍVEL' : 'AGUARDANDO PAGAMENTO'}
                   </span>
                   {payment?.isSandbox && <DemoBadge label="SANDBOX" />}
                 </div>
@@ -273,7 +278,18 @@ export default function Checkout() {
                     <p className={`${s.amount} num`}>{payment ? <BRLText>{formatCents(payment.amountCents)}</BRLText> : <Skeleton w={140} h={30} />}</p>
 
                     <div className={s.qrWrap}>
-                      {payment?.pixQrCodeBase64 && !expired ? (
+                      {wrongPayer ? (
+                        <div className={s.qrExpired} role="alert">
+                          <AlertTriangle size={22} aria-hidden="true" />
+                          <p className={s.wrongPayer}>
+                            Este Pix veio de outra conta. Por segurança, a taxa só é aceita quando paga pela conta do CNPJ
+                            {companyCnpj ? ` ${formatCnpj(companyCnpj)}` : ' da empresa'}. O valor é devolvido automaticamente a quem pagou.
+                          </p>
+                          <Button size="sm" icon={RefreshCw} onClick={createCharge} loading={creating}>
+                            Gerar novo Pix
+                          </Button>
+                        </div>
+                      ) : payment?.pixQrCodeBase64 && !expired ? (
                         <motion.img
                           initial={{ opacity: 0, scale: 0.97 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -294,7 +310,7 @@ export default function Checkout() {
                       ) : (
                         <Skeleton w={260} h={260} r={12} />
                       )}
-                      {payment && !expired && countdown && (
+                      {payment && !expired && !wrongPayer && countdown && (
                         <p className={`${s.expires} mono`}>
                           <Clock size={12} aria-hidden="true" /> expira em {countdown.label}
                         </p>
@@ -308,12 +324,21 @@ export default function Checkout() {
                       <div className={s.copyRow}>
                         <input id="pix-code" className={`${s.code} mono`} readOnly value={payment?.pixCopyPaste || ''} onFocus={(e) => e.target.select()} />
                       </div>
-                      <Button size="lg" block icon={copied ? Check : Copy} onClick={onCopy} disabled={!payment || expired}>
+                      <Button size="lg" block icon={copied ? Check : Copy} onClick={onCopy} disabled={!payment || expired || wrongPayer}>
                         {copied ? 'COPIADO' : 'COPIAR PIX'}
                       </Button>
                     </div>
 
                     <ol className={s.howto}>
+                      {cnpjOnly && (
+                        <li className={s.payerRule}>
+                          <Building2 size={14} aria-hidden="true" />
+                          <span>
+                            Pague pela conta bancária do CNPJ <strong>{companyCnpj ? formatCnpj(companyCnpj) : 'da empresa'}</strong>. Pix de outra conta (CPF ou outro
+                            CNPJ) é recusado e devolvido.
+                          </span>
+                        </li>
+                      )}
                       <li>
                         <Smartphone size={14} aria-hidden="true" /> Abra o app do seu banco e escolha Pix.
                       </li>
