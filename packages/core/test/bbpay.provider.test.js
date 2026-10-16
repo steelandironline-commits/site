@@ -83,8 +83,10 @@ function fakeBbPay() {
     if (u.pathname === '/oauth/token') return res(200, { access_token: 'tok', expires_in: 600 });
     if (opts.method === 'POST' && u.pathname === '/v2/solicitacoes') {
       const b = JSON.parse(opts.body);
+      // Like the bank: the convênio must come inside "geral".
+      if (!b.geral?.numeroConvenio) return res(400, { erros: [{ codigo: '5923577', mensagem: 'O número do convênio não foi informado. (5923577-052)' }] });
       const numero = state.next++;
-      state.requests.set(numero, { ...b, numeroSolicitacao: numero, codigoEstadoSolicitacao: 0 });
+      state.requests.set(numero, { ...b.geral, numeroSolicitacao: numero, codigoEstadoSolicitacao: 0 });
       return res(201, { numeroSolicitacao: numero, timestampCriacaoSolicitacao: '2026-10-15T10:00:00', urlSolicitacao: `https://bbpay.apps.bb.com.br/m/#/${numero}`, informacoesPix: { textoQrCode: `00020126BBPAY${numero}`, txId: `TX${numero}` } });
     }
     if (opts.method === 'GET' && u.pathname === '/v2/solicitacoes') {
@@ -121,12 +123,14 @@ describe('BB Pay payment requests', () => {
     const post = bb.state.calls.find((c) => c.method === 'POST' && c.path === '/v2/solicitacoes');
     expect(post.query['gw-dev-app-key']).toBe('appkey');
     expect(post.body).toEqual({
-      numeroConvenio: 421378,
-      pagamentoUnico: true,
-      timestampLimiteSolicitacao: '2026-10-15T12:00:00-03:00',
-      valorSolicitacao: 200,
-      descricaoSolicitacaoPagamento: 'Taxa de cadastro TemPix',
-      codigoConciliacaoSolicitacao: 'TPcm9pay01',
+      geral: {
+        numeroConvenio: 421378,
+        pagamentoUnico: true,
+        timestampLimiteSolicitacao: '2026-10-15T15:00:00Z',
+        valorSolicitacao: 200,
+        codigoConciliacaoSolicitacao: 'TPcm9pay01',
+        descricaoSolicitacao: 'Taxa de cadastro TemPix',
+      },
       formasPagamento: [{ codigoTipoPagamento: 'PIX', quantidadeParcelas: 1 }],
     });
     expect(charge.providerPaymentId).toBe('9001:TPcm9pay01');

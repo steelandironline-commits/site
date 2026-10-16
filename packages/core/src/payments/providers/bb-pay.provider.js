@@ -51,10 +51,9 @@ function brTime(v) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Deadline sent to BB, in Brasília time with an explicit offset. */
+/** Deadline sent to BB, in UTC as in the BB Pay OpenAPI example ("2030-01-10T03:00:00Z"). */
 export function bbTimestamp(date) {
-  const local = new Date(new Date(date).getTime() - 3 * 60 * 60 * 1000);
-  return `${local.toISOString().slice(0, 19)}-03:00`;
+  return `${new Date(date).toISOString().slice(0, 19)}Z`;
 }
 
 export class BbPayPaymentProvider extends PaymentProvider {
@@ -168,13 +167,16 @@ export class BbPayPaymentProvider extends PaymentProvider {
   async createPixCharge({ paymentId, amountCents, description, expiresAt }) {
     const conciliacao = conciliationFor(paymentId);
     const deadline = expiresAt ? new Date(expiresAt) : new Date(this.now() + 60 * 60 * 1000);
+    // BB Pay v2 OpenAPI: request data goes inside "geral"; payment methods alongside it.
     const body = {
-      numeroConvenio: Number(this.cfg.convenio),
-      pagamentoUnico: true,
-      timestampLimiteSolicitacao: bbTimestamp(deadline),
-      valorSolicitacao: Number((amountCents / 100).toFixed(2)),
-      descricaoSolicitacaoPagamento: String(description || 'TemPix').slice(0, 140),
-      codigoConciliacaoSolicitacao: conciliacao,
+      geral: {
+        numeroConvenio: Number(this.cfg.convenio),
+        pagamentoUnico: true,
+        timestampLimiteSolicitacao: bbTimestamp(deadline),
+        valorSolicitacao: Number((amountCents / 100).toFixed(2)),
+        codigoConciliacaoSolicitacao: conciliacao,
+        descricaoSolicitacao: String(description || 'TemPix').slice(0, 140),
+      },
       formasPagamento: [{ codigoTipoPagamento: 'PIX', quantidadeParcelas: 1 }],
     };
     let res;
