@@ -117,24 +117,21 @@ export const TRANSACTION_STATUS_LABELS = {
 };
 
 /**
- * How a transaction appears on the Pagamentos screens: four customer states
- * (Pago, Aguardando conclusão, Em disputa, Liberado) plus the two real endings.
+ * How a transaction appears on the Pagamentos screens: the customer states
+ * (Pago, Aguardando conclusão, Em disputa, Liberado) plus the real endings.
  * The internal status stays as it is; only the words change.
  */
 export const TRANSACTION_UI_STATE = {
-  DRAFT: { label: 'Rascunho', tone: 'neutral' },
-  AWAITING_PAYMENT: { label: 'Aguardando pagamento', tone: 'amber' },
-  PAID: { label: 'Pago', tone: 'revenue' },
-  READY_TO_RELEASE: { label: 'Pago', tone: 'amber', detail: 'Conclusão confirmada. Liberação em andamento.' },
-  PROTECTED: { label: 'Aguardando conclusão', tone: 'primary' },
-  DISPUTED: { label: 'Em disputa', tone: 'danger' },
-  RELEASED: { label: 'Liberado', tone: 'revenue' },
-  REFUNDED: { label: 'Reembolsado', tone: 'info' },
-  CANCELLED: { label: 'Cancelado', tone: 'neutral' },
+  DRAFT: { label: 'Rascunho', tone: 'neutral', description: 'Rascunho: a cobrança ainda não foi gerada.' },
+  AWAITING_PAYMENT: { label: 'Aguardando pagamento', tone: 'amber', description: 'Aguardando pagamento: o cliente ainda não pagou o Pix.' },
+  PAID: { label: 'Pago', tone: 'revenue', description: 'Pago: o pagamento foi recebido.' },
+  READY_TO_RELEASE: { label: 'Pago', tone: 'amber', description: 'Pago: a conclusão foi confirmada e a liberação está em andamento.' },
+  PROTECTED: { label: 'Aguardando conclusão', tone: 'primary', description: 'Aguardando conclusão: o valor fica retido até o serviço ser concluído e confirmado.' },
+  DISPUTED: { label: 'Em disputa', tone: 'danger', description: 'Em disputa: a liberação fica suspensa até a análise.' },
+  RELEASED: { label: 'Liberado', tone: 'revenue', description: 'Liberado: o valor foi repassado ao contratado.' },
+  REFUNDED: { label: 'Reembolsado', tone: 'info', description: 'Reembolsado: o valor foi devolvido ao cliente.' },
+  CANCELLED: { label: 'Cancelado', tone: 'neutral', description: 'Cancelado: a cobrança não será paga.' },
 };
-
-/** Name of the TemPix fee, as the customer reads it: intermediation, with its rate. */
-export const commissionLabel = (bps) => `Comissão de intermediação TemPix${bps != null ? ` (${(bps / 100).toLocaleString('pt-BR')}%)` : ''}`;
 
 export const TRANSACTION_TYPE_LABELS = { SALES: 'Venda', FREIGHT: 'Frete', WORKFORCE: 'Mão de obra', SERVICE: 'Serviço', SUBSCRIPTION: 'Assinatura' };
 

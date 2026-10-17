@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Check, CheckCheck, Copy, MapPin, Navigation, Package, Play, Send, ShieldCheck, Truck, Undo2, Unlock, X } from 'lucide-react';
-import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, commissionLabel, formatCents } from '@autopix/shared';
+import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, formatCents } from '@autopix/shared';
 import { useApi, useVisibleInterval } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
@@ -214,6 +214,7 @@ export default function TransactionDetail() {
             <BRLText>{formatCents(t.grossAmount)}</BRLText>
           </h1>
           <p className={s.pageSub}>{t.description}</p>
+          {(TRANSACTION_UI_STATE[t.status] || {}).description && <p className={s.pageSub}>{TRANSACTION_UI_STATE[t.status].description}</p>}
         </div>
         <div className={s.pageActions}>
           {t.isSandbox && <DemoBadge label="SANDBOX" />}
@@ -243,10 +244,6 @@ export default function TransactionDetail() {
               </div>
               {data.role !== 'BUYER' && (
                 <>
-                  <div>
-                    <dt>{commissionLabel(t.commissionRateBps)}</dt>
-                    <dd>− <BRLText>{formatCents(t.commissionAmount)}</BRLText></dd>
-                  </div>
                   <div>
                     <dt>Líquido do prestador</dt>
                     <dd className={s.revenue}><BRLText>{formatCents(t.sellerNetAmount)}</BRLText></dd>

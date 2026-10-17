@@ -123,7 +123,7 @@ describe.skipIf(!hasDb)('TemPix Pay — standard Pix (no protected capability)',
     const again = await request(restarted).get(`/api/pay/transactions/${t.id}`).set('Authorization', `Bearer ${verified.body.token}`);
     expect(again.status).toBe(200);
     expect(again.body.transaction.status).toBe('PAID');
-    expect(again.body.transaction.timeline.map((e) => e.type)).toEqual(expect.arrayContaining(['CREATED', 'COMMISSION', 'PIX_CREATED', 'PAYMENT_RECEIVED', 'SETTLEMENT_PENDING']));
+    expect(again.body.transaction.timeline.map((e) => e.type)).toEqual(expect.arrayContaining(['CREATED', 'PIX_CREATED', 'PAYMENT_RECEIVED', 'SETTLEMENT_PENDING']));
 
     // Audit trail is append-only.
     const audit = await ctx.prisma.financialAuditLog.findMany({ where: { transactionId: t.id } });

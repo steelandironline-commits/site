@@ -6,7 +6,6 @@ import { getPaymentProvider } from '../payments/index.js';
 
 export const TX_TITLES = {
   CREATED: 'Negócio criado',
-  COMMISSION: 'Comissão calculada',
   PIX_CREATED: 'Pix gerado',
   PIX_EXPIRED: 'Pix expirado',
   PAYMENT_RECEIVED: 'Pagamento recebido',
@@ -174,16 +173,11 @@ export class MarketplaceTransactionService {
         },
       });
       await this.timeline(t.id, { type: 'CREATED', actorUserId: user.id, metadata: { gross: t.grossAmount } }, tx);
-      await this.timeline(
-        t.id,
-        { type: 'COMMISSION', title: `Comissão de intermediação TemPix: ${formatCents(t.commissionAmount)} (${(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)`, metadata: { ruleId: quote.ruleId } },
-        tx,
-      );
       await this.publishBoth(t, {
         type: 'TRANSACTION_CREATED',
         userId: user.id,
         payload: { gross: t.grossAmount, commission: t.commissionAmount, net: t.sellerNetAmount, link: `/app/pay/transactions/${t.id}` },
-        activity: { type: 'PAYMENT', title: `Negócio criado · ${formatCents(t.grossAmount)}`, description: `${t.description} · comissão ${formatCents(t.commissionAmount)}`, source: 'TemPix Pay' },
+        activity: { type: 'PAYMENT', title: `Negócio criado · ${formatCents(t.grossAmount)}`, description: t.description, source: 'TemPix Pay' },
       }, tx);
       await this.audit.log({ action: 'TRANSACTION_CREATED', source: 'SYSTEM', userId: user.id, companyId: company.id, transactionId: t.id, metadata: { gross: t.grossAmount, commission: t.commissionAmount, rateBps: t.commissionRateBps, protectedFlow } }, tx);
       return t;

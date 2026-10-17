@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Clock, Hourglass, Landmark, Percent, Plus, QrCode, ShieldCheck, Wallet } from 'lucide-react';
-import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, commissionLabel, formatCents } from '@autopix/shared';
+import { ArrowRight, Clock, Hourglass, Landmark, Plus, QrCode, ShieldCheck, Wallet } from 'lucide-react';
+import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, formatCents } from '@autopix/shared';
 import { useApi } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { api } from '../../lib/api.js';
@@ -18,7 +18,6 @@ const TABS = [
   ['payments', 'Pagamentos'],
   ['receivable', 'A Receber'],
   ['toRelease', 'A Liberar'],
-  ['commissions', 'Comissões'],
   ['history', 'Histórico'],
   ['settings', 'Configurações'],
 ];
@@ -126,10 +125,6 @@ function NewCharge({ onCreated, reference, caps }) {
             <dd className="num"><BRLText>{formatCents(quote.grossCents)}</BRLText></dd>
           </div>
           <div>
-            <dt>Comissão de intermediação TemPix ({(quote.rateBps / 100).toLocaleString('pt-BR')}%)</dt>
-            <dd className="num">− <BRLText>{formatCents(quote.commissionCents)}</BRLText></dd>
-          </div>
-          <div>
             <dt>Você recebe</dt>
             <dd className={`num ${s.revenue}`}><BRLText>{formatCents(quote.sellerNetCents)}</BRLText></dd>
           </div>
@@ -144,16 +139,16 @@ function NewCharge({ onCreated, reference, caps }) {
   );
 }
 
-function TxRow({ t, showCommission }) {
+function TxRow({ t }) {
   return (
     <Link to={`/app/pay/transactions/${t.id}`} className={s.rowLink}>
       <span className={s.rowIcon} aria-hidden="true">
         {t.role === 'BUYER' ? <Wallet size={16} /> : <QrCode size={16} />}
       </span>
       <span className={s.rowMain}>
-        <strong className="num"><BRLText>{formatCents(showCommission ? t.commissionAmount : t.grossAmount)}</BRLText></strong>
+        <strong className="num"><BRLText>{formatCents(t.grossAmount)}</BRLText></strong>
         <span>
-          {showCommission ? commissionLabel(t.commissionRateBps) : TRANSACTION_TYPE_LABELS[t.type]} · {t.description} · {t.role === 'BUYER' ? 'você paga' : t.buyerName || 'cliente'} · {fmtDateTime(t.createdAt)}
+          {TRANSACTION_TYPE_LABELS[t.type]} · {t.description} · {t.role === 'BUYER' ? 'você paga' : t.buyerName || 'cliente'} · {fmtDateTime(t.createdAt)}
         </span>
       </span>
       <span className={s.rowBadges}>
@@ -254,7 +249,6 @@ export default function Pay() {
       ({
         payments: 'Nenhuma cobrança recebida de fornecedores.',
         toRelease: 'Nada aguardando liberação.',
-        commissions: 'As taxas aparecem após pagamento e conclusão confirmados pelo cliente.',
         history: 'Sem histórico ainda.',
       })[tab] || 'Crie uma cobrança aqui ou pelo WhatsApp: “gere um Pix de 1400”.',
     [tab],
@@ -278,7 +272,6 @@ export default function Pay() {
         <MetricCard index={0} label="Recebido" value={m?.receivedCents ?? 0} format={formatCents} loading={!m} icon={Wallet} tone="revenue" />
         <MetricCard index={1} label="A liberar" value={m?.toReleaseCents ?? 0} format={formatCents} loading={!m} icon={Hourglass} tone="primary" />
         <MetricCard index={2} label="Em processamento" value={m?.processingCents ?? 0} format={formatCents} loading={!m} icon={Clock} />
-        <MetricCard index={3} label="Comissões" value={m?.commissionsCents ?? 0} format={formatCents} loading={!m} icon={Percent} />
       </div>
       <PartnerNote caps={caps.data} sandbox={summary.data?.sandbox} />
 
@@ -307,7 +300,7 @@ export default function Pay() {
       ) : (
         <div className={s.list}>
           {items.map((t) => (
-            <TxRow key={t.id} t={t} showCommission={tab === 'commissions'} />
+            <TxRow key={t.id} t={t} />
           ))}
         </div>
       )}
