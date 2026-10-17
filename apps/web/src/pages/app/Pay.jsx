@@ -291,7 +291,7 @@ export default function Pay() {
         <MetricCard index={0} label="Recebido" value={m?.receivedCents ?? 0} format={formatCents} loading={!m} icon={Wallet} tone="revenue" />
         <MetricCard index={1} label="A liberar" value={m?.toReleaseCents ?? 0} format={formatCents} loading={!m} icon={Hourglass} tone="primary" />
         <MetricCard index={2} label="Em processamento" value={m?.processingCents ?? 0} format={formatCents} loading={!m} icon={Clock} />
-        <MetricCard index={3} label="Comissões TemPix" value={m?.commissionsCents ?? 0} format={formatCents} loading={!m} icon={Percent} />
+        <MetricCard index={3} label="Comissões" value={m?.commissionsCents ?? 0} format={formatCents} loading={!m} icon={Percent} />
       </div>
       <PartnerNote caps={caps.data} sandbox={summary.data?.sandbox} />
 
