@@ -116,6 +116,26 @@ export const TRANSACTION_STATUS_LABELS = {
   CANCELLED: 'Cancelado',
 };
 
+/**
+ * How a transaction appears on the Pagamentos screens: four customer states
+ * (Pago, Aguardando conclusão, Em disputa, Liberado) plus the two real endings.
+ * The internal status stays as it is; only the words change.
+ */
+export const TRANSACTION_UI_STATE = {
+  DRAFT: { label: 'Rascunho', tone: 'neutral' },
+  AWAITING_PAYMENT: { label: 'Aguardando pagamento', tone: 'amber' },
+  PAID: { label: 'Pago', tone: 'revenue' },
+  READY_TO_RELEASE: { label: 'Pago', tone: 'amber', detail: 'Conclusão confirmada. Liberação em andamento.' },
+  PROTECTED: { label: 'Aguardando conclusão', tone: 'primary' },
+  DISPUTED: { label: 'Em disputa', tone: 'danger' },
+  RELEASED: { label: 'Liberado', tone: 'revenue' },
+  REFUNDED: { label: 'Reembolsado', tone: 'info' },
+  CANCELLED: { label: 'Cancelado', tone: 'neutral' },
+};
+
+/** Name of the TemPix fee, as the customer reads it: intermediation, with its rate. */
+export const commissionLabel = (bps) => `Comissão de intermediação TemPix${bps != null ? ` (${(bps / 100).toLocaleString('pt-BR')}%)` : ''}`;
+
 export const TRANSACTION_TYPE_LABELS = { SALES: 'Venda', FREIGHT: 'Frete', WORKFORCE: 'Mão de obra', SERVICE: 'Serviço', SUBSCRIPTION: 'Assinatura' };
 
 export const SETTLEMENT_STATUS_LABELS = {

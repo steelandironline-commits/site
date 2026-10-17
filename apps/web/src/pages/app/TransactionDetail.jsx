@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Check, CheckCheck, Copy, MapPin, Navigation, Package, Play, Send, ShieldCheck, Truck, Undo2, Unlock, X } from 'lucide-react';
-import { SETTLEMENT_STATUS_LABELS, TRANSACTION_STATUS_LABELS, TRANSACTION_TYPE_LABELS, formatCents } from '@autopix/shared';
+import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, commissionLabel, formatCents } from '@autopix/shared';
 import { useApi, useVisibleInterval } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
 import { BRLText } from '../../components/brand/BRLIcon.jsx';
 import { Badge, Button, DemoBadge, Dialog, ErrorState, Field, Input, SkeletonCard, Textarea } from '../../components/ui/ui.jsx';
-import { PartnerNote, TX_TONE } from './Pay.jsx';
+import { PartnerNote } from './Pay.jsx';
 import s from './app.module.css';
 
 /** Role/state actions → UI. The server decides which ones are allowed. */
@@ -218,7 +218,7 @@ export default function TransactionDetail() {
         <div className={s.pageActions}>
           {t.isSandbox && <DemoBadge label="SANDBOX" />}
           {t.protectedFlow && t.status !== 'PROTECTED' && <Badge tone="primary">Pagamento protegido</Badge>}
-          <Badge tone={TX_TONE[t.status]}>{TRANSACTION_STATUS_LABELS[t.status]}</Badge>
+          <Badge tone={(TRANSACTION_UI_STATE[t.status] || {}).tone || 'neutral'}>{(TRANSACTION_UI_STATE[t.status] || {}).label || t.status}</Badge>
         </div>
       </header>
 
@@ -244,7 +244,7 @@ export default function TransactionDetail() {
               {data.role !== 'BUYER' && (
                 <>
                   <div>
-                    <dt>Taxa TemPix prevista ({(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)</dt>
+                    <dt>{commissionLabel(t.commissionRateBps)}</dt>
                     <dd>− <BRLText>{formatCents(t.commissionAmount)}</BRLText></dd>
                   </div>
                   <div>

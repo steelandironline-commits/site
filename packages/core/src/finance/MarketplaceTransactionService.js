@@ -40,6 +40,7 @@ const LIST_SELECT = {
   referenceId: true,
   grossAmount: true,
   commissionAmount: true,
+  commissionRateBps: true,
   sellerNetAmount: true,
   protectedFlow: true,
   settlementStatus: true,
@@ -175,7 +176,7 @@ export class MarketplaceTransactionService {
       await this.timeline(t.id, { type: 'CREATED', actorUserId: user.id, metadata: { gross: t.grossAmount } }, tx);
       await this.timeline(
         t.id,
-        { type: 'COMMISSION', title: `Comissão TemPix: ${formatCents(t.commissionAmount)} (${(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)`, metadata: { ruleId: quote.ruleId } },
+        { type: 'COMMISSION', title: `Comissão de intermediação TemPix: ${formatCents(t.commissionAmount)} (${(t.commissionRateBps / 100).toLocaleString('pt-BR')}%)`, metadata: { ruleId: quote.ruleId } },
         tx,
       );
       await this.publishBoth(t, {

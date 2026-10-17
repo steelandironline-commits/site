@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Clock, Hourglass, Landmark, Percent, Plus, QrCode, ShieldCheck, Wallet } from 'lucide-react';
-import { SETTLEMENT_STATUS_LABELS, TRANSACTION_STATUS_LABELS, TRANSACTION_TYPE_LABELS, formatCents } from '@autopix/shared';
+import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, commissionLabel, formatCents } from '@autopix/shared';
 import { useApi } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { api } from '../../lib/api.js';
@@ -11,18 +11,6 @@ import { LogoMark } from '../../components/brand/Logo.jsx';
 import { MetricCard } from '../../components/cards/Cards.jsx';
 import { Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, Select, SkeletonCard } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
-
-export const TX_TONE = {
-  DRAFT: 'neutral',
-  AWAITING_PAYMENT: 'amber',
-  PAID: 'revenue',
-  PROTECTED: 'primary',
-  READY_TO_RELEASE: 'amber',
-  RELEASED: 'revenue',
-  REFUNDED: 'info',
-  DISPUTED: 'danger',
-  CANCELLED: 'neutral',
-};
 
 const TABS = [
   ['all', 'Visão Geral'],
@@ -138,7 +126,7 @@ function NewCharge({ onCreated, reference, caps }) {
             <dd className="num"><BRLText>{formatCents(quote.grossCents)}</BRLText></dd>
           </div>
           <div>
-            <dt>Comissão TemPix ({(quote.rateBps / 100).toLocaleString('pt-BR')}%)</dt>
+            <dt>Comissão de intermediação TemPix ({(quote.rateBps / 100).toLocaleString('pt-BR')}%)</dt>
             <dd className="num">− <BRLText>{formatCents(quote.commissionCents)}</BRLText></dd>
           </div>
           <div>
@@ -165,13 +153,12 @@ function TxRow({ t, showCommission }) {
       <span className={s.rowMain}>
         <strong className="num"><BRLText>{formatCents(showCommission ? t.commissionAmount : t.grossAmount)}</BRLText></strong>
         <span>
-          {TRANSACTION_TYPE_LABELS[t.type]} · {t.description} · {t.role === 'BUYER' ? 'você paga' : t.buyerName || 'cliente'} · {fmtDateTime(t.createdAt)}
+          {showCommission ? commissionLabel(t.commissionRateBps) : TRANSACTION_TYPE_LABELS[t.type]} · {t.description} · {t.role === 'BUYER' ? 'você paga' : t.buyerName || 'cliente'} · {fmtDateTime(t.createdAt)}
         </span>
       </span>
       <span className={s.rowBadges}>
         {t.isSandbox && <DemoBadge label="SANDBOX" />}
-        {t.protectedFlow && t.status !== 'PROTECTED' && <Badge tone="primary">Pagamento protegido</Badge>}
-        <Badge tone={TX_TONE[t.status]}>{TRANSACTION_STATUS_LABELS[t.status]}</Badge>
+        <Badge tone={(TRANSACTION_UI_STATE[t.status] || {}).tone || 'neutral'}>{(TRANSACTION_UI_STATE[t.status] || {}).label || t.status}</Badge>
       </span>
     </Link>
   );
