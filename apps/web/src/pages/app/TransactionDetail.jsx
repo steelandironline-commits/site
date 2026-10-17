@@ -182,7 +182,7 @@ export default function TransactionDetail() {
   const t = data?.transaction;
 
   useEffect(() => {
-    if (t) document.title = `${t.description} — Carteira`;
+    if (t) document.title = `${t.description} — Pagamentos`;
   }, [t]);
   useEffect(() => {
     if (['PAYMENT', 'SYSTEM'].includes(stream.latest?.type)) reload();
@@ -203,7 +203,7 @@ export default function TransactionDetail() {
   return (
     <>
       <Link to="/app/pay" className={s.backLink}>
-        <ArrowLeft size={14} /> Carteira
+        <ArrowLeft size={14} /> Pagamentos
       </Link>
       <header className={s.pageHead}>
         <div>

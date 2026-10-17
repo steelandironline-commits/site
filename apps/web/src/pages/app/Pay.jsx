@@ -37,7 +37,7 @@ const TABS = [
 
 const parseMoney = (v) => Math.round(Number(String(v).replace(/\./g, '').replace(',', '.')) * 100) || 0;
 
-/** Partner/sandbox strip shown on every Carteira screen. */
+/** Partner/sandbox strip shown on every Pagamentos screen. */
 export function PartnerNote({ caps, sandbox }) {
   const disabled = caps?.provider === 'none';
   return (
@@ -250,7 +250,7 @@ export default function Pay() {
   const list = useApi(tab === 'settings' ? null : `/api/pay/transactions?view=${tab}`);
 
   useEffect(() => {
-    document.title = 'Carteira — TemPix';
+    document.title = 'Pagamentos — TemPix';
   }, []);
   useEffect(() => {
     if (stream.latest?.type === 'PAYMENT') {
@@ -278,7 +278,7 @@ export default function Pay() {
       <header className={s.pageHead}>
         <div>
           <h1 className={s.pageTitleBrand}>
-            <LogoMark size={26} /> Carteira
+            <LogoMark size={26} /> Pagamentos
           </h1>
           <p className={s.pageSub}>Cobranças, recebimentos e pagamentos dos seus negócios.</p>
         </div>
@@ -301,7 +301,7 @@ export default function Pay() {
         </div>
       )}
 
-      <nav className={`${s.filters} ${s.section}`} aria-label="Seções da Carteira">
+      <nav className={`${s.filters} ${s.section}`} aria-label="Seções de Pagamentos">
         {TABS.map(([k, label]) => (
           <button key={k} type="button" className={`${s.chip} ${tab === k ? s.chipActive : ''}`} aria-pressed={tab === k} onClick={() => setParams(k === 'all' ? {} : { tab: k })}>
             {label}

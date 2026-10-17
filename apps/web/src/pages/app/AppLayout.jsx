@@ -34,7 +34,7 @@ import { safeStorage, useIsMobile } from '../../lib/hooks.js';
 import { PageLoader } from '../PageLoader.jsx';
 import s from './app.module.css';
 
-/** The TemPix symbol, used as the icon of the Carteira shortcut. */
+/** The TemPix symbol, used as the icon of the Pagamentos shortcut. */
 function TemPixSymbol({ size = 17 }) {
   return <LogoMark size={size} />;
 }
@@ -47,7 +47,7 @@ const NAV = [
   { to: '/app/intermediacao', label: 'Intermediação', icon: Network },
   { to: '/app/social', label: 'Social', icon: MessageCircle },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
-  { to: '/app/pay', label: 'Carteira', icon: TemPixSymbol },
+  { to: '/app/pay', label: 'Pagamentos', icon: TemPixSymbol },
   { to: '/app/freight', label: 'Cargas', icon: Truck },
   { to: '/app/workforce', label: 'Equipes', icon: HardHat },
   { to: '/app/agents', label: 'Agentes', icon: Cpu },
@@ -67,8 +67,8 @@ const labelFor = (item, me) => (item.to === '/app/company' && me?.company?.accou
 /** Deep pages get a native-style back header on mobile. */
 const BACK = [
   [/^\/app\/opportunities\/[^/]+$/, '/app/opportunities', 'Oportunidades'],
-  [/^\/app\/payments\/[^/]+$/, '/app/pay', 'Carteira'],
-  [/^\/app\/pay\/transactions\/[^/]+$/, '/app/pay', 'Carteira'],
+  [/^\/app\/payments\/[^/]+$/, '/app/pay', 'Pagamentos'],
+  [/^\/app\/pay\/transactions\/[^/]+$/, '/app/pay', 'Pagamentos'],
   [/^\/app\/freight\/matches\/[^/]+$/, '/app/freight', 'Cargas'],
   [/^\/app\/workforce\/matches\/[^/]+$/, '/app/workforce', 'Equipes'],
   [/^\/app\/confirm\/[^/]+$/, '/app', 'Painel'],
