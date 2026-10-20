@@ -109,10 +109,20 @@ describe('o menu de cada área só aponta para páginas da própria área', () =
     });
   }
 
-  it('o menu do CNPJ é o mesmo do build legado (menos o item do admin e o rótulo da pessoa física)', () => {
-    const shape = (list) => list.map(({ to, label, shortLabel, end, tab, companyOnly }) => ({ to, label, shortLabel, end, tab, companyOnly }));
+  it('o menu do CNPJ é o mesmo do build legado (menos o item do admin e o que depende do tipo da conta)', () => {
+    // companyOnly e personLabel existem só no menu legado, que serve os dois tipos de conta; o CNPJ é só empresa.
+    const shape = (list) => list.map(({ to, label, shortLabel, end, tab }) => ({ to, label, shortLabel, end, tab }));
     expect(shape(cnpjNav.NAV)).toEqual(shape(legacyNav.NAV));
     expect(cnpjNav.BACK.map((r) => [r[0].source, r[1], r[2]])).toEqual(legacyNav.BACK.map((r) => [r[0].source, r[1], r[2]]));
+  });
+
+  it('o cadastro em andamento vai para o checkout só no CNPJ; o CPF não tem checkout', () => {
+    expect(cnpjNav.onboardingPath({ user: { status: 'PENDING_PAYMENT' } })).toBe('/checkout');
+    expect(cnpjNav.onboardingPath({ user: { status: 'PENDING_ACTIVATION' } })).toBe('/onboarding');
+    expect(cpfNav.onboardingPath({ user: { status: 'PENDING_PAYMENT' } })).toBe('/onboarding');
+    expect(cpfNav.onboardingPath({ user: { status: 'PENDING_ACTIVATION' } })).toBe('/onboarding');
+    expect(legacyNav.onboardingPath({ user: { status: 'PENDING_PAYMENT' } })).toBe('/checkout');
+    expect(legacyNav.onboardingPath({ user: { status: 'PENDING_ACTIVATION' } })).toBe('/onboarding');
   });
 
   it('o item do admin só existe no build legado', () => {

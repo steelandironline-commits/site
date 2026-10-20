@@ -13,23 +13,18 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { COMPANY_PRICING_FEATURES, PERSON_PRICING_FEATURES, PRICING, formatCents } from '@autopix/shared';
-import { BRLSymbol, BRLText, Button, Dialog, Logo, ScoreRing, isIos, useInstallPrompt, useSession } from '@autopix/ui';
+import { COMPANY_PRICING_FEATURES, PRICING, formatCents } from '@autopix/shared';
+import { BRLSymbol, BRLText, Button, Dialog, Logo, ScoreRing, cx, isIos, useInstallPrompt, useSession } from '@autopix/ui';
 import { WhatsAppIcon } from '../../components/brand/WhatsAppIcon.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import ProductStage from './ProductStage.jsx';
+import { opportunityLink } from '../../lib/opportunityLink.js';
 import { useDemoFeed } from '../../lib/demoFeed.js';
 import Descent from './descent/Descent.jsx';
 import { ConstructionSection, Ecosystem, Maritime } from './sectors/Sectors.jsx';
+import { ease, reveal } from './reveal.js';
 import s from './landing.module.css';
 
-const ease = [0.22, 1, 0.36, 1];
-const reveal = {
-  initial: { opacity: 0, y: 16 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-80px' },
-  transition: { duration: 0.6, ease },
-};
 
 /* ------------------------------------------------------------ download */
 /** "Instalar App": installs the TemPix app (PWA). iPhone gets the two-tap instructions. */
@@ -221,7 +216,7 @@ function Product() {
             </ul>
           </motion.div>
           <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.1 }}>
-            <ActivityStream events={events} mode="demo" demo badge={false} title="Atividade" max={8} className={s.landingStream} />
+            <ActivityStream events={events} mode="demo" demo badge={false} title="Atividade" max={8} className={s.landingStream} eventLink={opportunityLink} />
           </motion.div>
         </div>
       </div>
@@ -329,7 +324,7 @@ function LiveDemo() {
 /* --------------------------------------------------------------- pricing */
 const perDay = (cents) => (cents / 100 / 365).toFixed(2).replace('.', ',');
 
-function Pricing() {
+function Pricing({ copy, personCard }) {
   const fee = PRICING.commissionLabel;
   const { config } = useSession();
   const signup = config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents;
@@ -339,31 +334,10 @@ function Pricing() {
         <motion.header className={s.sectionHead} {...reveal}>
           <p className="eyebrow">Preço</p>
           <h2 id="preco-title">Sem mensalidade. Nunca.</h2>
-          <p>
-            Profissional entra grátis. Empresa paga só um cadastro, uma única vez. Depois, o TemPix só ganha quando você ganha: {fee} dos
-            valores intermediados com sucesso.
-          </p>
+          <p>{copy.priceLead(fee)}</p>
         </motion.header>
-        <div className={s.priceGrid}>
-          <motion.article className={s.price} {...reveal}>
-            <div className={s.priceTop}>
-              <p className="eyebrow">Cadastro Pessoa Física · login pelo CPF</p>
-              <p className={s.priceValue}>
-                <BRLSymbol className={s.priceCurrency} style={{ verticalAlign: '0.19em', marginRight: '0.04em' }} />0<span className={s.pricePer}> para sempre</span>
-              </p>
-              <p className={s.priceNote}>Para trabalhadores e autônomos se identificarem e receberem vagas, serviços e fretes.</p>
-            </div>
-            <ul className={s.priceList}>
-              {PERSON_PRICING_FEATURES.map((f) => (
-                <li key={f}>
-                  <Check size={15} aria-hidden="true" /> <BRLText>{f}</BRLText>
-                </li>
-              ))}
-            </ul>
-            <Button to="/onboarding?tipo=profissional" size="lg" block variant="outline" iconRight={ArrowRight}>
-              CADASTRAR GRÁTIS
-            </Button>
-          </motion.article>
+        <div className={cx(s.priceGrid, !personCard && s.priceGridSolo)}>
+          {personCard}
           <motion.article className={`${s.price} ${s.priceMain}`} {...reveal} transition={{ ...reveal.transition, delay: 0.08 }}>
             <div className={s.priceTop}>
               <p className="eyebrow">Cadastro Empresas · CNPJ ou MEI</p>
@@ -409,7 +383,7 @@ function Pricing() {
   );
 }
 
-function FinalCta() {
+function FinalCta({ copy }) {
   return (
     <section className={s.final}>
       <div className="container">
@@ -417,7 +391,7 @@ function FinalCta() {
           <h2>
             Tem emprego, tem rota, tem serviço. <span>TemPix.</span>
           </h2>
-          <p className={s.finalSub}>Profissional entra grátis · empresa paga só o cadastro, uma vez · sem mensalidade</p>
+          <p className={s.finalSub}>{copy.finalSub}</p>
           <div className={s.priceCtas}>
             <Button to="/login" size="lg" variant="outline">
               FAZER LOGIN
@@ -451,7 +425,12 @@ function Footer() {
   );
 }
 
-export default function Landing() {
+/**
+ * Página inicial. O que fala do preço e de quem se cadastra vem da entrada:
+ *   copy        { priceLead(fee), finalSub }
+ *   personCard  cartão de preço de outro tipo de cadastro, se a entrada tem (a área de empresas não tem)
+ */
+export default function Landing({ copy, personCard = null }) {
   useEffect(() => {
     document.title = 'TemPix — Tem emprego, tem rota, tem serviço';
   }, []);
@@ -468,8 +447,8 @@ export default function Landing() {
         <ConstructionSection />
         <Product />
         <LiveDemo />
-        <Pricing />
-        <FinalCta />
+        <Pricing copy={copy} personCard={personCard} />
+        <FinalCta copy={copy} />
       </main>
       <Footer />
     </>

@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, Download, ExternalLink, KeyRound, MessageCircle, Share, Smartphone, Unlink } from 'lucide-react';
-import { NOTIFICATION_CATEGORIES, NOTIFICATION_CATEGORY_LABELS, NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_LABELS } from '@autopix/shared';
+import { Bell, Download, ExternalLink, MessageCircle, Share, Smartphone, Unlink } from 'lucide-react';
+import { NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_LABELS } from '@autopix/shared';
 import {
   Badge,
   Button,
   Field,
   Input,
-  Select,
   SkeletonCard,
   del,
   disablePush,
@@ -17,12 +16,12 @@ import {
   useApi,
   useInstallPrompt,
 } from '@autopix/ui';
-import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
 import s from './app.module.css';
 
-export function WhatsAppCard() {
+/** `copy.verified`: o que o número vinculado permite (os comandos são da área). */
+export function WhatsAppCard({ copy }) {
   const toast = useToast();
   const { data, reload } = useApi('/api/whatsapp');
   const [phone, setPhone] = useState('');
@@ -87,8 +86,7 @@ export function WhatsAppCard() {
             {conn.phoneNumber} · verificado {fmtDateTime(conn.verifiedAt)}
           </p>
           <p className={s.muted} style={{ fontSize: 12, marginTop: 6 }}>
-            Receba oportunidades com botões (ANALISAR, ABORDAR, DESCARTAR) e envie comandos como “gere um Pix de 1400”. Ações financeiras sempre pedem
-            confirmação no app.
+            {copy.verified}
           </p>
           <div style={{ marginTop: 12 }}>
             <Button size="sm" variant="ghost" icon={Unlink} onClick={revoke}>
@@ -131,7 +129,8 @@ export function WhatsAppCard() {
   );
 }
 
-export function NotificationPrefsCard() {
+/** `categories`: as categorias de aviso que a área tem, [{ key, label }] (a área escolhe quais e como se chamam). */
+export function NotificationPrefsCard({ categories }) {
   const toast = useToast();
   const { data, setData } = useApi('/api/notifications/preferences');
   const [push, setPush] = useState(null);
@@ -193,10 +192,10 @@ export function NotificationPrefsCard() {
               </tr>
             </thead>
             <tbody>
-              {NOTIFICATION_CATEGORIES.map((cat) => (
+              {categories.map(({ key: cat, label }) => (
                 <tr key={cat}>
                   <th scope="row" style={{ textTransform: 'none', letterSpacing: 0, fontFamily: 'inherit', fontSize: 13, color: 'var(--text-2)' }}>
-                    {NOTIFICATION_CATEGORY_LABELS[cat]}
+                    {label}
                   </th>
                   {NOTIFICATION_CHANNELS.map((ch) => (
                     <td key={ch} style={{ textAlign: 'center' }}>
@@ -205,7 +204,7 @@ export function NotificationPrefsCard() {
                         className={s.switch}
                         checked={Boolean(data.preferences[ch][cat])}
                         onChange={(e) => toggle(ch, cat, e.target.checked)}
-                        aria-label={`${NOTIFICATION_CATEGORY_LABELS[cat]} por ${NOTIFICATION_CHANNEL_LABELS[ch]}`}
+                        aria-label={`${label} por ${NOTIFICATION_CHANNEL_LABELS[ch]}`}
                       />
                     </td>
                   ))}
@@ -266,54 +265,6 @@ export function InstallCard() {
           Use o menu do navegador → “Instalar app” (Chrome, Edge) ou “Adicionar à tela inicial”.
         </p>
       )}
-    </section>
-  );
-}
-
-export function PayoutCard() {
-  const { data, reload } = useApi('/api/company');
-  const { run, busy } = useAction();
-  const [pixKey, setPixKey] = useState('');
-  const [pixKeyType, setPixKeyType] = useState('CNPJ');
-  const company = data?.company;
-  return (
-    <section className={`${s.panel} ${s.panelPad}`} aria-labelledby="payout-title">
-      <h2 id="payout-title" className={s.panelTitle}>
-        <KeyRound size={15} style={{ verticalAlign: -2 }} aria-hidden="true" /> Chave Pix de recebimento
-      </h2>
-      <p className={s.muted} style={{ fontSize: 13, margin: '6px 0 12px' }}>
-        {company?.payoutPixKeyType
-          ? `Atual: ${company.payoutPixKeyType} terminando em ${company.payoutPixKeyLast4}.`
-          : 'Nenhuma chave cadastrada. Necessária para liberar pagamentos protegidos.'}{' '}
-        Alterar exige confirmação com senha.
-      </p>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          await run('CHANGE_BANK_DETAILS', { pixKey, pixKeyType });
-          reload();
-        }}
-        noValidate
-        style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}
-      >
-        <div style={{ width: 120 }}>
-          <Field label="Tipo">
-            {(a) => (
-              <Select {...a} value={pixKeyType} onChange={(e) => setPixKeyType(e.target.value)}>
-                {['CNPJ', 'CPF', 'EMAIL', 'PHONE', 'EVP'].map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </div>
-        <div style={{ flex: '1 1 200px' }}>
-          <Field label="Chave">{(a) => <Input {...a} value={pixKey} onChange={(e) => setPixKey(e.target.value)} autoComplete="off" />}</Field>
-        </div>
-        <Button type="submit" variant="secondary" loading={busy === 'CHANGE_BANK_DETAILS'} disabled={pixKey.trim().length < 5}>
-          Alterar
-        </Button>
-      </form>
     </section>
   );
 }

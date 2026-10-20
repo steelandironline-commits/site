@@ -792,6 +792,14 @@
   }
 }
 
+/* Uma entrada só com o cartão de empresas: ele fica sozinho, centralizado, em vez de meia grade vazia. */
+@media (min-width: 860px) {
+  .priceGrid.priceGridSolo {
+    grid-template-columns: minmax(0, 460px);
+    justify-content: center;
+  }
+}
+
 .priceGrid .price {
   max-width: none;
   margin: 0;

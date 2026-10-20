@@ -89,6 +89,9 @@ export const EXCLUSIVE_FILES = Object.freeze({
     'pages/app/Intermediation.jsx',
     'pages/app/Freight.jsx',
     'pages/app/Workforce.jsx',
+    // Equipe (colaboradores com login por CPF) e chave Pix de repasse da empresa (Q1, Q4).
+    'pages/app/TeamCard.jsx',
+    'pages/app/PayoutCard.jsx',
   ]),
   CPF: Object.freeze([]),
   ADMIN: Object.freeze(['pages/app/Admin.jsx']),

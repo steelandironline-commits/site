@@ -44,6 +44,9 @@ export const NAV = [
 /** Item extra do administrador da plataforma. Os builds de área não têm (admin é a ETAPA 4). */
 export const ADMIN_NAV = { to: '/app/admin', label: 'Admin financeiro', icon: ShieldAlert };
 
+/** Para onde vai uma sessão que ainda está no cadastro: com pagamento pendente, o checkout; senão, o cadastro. */
+export const onboardingPath = (me) => (me.user.status === 'PENDING_PAYMENT' ? '/checkout' : '/onboarding');
+
 /** Páginas internas ganham um cabeçalho de volta no celular: [caminho, destino, rótulo]. */
 export const BACK = [
   [/^\/app\/opportunities\/[^/]+$/, '/app/opportunities', 'Oportunidades'],

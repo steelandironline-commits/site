@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { KIND_STYLE, eventKind } from '../../lib/eventKind.js';
 import { Link } from 'react-router-dom';
 import { animate, motion, useReducedMotion } from 'framer-motion';
 import {
@@ -30,7 +29,7 @@ import {
   SIGNAL_TYPE_LABELS,
 } from '@autopix/shared';
 import { BRLSymbol, BRLText, Badge, Button, DemoBadge, ScoreRing, Skeleton, cx } from '@autopix/ui';
-import { fmtDate, fmtDateTime, fmtTime, formatDuration, relative } from '../../lib/time.js';
+import { fmtDate, fmtDateTime, formatDuration, relative } from '../../lib/time.js';
 import s from './cards.module.css';
 
 /* ---------------------------------------------------------- count up */
@@ -253,45 +252,6 @@ export function AgentCard({ agent, index = 0 }) {
       {agent.lastError && <p className={s.agentErr}><BRLText>{agent.lastError}</BRLText></p>}
     </motion.article>
   );
-}
-
-/* ------------------------------------------------------- ActivityCard */
-export const ACTIVITY_ICON = { SEARCH: Radar, RESEARCH: Globe, SIGNAL: Zap, OPPORTUNITY: Target, AGENT: Cpu, SYSTEM: Server, PAYMENT: QrCode };
-
-export function ActivityCard({ event: e, compact = false }) {
-  const kind = eventKind(e);
-  const Icon = kind ? KIND_STYLE[kind].Icon : ACTIVITY_ICON[e.type] || Server;
-  const agentName = e.agent?.name || e.source;
-  const content = (
-    <>
-      <time className={cx(s.actTime, 'mono')} dateTime={e.createdAt}>
-        {fmtTime(e.createdAt)}
-      </time>
-      <span
-        className={cx(s.actIcon, s[`sev-${e.severity}`])}
-        style={kind ? { color: KIND_STYLE[kind].color, borderColor: `${KIND_STYLE[kind].color}66`, background: `${KIND_STYLE[kind].color}1f` } : undefined}
-        aria-hidden="true"
-      >
-        <Icon size={14} />
-      </span>
-      <div className={s.actBody}>
-        <p className={s.actTitle}>
-          <BRLText>{e.title}</BRLText>
-          {e.isDemo && <DemoBadge className={s.actDemo} />}
-        </p>
-        {!compact && e.description && <p className={s.actDesc}><BRLText>{e.description}</BRLText></p>}
-        {agentName && <p className={s.actSource}><BRLText>{agentName}</BRLText></p>}
-      </div>
-    </>
-  );
-  if (e.opportunityId) {
-    return (
-      <Link to={`/app/opportunities/${e.opportunityId}`} className={cx(s.act, s.actLink, compact && s.actCompact)}>
-        {content}
-      </Link>
-    );
-  }
-  return <div className={cx(s.act, compact && s.actCompact)}>{content}</div>;
 }
 
 /* ---------------------------------------------------------- SignalCard */

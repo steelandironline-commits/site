@@ -13,7 +13,8 @@ const STATUS = { PENDING: ['amber', 'Aguardando'], CONFIRMED: ['primary', 'Confi
  * Step-up authentication for sensitive actions (fund release, refunds, bank
  * details). Requires the signed-in web/PWA session AND the account password.
  */
-export default function ConfirmChallenge() {
+/** `copy.afterConfirm(result)`: para onde ir depois de confirmar (cada área sabe quais telas tem). */
+export default function ConfirmChallenge({ copy }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -36,8 +37,7 @@ export default function ConfirmChallenge() {
       const viaWhatsApp = c.mechanism === 'WHATSAPP_OTP';
       const out = await post(`/api/challenges/${id}/${viaWhatsApp ? 'confirm-whatsapp' : 'confirm'}`, viaWhatsApp ? { code } : { password });
       toast.success('Ação confirmada e executada.');
-      const paymentId = out.result?.payment?.id;
-      navigate(paymentId ? `/app/payments/${paymentId}` : '/app', { replace: true });
+      navigate(copy.afterConfirm(out.result), { replace: true });
     } catch (err) {
       if (err.status === 400) setFieldError(err.message);
       else toast.error(err.message);

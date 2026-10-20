@@ -4,20 +4,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { Badge, Button, EmptyState, ErrorState, Input, MiniRadar, Skeleton, get, useDebounced } from '@autopix/ui';
 import { fmtDay } from '../../lib/time.js';
-import { ActivityCard } from '../../components/cards/Cards.jsx';
+import { ActivityCard } from '../../components/activity/ActivityCard.jsx';
 import s from './app.module.css';
 
-const FILTERS = [
-  { key: '', label: 'All' },
-  { key: 'SEARCH', label: 'Search' },
-  { key: 'RESEARCH', label: 'Research' },
-  { key: 'SIGNAL', label: 'Signals' },
-  { key: 'OPPORTUNITY', label: 'Opportunities' },
-  { key: 'AGENT', label: 'Agents' },
-  { key: 'SYSTEM', label: 'System' },
-];
-
-export default function Activity() {
+/** `copy`: { subtitle, empty, filters, eventLink } (os filtros são [{ key, label }]; a chave vazia é "tudo"; eventLink(evento) é a página que o evento abre, se houver). */
+export default function Activity({ copy }) {
   const { stream } = useOutletContext();
   const [type, setType] = useState('');
   const [q, setQ] = useState('');
@@ -69,7 +60,7 @@ export default function Activity() {
       <header className={s.pageHead}>
         <div>
           <h1 className={s.pageTitle}>Atividade</h1>
-          <p className={s.pageSub}>Tudo o que seus agentes fizeram, em ordem cronológica.</p>
+          <p className={s.pageSub}>{copy.subtitle}</p>
         </div>
         <Badge tone={stream.mode === 'live' ? 'primary' : 'neutral'} dot pulse={stream.mode === 'live'}>
           {stream.mode === 'live' ? 'Ao vivo' : stream.mode === 'polling' ? 'Atualização periódica' : 'Conectando'}
@@ -84,7 +75,7 @@ export default function Activity() {
         </label>
       </div>
       <div className={s.filters} role="toolbar" aria-label="Filtrar por tipo">
-        {FILTERS.map((f) => (
+        {copy.filters.map((f) => (
           <button key={f.key || 'all'} type="button" className={`${s.chip} ${type === f.key ? s.chipActive : ''}`} aria-pressed={type === f.key} onClick={() => setType(f.key)}>
             {f.label}
           </button>
@@ -103,7 +94,7 @@ export default function Activity() {
             </div>
           ))
         ) : !state.items.length ? (
-          <EmptyState visual={<MiniRadar size={72} />} title="Nenhum evento ainda" message="Os eventos aparecem aqui assim que os agentes começam a trabalhar." />
+          <EmptyState visual={<MiniRadar size={72} />} title="Nenhum evento ainda" message={copy.empty} />
         ) : (
           groups.map(([day, items]) => (
             <div key={day} className={s.dayGroup}>
@@ -111,7 +102,7 @@ export default function Activity() {
               <AnimatePresence initial={false}>
                 {items.map((e) => (
                   <motion.div key={e.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.35 }}>
-                    <ActivityCard event={e} />
+                    <ActivityCard event={e} eventLink={copy.eventLink} />
                   </motion.div>
                 ))}
               </AnimatePresence>

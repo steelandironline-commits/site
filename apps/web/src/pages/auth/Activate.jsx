@@ -4,7 +4,7 @@ import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton, get, post, useSession } from '@autopix/ui';
 import s from './authPage.module.css';
 
-export default function Activate() {
+export default function Activate({ copy }) {
   const { token } = useParams();
   const navigate = useNavigate();
   const { refresh } = useSession();
@@ -56,9 +56,7 @@ export default function Activate() {
           </>
         }
       >
-        <p className={s.subtitle}>
-          Links de verificação são de uso único e expiram em 48 horas. Se você esperava esta mensagem, volte ao cadastro ou ao checkout para reenviar o link.
-        </p>
+        <p className={s.subtitle}>{copy.invalidHelp}</p>
       </AuthShell>
     );
   }

@@ -10,5 +10,8 @@ export const NAV = [
   { to: '/app/settings', label: 'Configurações', icon: Settings },
 ];
 
+/** Sessão ainda no cadastro: sempre o cadastro. A área de pessoas não tem cobrança, então não tem checkout. */
+export const onboardingPath = () => '/onboarding';
+
 /** Páginas internas ganham um cabeçalho de volta no celular: [caminho, destino, rótulo]. */
 export const BACK = [[/^\/app\/confirm\/[^/]+$/, '/app', 'Painel']];

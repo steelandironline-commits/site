@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Check, QrCode, ShieldCheck } from 'lucide-react';
-import { COMMISSION_PLAN_CODE, COMPANY_PRICING_FEATURES, PERSON_PRICING_FEATURES, PLAN, PRICING, SUBSCRIPTION_STATUS_LABELS, formatCents } from '@autopix/shared';
+import { COMMISSION_PLAN_CODE, PLAN, PRICING, SUBSCRIPTION_STATUS_LABELS, formatCents } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
 import { BRLText, Badge, Button, Dialog, EmptyState, ErrorState, SkeletonCard, useApi, useSession } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
@@ -10,7 +10,11 @@ import s from './app.module.css';
 
 const TONE = { ACTIVE: 'primary', PENDING: 'amber', PAST_DUE: 'amber', CANCELED: 'danger', EXPIRED: 'neutral' };
 
-export default function Subscription() {
+/**
+ * Plano. `features` é a lista do que a conta recebe e `gold` o destaque do cartão; cada entrada passa os
+ * seus (a tela não sabe se a conta é de empresa ou de pessoa).
+ */
+export default function Subscription({ features, gold = false }) {
   const toast = useToast();
   const { refresh } = useSession();
   const sub = useApi('/api/subscription');
@@ -38,7 +42,7 @@ export default function Subscription() {
   };
 
   const data = sub.data?.subscription;
-  if (data?.plan === COMMISSION_PLAN_CODE) return <CommissionPlan />;
+  if (data?.plan === COMMISSION_PLAN_CODE) return <CommissionPlan features={features} gold={gold} />;
 
   return (
     <>
@@ -173,10 +177,8 @@ export default function Subscription() {
 }
 
 /** TemPix has no subscription: signup is free and the fee is a share of each contract. */
-function CommissionPlan() {
-  const { me } = useSession();
+function CommissionPlan({ features, gold }) {
   const fee = PRICING.commissionLabel;
-  const company = me?.company?.accountType !== 'PERSON';
   return (
     <>
       <header className={s.pageHead}>
@@ -186,7 +188,7 @@ function CommissionPlan() {
         </div>
       </header>
       <div className={s.subGrid}>
-        <section className={`${s.planCard} ${company ? `${s.planGold} gold-icons` : ''}`} aria-labelledby="plan">
+        <section className={`${s.planCard} ${gold ? `${s.planGold} gold-icons` : ''}`} aria-labelledby="plan">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <h2 id="plan" className="mono" style={{ letterSpacing: '0.2em', fontSize: 16 }}>
               TEMPIX
@@ -204,7 +206,7 @@ function CommissionPlan() {
             têm mensalidade.
           </p>
           <ul className={s.reasons} style={{ marginTop: 18 }}>
-            {(company ? COMPANY_PRICING_FEATURES : PERSON_PRICING_FEATURES).map((f) => (
+            {features.map((f) => (
               <li key={f}>
                 <Check size={14} aria-hidden="true" /> {f}
               </li>

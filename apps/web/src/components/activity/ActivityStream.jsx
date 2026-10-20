@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ActivityCard } from '../cards/Cards.jsx';
+import { ActivityCard } from './ActivityCard.jsx';
 import { KIND_STYLE, eventKind } from '../../lib/eventKind.js';
 import { Badge, DemoBadge, Skeleton } from '@autopix/ui';
 import s from './activity.module.css';
@@ -11,7 +11,7 @@ const MODE_LABEL = { live: 'Ao vivo', polling: 'Atualizando', connecting: 'Conec
  *  mode="demo": landing showcase (badge optional: `badge={false}` on the landing).
  *  otherwise:   only events stored in the database (REAL).
  */
-export function ActivityStream({ events, mode = 'live', demo = false, badge = true, loading, title = 'Atividade', max = 12, compact, empty, className }) {
+export function ActivityStream({ events, mode = 'live', demo = false, badge = true, loading, title = 'Atividade', max = 12, compact, empty, className, eventLink }) {
   return (
     <section className={`${s.stream} ${className || ''}`} aria-label={title}>
       <header className={s.streamHead}>
@@ -53,7 +53,7 @@ export function ActivityStream({ events, mode = 'live', demo = false, badge = tr
                   aria-hidden="true"
                 />
               )}
-              <ActivityCard event={demo ? { ...e, isDemo: false } : e} compact={compact} />
+              <ActivityCard event={demo ? { ...e, isDemo: false } : e} compact={compact} eventLink={eventLink} />
             </motion.div>
             );
           })}

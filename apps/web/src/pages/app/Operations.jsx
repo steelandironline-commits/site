@@ -1,8 +1,7 @@
 /* Perfil operacional: capabilities, completeness and per-module editing. */
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Network, Save } from 'lucide-react';
+import { ChevronDown, Save } from 'lucide-react';
 import {
   DOCUMENTS_FIELD,
   OPERATION_START,
@@ -14,7 +13,6 @@ import {
   operationalProfileSchema,
   profileCompleteness,
 } from '@autopix/shared';
-import { executeAction } from '../../lib/actions.js';
 import { Button, ErrorState, SkeletonCard, useApi } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { OperationFields } from '../onboarding/operations/OperationFields.jsx';
@@ -62,10 +60,17 @@ function Section({ id, title, group, fields, profile, setProfile, accountType, o
   );
 }
 
-export default function Operations() {
+/**
+ * Perfil operacional. De onde ele vem e para onde volta depende da área, e a tela não sabe qual é:
+ *   source    { path, select(data), accountType(entity), save(operationalProfile), merge(data, saved) }
+ *             lê `path`, tira a conta de `data`, grava e devolve o `data` novo
+ *   copy      { subtitle }
+ *   headerAction, note   elementos opcionais da área (um atalho no cabeçalho e a nota do rodapé)
+ */
+export default function Operations({ source, copy, headerAction = null, note = null }) {
   const toast = useToast();
-  const { data, error, reload, setData } = useApi('/api/company');
-  const company = data?.company;
+  const { data, error, reload, setData } = useApi(source.path);
+  const company = data ? source.select(data) : undefined;
   const [profile, setProfile] = useState(null);
   const [open, setOpen] = useState('operacao');
   const [saving, setSaving] = useState(false);
@@ -77,7 +82,7 @@ export default function Operations() {
     if (company) setProfile(normalizeOperationalProfile(company.operationalProfile));
   }, [company]);
 
-  const accountType = company?.accountType || 'COMPANY';
+  const accountType = source.accountType(company);
   const saved = useMemo(() => (company ? normalizeOperationalProfile(company.operationalProfile) : null), [company]);
   const dirty = profile && saved && JSON.stringify(profile) !== JSON.stringify(saved);
   const modules = useMemo(() => (profile ? modulesFor(profile, accountType) : []), [profile, accountType]);
@@ -90,8 +95,8 @@ export default function Operations() {
     }
     setSaving(true);
     try {
-      const { result } = await executeAction('UPDATE_COMPANY_PROFILE', { operationalProfile: parsed.data });
-      setData((d) => ({ ...d, company: { ...d.company, ...result.company } }));
+      const fresh = await source.save(parsed.data);
+      setData((d) => source.merge(d, fresh));
       toast.success('Perfil operacional salvo.');
     } catch (err) {
       toast.error(err.message);
@@ -108,11 +113,9 @@ export default function Operations() {
       <header className={s.pageHead}>
         <div>
           <h1 className={s.pageTitle}>Perfil operacional</h1>
-          <p className={s.pageSub}>O que sua empresa faz, possui, fornece e compra. É isso que decide quais oportunidades chegam até você.</p>
+          <p className={s.pageSub}>{copy.subtitle}</p>
         </div>
-        <Button to="/app/intermediacao" variant="outline" icon={Network}>
-          Intermediação
-        </Button>
+        {headerAction}
       </header>
 
       <div className={x.layout}>
@@ -154,9 +157,7 @@ export default function Operations() {
             open={open === 'docs'}
             onToggle={() => setOpen((o) => (o === 'docs' ? null : 'docs'))}
           />
-          <p className={x.note}>
-            Cidade, regiões, produtos e cliente ideal ficam em <Link to="/app/company">Empresa</Link>.
-          </p>
+          {note && <p className={x.note}>{note}</p>}
         </div>
         <aside className={`${s.panel} ${s.panelPad} ${x.side}`} aria-labelledby="caps-title">
           <h2 id="caps-title" className={s.panelTitle}>

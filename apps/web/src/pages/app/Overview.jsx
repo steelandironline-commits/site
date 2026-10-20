@@ -8,6 +8,7 @@ import { useToast } from '../../lib/toast.jsx';
 import { greeting, relative } from '../../lib/time.js';
 import { MetricCard, OpportunityCard } from '../../components/cards/Cards.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
+import { opportunityLink } from '../../lib/opportunityLink.js';
 import { BusinessFlow } from '../../components/activity/Flow.jsx';
 import { useOpportunityActions } from './useOpportunityActions.js';
 import s from './app.module.css';
@@ -143,6 +144,7 @@ export default function Overview() {
           mode={stream.mode}
           loading={stream.loading}
           max={14}
+          eventLink={opportunityLink}
           compact
           empty={<EmptyState visual={<MiniRadar size={72} />} title="Aguardando atividade" message="Os eventos dos agentes aparecem aqui em tempo real." />}
         />

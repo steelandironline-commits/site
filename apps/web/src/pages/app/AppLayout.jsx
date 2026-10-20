@@ -18,13 +18,6 @@ import {
 } from '@autopix/ui';
 import s from './app.module.css';
 
-/**
- * Items an account sees: an item marked `companyOnly` is hidden from a pessoa física, and
- * `personLabel` replaces the label for her. Both come from the navigation the entry passes in.
- */
-const navFor = (items, me) => items.filter((i) => !i.companyOnly || me?.company?.accountType !== 'PERSON');
-const labelFor = (item, me) => (item.personLabel && me?.company?.accountType === 'PERSON' ? item.personLabel : item.label);
-
 function InstallBanner() {
   const install = useInstallPrompt();
   const storage = safeStorage();
@@ -92,14 +85,15 @@ function PageFallback() {
 }
 
 /**
- * Panel shell. The navigation belongs to the entry that mounts it (see legacyNav.js and
- * areas/<área>/nav.js), so this file lists no screen of its own:
- *   nav       items { to, label, icon, end?, tab?, shortLabel?, companyOnly?, personLabel? };
- *             `tab` items go to the mobile tab bar, the others to the "Mais" sheet
- *   back      [pathRegExp, backTo, backLabel] rows: deep pages get a native-style back header on mobile
- *   adminNav  extra item for a platform admin (legacy build only)
+ * Panel shell. The navigation and the words belong to the entry that mounts it (legacyNav.js and
+ * legacy/copy.js, or areas/<área>/nav.js and copy.js), so this file lists no screen and no area text:
+ *   nav         the items this account sees, { to, label, icon, end?, tab?, shortLabel? };
+ *               `tab` items go to the mobile tab bar, the others to the "Mais" sheet
+ *   back        [pathRegExp, backTo, backLabel] rows: deep pages get a native-style back header on mobile
+ *   onboardingTo(me)  where a session still in signup goes (the signup page, or the checkout where one exists)
+ *   copy        { offline } the paragraph of the offline screen
  */
-export default function AppLayout({ nav, back = [], adminNav = null }) {
+export default function AppLayout({ nav, back = [], onboardingTo, copy }) {
   const { loading, me, isAuthenticated, demoMode, logout, offline, refresh } = useSession();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -112,7 +106,6 @@ export default function AppLayout({ nav, back = [], adminNav = null }) {
   const outlet = useOutlet({ stream, me, demoMode, onLogout: () => onLogoutRef.current?.() });
   const mobileTabs = nav.filter((n) => n.tab);
   const moreItems = nav.filter((n) => !n.tab);
-  const withAdmin = (items) => (me?.user?.isPlatformAdmin && adminNav ? [...items, adminNav] : items);
 
   useEffect(() => setMoreOpen(false), [location.pathname]);
 
@@ -122,7 +115,7 @@ export default function AppLayout({ nav, back = [], adminNav = null }) {
       <div className={s.offline} role="alert">
         <Logo />
         <h1>Você está sem conexão</h1>
-        <p>Seus agentes continuam trabalhando no servidor. Reconecte para ver as novidades.</p>
+        <p>{copy.offline}</p>
         <Button icon={RefreshCw} onClick={refresh}>
           Tentar novamente
         </Button>
@@ -130,7 +123,7 @@ export default function AppLayout({ nav, back = [], adminNav = null }) {
     );
   }
   if (!isAuthenticated) {
-    if (me?.scope === 'ONBOARDING') return <Navigate to={me.user.status === 'PENDING_PAYMENT' ? '/checkout' : '/onboarding'} replace />;
+    if (me?.scope === 'ONBOARDING') return <Navigate to={onboardingTo(me)} replace />;
     if (loggingOut.current) return <Navigate to="/login" replace />;
     const next = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?next=${next}`} replace />;
@@ -152,7 +145,7 @@ export default function AppLayout({ nav, back = [], adminNav = null }) {
           <Logo />
         </Link>
         <nav className={s.sideNav}>
-          {navFor(withAdmin(nav), me).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon, end }) => (
+          {nav.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => `${s.navItem} ${isActive ? s.navActive : ''}`}>
               {({ isActive }) => (
                 <>
@@ -250,7 +243,7 @@ export default function AppLayout({ nav, back = [], adminNav = null }) {
                   <X size={18} />
                 </button>
               </div>
-              {navFor(withAdmin(moreItems), me).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon }) => (
+              {moreItems.map(({ to, label, icon: Icon }) => (
                 <NavLink key={to} to={to} className={({ isActive }) => `${s.sheetItem} ${isActive ? s.navActive : ''}`}>
                   <Icon size={18} aria-hidden="true" /> {label}
                 </NavLink>

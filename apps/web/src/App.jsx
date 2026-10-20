@@ -2,27 +2,31 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Landing from './pages/landing/Landing.jsx';
 import { PageLoader } from '@autopix/ui';
-import { ADMIN_NAV, BACK, NAV } from './legacyNav.js';
+import { COPY, LANDING } from './legacy/copy.js';
+import { PersonPriceCard } from './legacy/PersonPriceCard.jsx';
 
+// Build legado (convive com os builds de área até o go-live): as telas de sempre, para os dois tipos de
+// conta, com a cópia de src/legacy/copy.js. As páginas que dependem do tipo da conta têm o seu
+// invólucro em src/legacy/; as áreas passam o que é delas direto de areas/<área>/App.jsx.
 const Onboarding = lazy(() => import('./legacy/Onboarding.jsx'));
 const Checkout = lazy(() => import('./pages/checkout/Checkout.jsx'));
 const Login = lazy(() => import('./pages/auth/Login.jsx'));
 const Activate = lazy(() => import('./pages/auth/Activate.jsx'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword.jsx'));
-const AppLayout = lazy(() => import('./pages/app/AppLayout.jsx'));
+const AppLayout = lazy(() => import('./legacy/LegacyLayout.jsx'));
 const Overview = lazy(() => import('./pages/app/Overview.jsx'));
 const RadarPage = lazy(() => import('./pages/app/RadarPage.jsx'));
 const Opportunities = lazy(() => import('./pages/app/Opportunities.jsx'));
 const OpportunityDetail = lazy(() => import('./pages/app/OpportunityDetail.jsx'));
 const Social = lazy(() => import('./pages/app/Social.jsx'));
-const Operations = lazy(() => import('./pages/app/Operations.jsx'));
+const Operations = lazy(() => import('./legacy/OperationsPage.jsx'));
 const Intermediation = lazy(() => import('./pages/app/Intermediation.jsx'));
 const Activity = lazy(() => import('./pages/app/Activity.jsx'));
 const Agents = lazy(() => import('./pages/app/Agents.jsx'));
 const Company = lazy(() => import('./pages/app/Company.jsx'));
-const Subscription = lazy(() => import('./pages/app/Subscription.jsx'));
-const Settings = lazy(() => import('./pages/app/Settings.jsx'));
+const Subscription = lazy(() => import('./legacy/SubscriptionPage.jsx'));
+const Settings = lazy(() => import('./legacy/SettingsPage.jsx'));
 const Pay = lazy(() => import('./pages/app/Pay.jsx'));
 const TransactionDetail = lazy(() => import('./pages/app/TransactionDetail.jsx'));
 const Admin = lazy(() => import('./pages/app/Admin.jsx'));
@@ -49,23 +53,23 @@ export default function App() {
       <ScrollToTop />
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<Landing copy={LANDING} personCard={<PersonPriceCard />} />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/activate/:token" element={<Activate />} />
+          <Route path="/login" element={<Login copy={COPY.login} />} />
+          <Route path="/activate/:token" element={<Activate copy={COPY.activate} />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/app" element={<AppLayout nav={NAV} back={BACK} adminNav={ADMIN_NAV} />}>
+          <Route path="/app" element={<AppLayout />}>
             <Route index element={<Overview />} />
             <Route path="radar" element={<RadarPage />} />
             <Route path="licitacoes" element={<Tenders />} />
             <Route path="opportunities" element={<Opportunities />} />
             <Route path="opportunities/:id" element={<OpportunityDetail />} />
-            <Route path="social" element={<Social />} />
+            <Route path="social" element={<Social copy={COPY.social} />} />
             <Route path="operacao" element={<Operations />} />
             <Route path="intermediacao" element={<Intermediation />} />
-            <Route path="activity" element={<Activity />} />
+            <Route path="activity" element={<Activity copy={COPY.activity} />} />
             <Route path="agents" element={<Agents />} />
             <Route path="company" element={<Company />} />
             <Route path="subscription" element={<Subscription />} />
@@ -79,7 +83,7 @@ export default function App() {
             <Route path="freight/matches/:id" element={<FreightMatchDetail />} />
             <Route path="workforce" element={<Workforce />} />
             <Route path="workforce/matches/:id" element={<WorkforceMatchDetail />} />
-            <Route path="confirm/:id" element={<ConfirmChallenge />} />
+            <Route path="confirm/:id" element={<ConfirmChallenge copy={COPY.confirm} />} />
             <Route path="*" element={<Navigate to="/app" replace />} />
           </Route>
           <Route path="*" element={<NotFound />} />

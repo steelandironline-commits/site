@@ -4,11 +4,16 @@ import { LogOut, Monitor } from 'lucide-react';
 import { Badge, Button, DemoBadge, ErrorState, Field, PasswordInput, PasswordStrength, SkeletonCard, del, put, useApi } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
-import { InstallCard, NotificationPrefsCard, PayoutCard, WhatsAppCard } from './SettingsPlatform.jsx';
-import { TeamCard } from './TeamCard.jsx';
+import { InstallCard, NotificationPrefsCard, WhatsAppCard } from './SettingsPlatform.jsx';
 import s from './app.module.css';
 
-export default function Settings() {
+/**
+ * Configurações da conta. O que é da área entra por props, e a tela não sabe qual área é:
+ *   copy        { whatsapp: { verified }, notificationCategories, environment: { demo, production } }
+ *   team        (me) => elemento ou nada: o cartão de equipe, se a área tem
+ *   payout      elemento ou nada: o cartão da chave Pix de recebimento, se a área tem
+ */
+export default function Settings({ copy, team = null, payout = null }) {
   const toast = useToast();
   const { me, demoMode, onLogout } = useOutletContext();
   const sessions = useApi('/api/me/sessions');
@@ -99,8 +104,8 @@ export default function Settings() {
         </form>
 
         <div className={s.stack}>
-          {me.company?.accountType !== 'PERSON' && <TeamCard me={me} />}
-          <WhatsAppCard />
+          {team?.(me)}
+          <WhatsAppCard copy={copy.whatsapp} />
           <InstallCard />
           <section className={`${s.panel} ${s.panelPad}`} aria-labelledby="sess">
             <div className={s.sectionHead}>
@@ -139,19 +144,19 @@ export default function Settings() {
             </h2>
             {demoMode ? (
               <p className={s.muted} style={{ fontSize: 13, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <DemoBadge /> Modo demonstração ativo: empresas e oportunidades são fictícias (domínios .example).
+                <DemoBadge /> {copy.environment.demo}
               </p>
             ) : (
               <p className={s.muted} style={{ fontSize: 13 }}>
-                Modo produção: somente atividades e oportunidades reais, registradas pelos agentes.
+                {copy.environment.production}
               </p>
             )}
           </section>
         </div>
       </div>
       <div className={`${s.section} ${s.subGrid}`}>
-        <NotificationPrefsCard />
-        <PayoutCard />
+        <NotificationPrefsCard categories={copy.notificationCategories} />
+        {payout}
       </div>
     </>
   );

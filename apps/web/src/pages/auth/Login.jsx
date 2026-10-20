@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { formatDocument } from '@autopix/shared';
 import { AuthShell, Button, Field, FormError, Input, PasswordInput, post, useSession } from '@autopix/ui';
 import s from './authPage.module.css';
 
-export default function Login() {
+/**
+ * Entrar. O documento que a tela pede e o jeito de digitá-lo vêm da área (`copy.identifier`:
+ * label, hint, placeholder e `mask`), assim como a frase de abertura (`copy.subtitle`); esta tela não
+ * sabe qual documento é.
+ */
+export default function Login({ copy }) {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { refresh, isAuthenticated, loading: sessionLoading, expired } = useSession();
@@ -64,7 +68,7 @@ export default function Login() {
   return (
     <AuthShell
       title="Entrar no TemPix"
-      subtitle="Acompanhe as oportunidades que seus agentes encontraram."
+      subtitle={copy.subtitle}
       footer={
         <>
           Ainda não tem conta? <Link to="/onboarding">Cadastre-se agora</Link>
@@ -99,18 +103,18 @@ export default function Login() {
       ) : (
       <form onSubmit={submit} noValidate>
         <FormError error={error} />
-        <Field label="CPF ou CNPJ" hint="Empresas e MEI entram com o CNPJ. Pessoa física e colaboradores, com o CPF." error={errors.identifier}>
+        <Field label={copy.identifier.label} hint={copy.identifier.hint} error={errors.identifier}>
           {(a) => (
             <Input
               {...a}
               autoComplete="username"
               inputMode="numeric"
-              placeholder="000.000.000-00 ou 00.000.000/0000-00"
+              placeholder={copy.identifier.placeholder}
               value={form.identifier}
               onChange={(e) => {
                 const v = e.target.value;
                 // Older accounts may still type their e-mail.
-                setForm({ ...form, identifier: /[a-z@]/i.test(v) ? v : formatDocument(v) });
+                setForm({ ...form, identifier: /[a-z@]/i.test(v) ? v : copy.identifier.mask(v) });
               }}
               required
             />

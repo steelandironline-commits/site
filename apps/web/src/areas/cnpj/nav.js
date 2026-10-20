@@ -22,7 +22,7 @@ export const NAV = [
   { to: '/app', label: 'Visão Geral', shortLabel: 'Visão', icon: LayoutDashboard, end: true, tab: true },
   { to: '/app/radar', label: 'Radar', icon: Radar },
   { to: '/app/opportunities', label: 'Oportunidades', shortLabel: 'Oportun.', icon: Target, tab: true },
-  { to: '/app/licitacoes', label: 'Licitações', icon: Landmark, companyOnly: true },
+  { to: '/app/licitacoes', label: 'Licitações', icon: Landmark },
   { to: '/app/intermediacao', label: 'Intermediação', icon: Network },
   { to: '/app/social', label: 'Social', icon: MessageCircle, tab: true },
   { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
@@ -36,6 +36,9 @@ export const NAV = [
   { to: '/app/subscription', label: 'Plano', icon: CreditCard },
   { to: '/app/settings', label: 'Configurações', icon: Settings },
 ];
+
+/** Para onde vai uma sessão que ainda está no cadastro: com pagamento pendente, o checkout; senão, o cadastro. */
+export const onboardingPath = (me) => (me.user.status === 'PENDING_PAYMENT' ? '/checkout' : '/onboarding');
 
 /** Páginas internas ganham um cabeçalho de volta no celular: [caminho, destino, rótulo]. */
 export const BACK = [

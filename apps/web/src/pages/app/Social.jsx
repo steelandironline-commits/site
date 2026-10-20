@@ -94,7 +94,8 @@ function Post({ post, onChange }) {
   </article>;
 }
 
-export default function Social() {
+/** `copy`: { emptyNote, emptyAction } (texto do estado vazio e, se a área tem, o botão que leva aos contratos). */
+export default function Social({ copy }) {
   const [params, setParams] = useSearchParams();
   const requested = params.get('transaction');
   const feed = useApi('/api/social/posts'), eligible = useApi('/api/social/eligible');
@@ -128,7 +129,7 @@ export default function Social() {
           {photo && <><img src={photo} className={s.preview} alt="Prévia da foto que será publicada" /><Button size="sm" variant="ghost" onClick={() => setPhoto(null)}>Remover foto</Button></>}
           <p className={s.note}>Ao publicar, sua opinião, seu nome e a foto ficarão visíveis à comunidade TemPix. Valor, dados do cliente e detalhes privados do contrato permanecem protegidos.</p>
           <Button icon={Share2} disabled={!selected || !body.trim() || preparing} loading={busy === 'PUBLISH_SOCIAL_POST'} onClick={publish}>Compartilhar minha opinião</Button>
-        </> : <div className={s.empty}><Camera size={28} /><p>Suas próximas entregas merecem aparecer aqui.</p><p className={s.note}>{requested ? 'Este contrato já foi publicado ou ainda não está disponível. ' : ''}Depois que o cliente confirmar a conclusão de um serviço no TemPix Pay, você poderá compartilhar sua opinião e uma foto. Também vale para contratos do seu histórico.</p><Button to="/app/pay" variant="secondary">Ver meus contratos</Button></div>}
+        </> : <div className={s.empty}><Camera size={28} /><p>Suas próximas entregas merecem aparecer aqui.</p><p className={s.note}>{requested ? 'Este contrato já foi publicado ou ainda não está disponível. ' : ''}{copy.emptyNote}</p>{copy.emptyAction && <Button to={copy.emptyAction.to} variant="secondary">{copy.emptyAction.label}</Button>}</div>}
       </section>
       {feed.error ? <ErrorState message={feed.error.message} onRetry={feed.reload} /> : !feed.data ? <SkeletonCard lines={5} /> : <>
         {feed.data.items.length === 0 && <section className={`${s.card} ${s.empty}`}><ShieldCheck size={28} /><h2 className={app.panelTitle}>O primeiro serviço pode ser o seu</h2><p className={s.note}>As publicações aparecerão aqui quando alguém compartilhar uma entrega confirmada. Cada história começa com um trabalho concluído.</p></section>}
