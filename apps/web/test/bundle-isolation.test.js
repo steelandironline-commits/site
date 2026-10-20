@@ -238,6 +238,36 @@ describe('marcadores: o bundle de cada área não leva texto nem chamada da outr
     });
   }
 
+  // A prova pelo outro lado: tudo o que o bundle chama existe no host da área (um /api/... sem montagem ali
+  // seria um 404 em produção, e é o que o CPF fazia com /api/company e /api/team).
+  for (const area of ['cpf', 'cnpj']) {
+    it(`${area}: todo /api/... que o bundle chama é uma montagem que o host ${area.toUpperCase()} tem`, () => {
+      const called = new Set();
+      for (const file of outputFiles(area).filter((f) => f.endsWith('.js'))) {
+        // Fora a URL de documentação do react-three-fiber (…/react-three-fiber/api/objects): a barra vem de um nome.
+        for (const m of read(area, file).matchAll(/(?<![\w./-])\/api\/[a-z-]+/g)) called.add(m[0]);
+      }
+      expect(called.size).toBeGreaterThan(8);
+      const served = API_MOUNTS.filter((m) => isAnyArea(m.areas) || m.areas.includes(area.toUpperCase())).map((m) => m.path);
+      expect([...called].filter((path) => !served.includes(path)).sort()).toEqual([]);
+    });
+  }
+
+  // E os links: todo caminho de página que o bundle escreve é uma página da área (ou o começo de uma com
+  // parâmetro, como "/app/opportunities/" antes do id).
+  for (const area of ['cpf', 'cnpj']) {
+    it(`${area}: todo link /app/..., /checkout etc. que o bundle escreve é uma página do ${area.toUpperCase()}`, () => {
+      const pages = PAGES[area.toUpperCase()];
+      const linked = new Set();
+      for (const file of outputFiles(area).filter((f) => f.endsWith('.js'))) {
+        for (const m of read(area, file).matchAll(/(?<![\w./:-])\/(?:app(?:\/[a-z0-9-]+)*|checkout|onboarding|login|forgot-password)(?![\w-])/g)) linked.add(m[0]);
+      }
+      expect(linked.size).toBeGreaterThan(5);
+      const unknown = [...linked].filter((p) => !isPageOf(area.toUpperCase(), p) && !pages.some((page) => page.startsWith(`${p}/`)));
+      expect(unknown.sort()).toEqual([]);
+    });
+  }
+
   it('o CPF não manda a pessoa a um checkout, a licitações nem a pagamentos, e o CNPJ não a "Meu perfil"', () => {
     expect(filesWith('cpf', /checkout/i)).toEqual([]);
     expect(filesWith('cpf', /\blicita[cç][oõ]es\b/i)).toEqual([]);
