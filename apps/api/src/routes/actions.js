@@ -21,7 +21,8 @@ export function actionRoutes({ actions }) {
   const r = Router();
 
   r.get('/', requireAuth, (req, res) => {
-    res.json({ items: actions.catalog() });
+    // Area mode lists only what the session's area may run (the engine denies the rest on every channel).
+    res.json({ items: actions.catalog({ area: req.session.area }) });
   });
 
   r.post('/:name', requireOnboardingSession, async (req, res) => {

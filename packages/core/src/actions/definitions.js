@@ -14,23 +14,32 @@ const money = z.coerce.number().int().min(100).max(100_000_000); // cents
 export function registerCoreActions(engine) {
   const s = () => engine.services;
 
+  // Areas that may run each action (ARQUITETURA 6.6). In area mode the engine denies an action whose
+  // `areas` does not contain the user's area, on EVERY channel (web, API, WhatsApp, worker), and an
+  // action without `areas` is denied. Decided by content: company/Pay/freight/workforce/agents/team/
+  // plan actions are CNPJ only (Q3, Q4, Q13); social is shared; platform-admin actions are ADMIN.
+  const CNPJ_ONLY = ['CNPJ'];
+  const BOTH = ['CNPJ', 'CPF'];
+  const ADMIN_ONLY = ['ADMIN'];
+
   // Social is explicit, authenticated and available only through the app/API.
-  engine.register({ name: 'PUBLISH_SOCIAL_POST', channels: ['WEB', 'API'],
+  engine.register({ name: 'PUBLISH_SOCIAL_POST', areas: BOTH, channels: ['WEB', 'API'],
     schema: z.object({ transactionId: id, body: z.string().trim().min(1).max(2000), photo: z.string().max(614450).optional().nullable() }),
     handler: (ctx, input) => s().social.publish({ user: ctx.user, company: ctx.company, ...input }) });
-  engine.register({ name: 'COMMENT_SOCIAL_POST', channels: ['WEB', 'API'],
+  engine.register({ name: 'COMMENT_SOCIAL_POST', areas: BOTH, channels: ['WEB', 'API'],
     schema: z.object({ postId: id, body: z.string().trim().min(1).max(1000), parentId: id.optional().nullable() }),
     handler: (ctx, input) => s().social.comment({ user: ctx.user, ...input }) });
-  engine.register({ name: 'REPOST_SOCIAL_POST', channels: ['WEB', 'API'],
+  engine.register({ name: 'REPOST_SOCIAL_POST', areas: BOTH, channels: ['WEB', 'API'],
     schema: z.object({ postId: id, body: z.string().trim().max(2000).default('') }),
     handler: (ctx, input) => s().social.repost({ user: ctx.user, ...input }) });
-  engine.register({ name: 'DELETE_SOCIAL_POST', channels: ['WEB', 'API'], schema: byId,
+  engine.register({ name: 'DELETE_SOCIAL_POST', areas: BOTH, channels: ['WEB', 'API'], schema: byId,
     handler: (ctx, input) => s().social.remove({ user: ctx.user, ...input }) });
 
   // ------------------------------------------------------- opportunities
   const oppStatus = (name, status, description) =>
     engine.register({
       name,
+      areas: CNPJ_ONLY,
       description,
       schema: byId,
       requiresActiveSubscription: false,
@@ -45,6 +54,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CONTACT_OPPORTUNITY',
+    areas: CNPJ_ONLY,
     description: 'Inicia a abordagem: gera a sugestão (se necessário) e marca como “Em contato”.',
     schema: byId,
     inputDoc: { id: 'opportunity id' },
@@ -62,6 +72,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'SET_OPPORTUNITY_STATUS',
+    areas: CNPJ_ONLY,
     description: 'Move a oportunidade no funil.',
     schema: z.object({ id, status: z.enum(OPPORTUNITY_STATUSES) }),
     inputDoc: { id: 'opportunity id', status: OPPORTUNITY_STATUSES.join('|') },
@@ -72,6 +83,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'UPDATE_OPPORTUNITY_NOTES',
+    areas: CNPJ_ONLY,
     description: 'Atualiza as notas da oportunidade.',
     schema: z.object({ id, notes: z.union([z.string().max(10_000), z.null()]) }),
     channels: ['WEB', 'API'],
@@ -82,6 +94,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'GENERATE_APPROACH',
+    areas: CNPJ_ONLY,
     description: 'Gera uma nova sugestão de abordagem comercial.',
     schema: byId,
     handler: async (ctx, { id: oppId }) => ({
@@ -92,6 +105,7 @@ export function registerCoreActions(engine) {
   // ------------------------------------------------------------- queries
   engine.register({
     name: 'LIST_TODAY_OPPORTUNITIES',
+    areas: CNPJ_ONLY,
     description: 'Oportunidades criadas nas últimas 24 horas.',
     kind: 'query',
     schema: z.object({ limit: z.coerce.number().int().min(1).max(20).default(5) }),
@@ -113,6 +127,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'GET_OPEN_PIPELINE_VALUE',
+    areas: CNPJ_ONLY,
     description: 'Valor potencial dos negócios em aberto.',
     kind: 'query',
     schema: z.object({}).passthrough(),
@@ -130,6 +145,7 @@ export function registerCoreActions(engine) {
   // -------------------------------------------------------------- freight
   engine.register({
     name: 'CREATE_FREIGHT_REQUEST',
+    areas: CNPJ_ONLY,
     description: 'Procura cargas para uma rota.',
     schema: z.object({
       origin: z.string().trim().min(2).max(80),
@@ -145,6 +161,7 @@ export function registerCoreActions(engine) {
   const freightMove = (name, to, from, eventType, title, description) =>
     engine.register({
       name,
+      areas: CNPJ_ONLY,
       description,
       schema: byId,
       requiresActiveSubscription: true,
@@ -160,6 +177,7 @@ export function registerCoreActions(engine) {
   // ------------------------------------------------------------ workforce
   engine.register({
     name: 'CREATE_WORKFORCE_DEMAND',
+    areas: CNPJ_ONLY,
     description: 'Cria uma demanda de profissionais.',
     schema: z.object({
       role: z.string().trim().min(2).max(80),
@@ -176,6 +194,7 @@ export function registerCoreActions(engine) {
   const workforceMove = (name, to, from, title, description) =>
     engine.register({
       name,
+      areas: CNPJ_ONLY,
       description,
       schema: byId,
       requiresActiveSubscription: true,
@@ -189,6 +208,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'SCHEDULE_WORKFORCE_INTERVIEW',
+    areas: CNPJ_ONLY,
     description: 'Marca a entrevista e gera o Pix de R$ 1,00 para a empresa pagar a taxa de agendamento.',
     schema: z.object({ id, interviewAt: z.string().datetime(), candidateEmail: z.string().trim().email().max(254) }),
     requiresActiveSubscription: true,
@@ -199,6 +219,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'AGREE_HIRE',
+    areas: CNPJ_ONLY,
     description: 'Registra o valor acordado. A taxa de 2% é aplicada à intermediação concluída no TemPix Pay.',
     schema: z.object({ id, agreedSalaryCents: z.coerce.number().int().min(100).max(100_000_000) }),
     requiresActiveSubscription: true,
@@ -209,6 +230,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CANCEL_WORKFORCE_INTERVIEW',
+    areas: CNPJ_ONLY,
     description: 'Cancela uma entrevista e solicita a devolução do R$ 1,00 se o candidato já pagou.',
     schema: byId,
     requiresActiveSubscription: true,
@@ -220,6 +242,7 @@ export function registerCoreActions(engine) {
   // ------------------------------------------------------------- payments
   engine.register({
     name: 'CREATE_SUBSCRIPTION_PIX',
+    areas: CNPJ_ONLY,
     description: 'Gera (ou reutiliza) o Pix da assinatura TemPix.',
     schema: z.object({}).passthrough(),
     channels: ['WEB', 'API'],
@@ -234,6 +257,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CREATE_TRANSACTION',
+    areas: CNPJ_ONLY,
     description: 'Cria um negócio no TemPix Pay (valor calculado no servidor, comissão aplicada).',
     schema: z.object({
       type: z.enum(['SALES', 'FREIGHT', 'WORKFORCE', 'SERVICE']).optional(),
@@ -251,6 +275,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CREATE_TRANSACTION_PIX',
+    areas: CNPJ_ONLY,
     description: 'Gera (ou reutiliza) o Pix da transação. O valor vem da transação, nunca do cliente.',
     schema: txRef,
     requiresActiveSubscription: true,
@@ -259,6 +284,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CREATE_PIX',
+    areas: CNPJ_ONLY,
     description: 'Cria uma cobrança TemPix Pay (serviço) e gera o Pix.',
     schema: z.object({
       amountCents: money,
@@ -286,6 +312,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'START_SERVICE',
+    areas: CNPJ_ONLY,
     description: 'Informa o início do serviço (após pagamento confirmado).',
     schema: txRef,
     handler: async (ctx, { id: txId }) => ({ transaction: await s().transactions.startService({ user: ctx.user, company: ctx.company, id: txId }) }),
@@ -293,6 +320,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'REPORT_COMPLETION',
+    areas: CNPJ_ONLY,
     description: 'Prestador informa a conclusão do serviço.',
     schema: txRef,
     handler: async (ctx, { id: txId }) => ({ transaction: await s().transactions.reportCompletion({ user: ctx.user, company: ctx.company, id: txId }) }),
@@ -300,6 +328,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'REQUEST_RELEASE',
+    areas: CNPJ_ONLY,
     description: 'Prestador pede ao cliente a confirmação para liberar o pagamento protegido.',
     schema: txRef,
     handler: async (ctx, { id: txId }) => ({ transaction: await s().transactions.requestRelease({ user: ctx.user, company: ctx.company, id: txId }) }),
@@ -307,6 +336,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CONFIRM_COMPLETION',
+    areas: CNPJ_ONLY,
     description: 'Cliente confirma a conclusão (não libera dinheiro por si só).',
     schema: txRef,
     channels: ['WEB', 'API'],
@@ -318,6 +348,7 @@ export function registerCoreActions(engine) {
   // Never from WhatsApp, never by an LLM: sensitive + step-up + web/app session only.
   engine.register({
     name: 'RELEASE_PAYMENT',
+    areas: CNPJ_ONLY,
     description: 'Libera o pagamento protegido ao prestador pelo fluxo autorizado do parceiro financeiro.',
     schema: txRef,
     roles: ['OWNER'],
@@ -331,6 +362,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'REFUND_PAYMENT',
+    areas: CNPJ_ONLY,
     description: 'Reembolsa (total ou parcial) um pagamento confirmado. Concluído só após confirmação do parceiro financeiro.',
     schema: z.object({ id, amountCents: money.optional(), reason: z.string().trim().max(300).optional() }),
     roles: ['OWNER'],
@@ -344,6 +376,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'OPEN_DISPUTE',
+    areas: CNPJ_ONLY,
     description: 'Abre disputa e congela a liberação.',
     schema: z.object({ id, reason: z.string().trim().min(5).max(500), description: z.string().trim().max(2000).optional() }),
     channels: ['WEB', 'API'],
@@ -354,6 +387,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'RESPOND_DISPUTE',
+    areas: CNPJ_ONLY,
     description: 'Registra a manifestação de uma das partes na disputa.',
     schema: z.object({ id, message: z.string().trim().min(2).max(2000) }),
     channels: ['WEB', 'API'],
@@ -363,6 +397,7 @@ export function registerCoreActions(engine) {
   // Human decision only (platform admin, step-up). AI may summarize, never decide.
   engine.register({
     name: 'RESOLVE_DISPUTE',
+    areas: ADMIN_ONLY,
     description: 'Resolve uma disputa (administração da plataforma).',
     schema: z.object({ id, outcome: z.enum(['BUYER', 'SELLER', 'CANCEL']), note: z.string().trim().min(10).max(2000), refundAmountCents: money.optional() }),
     platformAdmin: true,
@@ -374,6 +409,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CANCEL_TRANSACTION',
+    areas: CNPJ_ONLY,
     description: 'Cancela o negócio antes do pagamento.',
     schema: txRef,
     handler: async (ctx, { id: txId }) => ({ transaction: await s().transactions.cancel({ user: ctx.user, company: ctx.company, id: txId }) }),
@@ -383,6 +419,7 @@ export function registerCoreActions(engine) {
   const tripRef = z.object({ matchId: id });
   engine.register({
     name: 'CONSENT_TRIP_TRACKING',
+    areas: CNPJ_ONLY,
     description: 'Autoriza o compartilhamento de localização apenas para esta viagem.',
     schema: tripRef,
     channels: ['WEB', 'API'],
@@ -390,24 +427,28 @@ export function registerCoreActions(engine) {
   });
   engine.register({
     name: 'REVOKE_TRIP_TRACKING',
+    areas: CNPJ_ONLY,
     description: 'Interrompe o compartilhamento de localização.',
     schema: tripRef,
     handler: async (ctx, { matchId }) => ({ match: await s().trips.revokeConsent({ company: ctx.company, matchId }) }),
   });
   engine.register({
     name: 'START_TRIP',
+    areas: CNPJ_ONLY,
     description: 'Motorista a caminho da coleta.',
     schema: tripRef,
     handler: async (ctx, { matchId }) => ({ match: await s().trips.start({ user: ctx.user, company: ctx.company, matchId, source: src(ctx) }) }),
   });
   engine.register({
     name: 'MARK_CARGO_LOADED',
+    areas: CNPJ_ONLY,
     description: 'Registra a carga carregada e inicia a viagem.',
     schema: tripRef,
     handler: async (ctx, { matchId }) => ({ match: await s().trips.markLoaded({ user: ctx.user, company: ctx.company, matchId, source: src(ctx) }) }),
   });
   engine.register({
     name: 'RECORD_LOCATION',
+    areas: CNPJ_ONLY,
     description: 'Registra a localização do motorista (requer consentimento). Nunca libera pagamento.',
     kind: 'command',
     schema: z.object({ matchId: id, latitude: z.coerce.number(), longitude: z.coerce.number(), accuracyM: z.coerce.number().min(0).max(100_000).optional().nullable() }),
@@ -416,6 +457,7 @@ export function registerCoreActions(engine) {
   });
   engine.register({
     name: 'CONFIRM_DELIVERY',
+    areas: CNPJ_ONLY,
     description: 'Cliente confirma a entrega do frete (não libera dinheiro por si só).',
     schema: txRef,
     channels: ['WEB', 'API'],
@@ -427,6 +469,7 @@ export function registerCoreActions(engine) {
   // ---------------------------------------------------- platform admin
   engine.register({
     name: 'UPDATE_COMMISSION_RULE',
+    areas: ADMIN_ONLY,
     description: 'Cria ou altera uma regra de comissão (administração).',
     schema: z.object({
       id: id.optional(),
@@ -449,6 +492,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'RESOLVE_RECONCILIATION_ISSUE',
+    areas: ADMIN_ONLY,
     description: 'Reconhece ou encerra uma divergência (anotação; não move dinheiro).',
     schema: z.object({ id, status: z.enum(['ACKNOWLEDGED', 'RESOLVED']), note: z.string().trim().max(2000).optional() }),
     platformAdmin: true,
@@ -458,6 +502,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'GET_TRANSACTION',
+    areas: CNPJ_ONLY,
     description: 'Detalhe de uma transação TemPix Pay.',
     kind: 'query',
     schema: txRef,
@@ -466,6 +511,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CHANGE_BANK_DETAILS',
+    areas: CNPJ_ONLY,
     description: 'Altera a chave Pix de recebimento da empresa.',
     schema: z.object({
       pixKey: z.string().trim().min(5).max(140),
@@ -494,6 +540,7 @@ export function registerCoreActions(engine) {
   // --------------------------------------------------------------- agents
   engine.register({
     name: 'START_AGENT',
+    areas: CNPJ_ONLY,
     description: 'Ativa os agentes e solicita um novo ciclo de busca.',
     schema: z.object({}).passthrough(),
     requiresActiveSubscription: true,
@@ -517,6 +564,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'PAUSE_AGENT',
+    areas: CNPJ_ONLY,
     description: 'Pausa os agentes (nenhuma nova busca até retomar).',
     schema: z.object({}).passthrough(),
     roles: ['OWNER', 'ADMIN'],
@@ -539,6 +587,7 @@ export function registerCoreActions(engine) {
   // --------------------------------------------------- company / account
   engine.register({
     name: 'UPDATE_COMPANY_PROFILE',
+    areas: CNPJ_ONLY,
     description: 'Atualiza o perfil comercial (influencia as próximas buscas).',
     schema: companyUpdateSchema,
     roles: ['OWNER', 'ADMIN'],
@@ -549,6 +598,7 @@ export function registerCoreActions(engine) {
   // ---------------------------------------------------------- collaborators
   engine.register({
     name: 'INVITE_COLLABORATOR',
+    areas: CNPJ_ONLY,
     description: 'Libera acesso de um colaborador à conta da empresa (login pelo CPF).',
     schema: collaboratorInviteSchema,
     roles: ['OWNER'],
@@ -558,6 +608,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'REMOVE_COLLABORATOR',
+    areas: CNPJ_ONLY,
     description: 'Remove o acesso de um colaborador.',
     schema: byId,
     roles: ['OWNER'],
@@ -567,6 +618,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'CANCEL_SUBSCRIPTION',
+    areas: CNPJ_ONLY,
     description: 'Cancela a assinatura ao fim do período.',
     schema: z.object({}).passthrough(),
     roles: ['OWNER'],
@@ -576,6 +628,7 @@ export function registerCoreActions(engine) {
 
   engine.register({
     name: 'RESUME_SUBSCRIPTION',
+    areas: CNPJ_ONLY,
     description: 'Desfaz o cancelamento agendado.',
     schema: z.object({}).passthrough(),
     roles: ['OWNER'],

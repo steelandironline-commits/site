@@ -4,6 +4,8 @@ import { getConfig } from '../config.js';
 import { AppError, badRequest, conflict, forbidden, notFound, unauthorized, unavailable } from '../errors.js';
 import { logger } from '../logger.js';
 import { createOtp, hashOtp } from '../security/otp.js';
+import { areaOfUser } from '../security/area.js';
+import { AREAS } from '@autopix/areas/areas';
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const SECRET_KEYS = /password|token|secret|code|pixKey|cpf|document|link|photo/i;
@@ -28,7 +30,14 @@ function sanitize(value, depth = 0) {
  *     channels: ['WEB','API','WHATSAPP'], roles: [...],
  *     requiresActiveSubscription, allowOnboarding, sensitive, summarize(input),
  *     platformAdmin (User.isPlatformAdmin required, replaces roles),
+ *     areas: ['CNPJ'|'CPF'|'ADMIN', ...] (who may run it, see "Area mode"),
  *     handler(ctx, input) }
+ *
+ * Area mode (config.areas.enabled, ARQUITETURA 6.6): the user's area comes from the owner of the
+ * account (ADMIN for a platform admin, else the company's accountType), never from the host or the
+ * channel, and `def.areas` must contain it on EVERY channel (web, API, WhatsApp, system). An action
+ * without `areas`, or one the user's area is not in, answers 404 "Ação desconhecida" like an action
+ * that does not exist. Legacy mode does not look at areas.
  */
 export class ActionEngine {
   constructor({ prisma = getPrisma(), config = getConfig(), services = {} } = {}) {
@@ -40,6 +49,9 @@ export class ActionEngine {
 
   register(def) {
     if (!def.name || !def.handler || !def.schema) throw new Error('Invalid action definition');
+    if (def.areas !== undefined && !(Array.isArray(def.areas) && def.areas.length > 0 && def.areas.every((a) => AREAS.includes(a)))) {
+      throw new Error(`Invalid action definition: ${def.name} has invalid areas`);
+    }
     this.actions.set(def.name, {
       kind: 'command',
       channels: ['WEB', 'API', 'WHATSAPP'],
@@ -56,9 +68,15 @@ export class ActionEngine {
     return this.actions.get(name);
   }
 
-  /** Public catalog for clients (no handlers, no internals). */
-  catalog() {
-    return [...this.actions.values()].map((a) => ({
+  /**
+   * Public catalog for clients (no handlers, no internals).
+   * Area mode lists only the actions the given area may run (nothing without an area: fail closed).
+   * Legacy mode lists everything, as before.
+   */
+  catalog({ area } = {}) {
+    const all = [...this.actions.values()];
+    const visible = this.config.areas?.enabled ? all.filter((a) => area && a.areas?.includes(area)) : all;
+    return visible.map((a) => ({
       name: a.name,
       description: a.description,
       kind: a.kind,
@@ -110,6 +128,9 @@ export class ActionEngine {
       // 1. Authentication
       user = await this.#authenticate(def, channel, actor);
 
+      // 1b. Area (area mode only): the owner's area must be one of the action's areas.
+      const area = this.config.areas?.enabled ? await this.#authorizeArea(def, user) : null;
+
       // 2. Authorization
       if (!def.channels.includes(channel)) throw forbidden('Esta ação não está disponível neste canal.');
       if (def.platformAdmin) {
@@ -153,6 +174,7 @@ export class ActionEngine {
         services: this.services,
         events: this.services.events,
         user,
+        area,
         company,
         channel,
         actor,
@@ -191,6 +213,23 @@ export class ActionEngine {
       throw unauthorized();
     }
     return user;
+  }
+
+  /**
+   * Area mode: the area of the user (owner of the account) must be in `def.areas`. Returns it, so
+   * handlers pass it to the services that filter by area. A missing company, an unknown account type
+   * or an action without `areas` is a denial (fail closed), with the same answer as an unknown action.
+   */
+  async #authorizeArea(def, user) {
+    const company = await this.prisma.company.findUnique({ where: { id: user.companyId }, select: { accountType: true } });
+    let area = null;
+    try {
+      area = areaOfUser({ isPlatformAdmin: user.isPlatformAdmin, company });
+    } catch {
+      area = null; // no company or an unknown account type
+    }
+    if (!area || !Array.isArray(def.areas) || !def.areas.includes(area)) throw notFound('Ação desconhecida.');
+    return area;
   }
 
   async #createChallenge(def, user, input, channel) {
