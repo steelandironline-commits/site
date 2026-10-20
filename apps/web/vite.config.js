@@ -109,6 +109,8 @@ function areaConfig(area) {
 }
 
 export default defineConfig(({ mode }) => {
+  // Sem isto, "--mode admin" cairia em silêncio no build legado e gravaria em dist/.
+  if (mode === 'admin') throw new Error('vite --mode admin: o build do admin entra na ETAPA 4.');
   const area = AREA_MODES[mode];
   return area ? areaConfig(area) : legacyConfig;
 });

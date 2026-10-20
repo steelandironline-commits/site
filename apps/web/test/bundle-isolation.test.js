@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -16,7 +17,7 @@ import { AREA_BRAND as CPF_BRAND } from '@autopix/areas/brand/cpf';
 
 const run = promisify(execFile);
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const viteBin = path.join(webRoot, '../../node_modules/vite/bin/vite.js');
+const viteBin = path.join(path.dirname(createRequire(import.meta.url).resolve('vite/package.json')), 'bin/vite.js');
 
 const BRANDS = { cnpj: CNPJ_BRAND, cpf: CPF_BRAND };
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tempix-bundles-'));
