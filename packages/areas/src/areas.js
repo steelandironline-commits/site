@@ -5,6 +5,15 @@
 export const AREAS = Object.freeze(['CNPJ', 'CPF', 'ADMIN']);
 
 /**
+ * Marcador de uma montagem de API que responde em qualquer host, inclusive sem área
+ * (infraestrutura sem sessão: /api/health e /api/webhooks/*). Só infraestrutura usa isto.
+ */
+export const ANY_AREA = Object.freeze(['*']);
+
+/** A lista de áreas de uma montagem é o marcador ANY_AREA (compara o conteúdo, não a identidade)? */
+export const isAnyArea = (areas) => Array.isArray(areas) && areas.length === 1 && areas[0] === ANY_AREA[0];
+
+/**
  * Variável de ambiente que traz o host de cada área. Nenhum domínio fica
  * fixo no código (Q14): quem manda é a configuração.
  */

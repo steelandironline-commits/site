@@ -3,6 +3,8 @@
 // importa um a um: @autopix/areas/brand/platform e @autopix/areas/brand/<área>.
 export {
   AREAS,
+  ANY_AREA,
+  isAnyArea,
   AREA_HOST_VARS,
   REDIRECT_HOST_VARS,
   AREA_DIST_DIRS,

@@ -4,7 +4,7 @@
 // cookie. Quem autoriza é a área gravada na sessão (ARQUITETURA, seção 6.3), que um
 // cabeçalho `Host` forjado não altera. Este arquivo não mexe em cookie, sessão, CORS
 // nem CSRF (quem usa a área para isso são app.js e security.js, via areaOrigins).
-import { AREAS, hostnameOf, urlFor } from '@autopix/areas';
+import { AREAS, ANY_AREA, hostnameOf, isAnyArea, urlFor } from '@autopix/areas';
 import { notFoundApi } from './errors.js';
 
 /** Infraestrutura sem sessão: responde em qualquer host e nunca tem área. */
@@ -79,3 +79,61 @@ export function hostArea(config) {
     return neutralNotFound(req, res, next);
   };
 }
+
+/**
+ * Guarda de área de uma montagem: responde 404 neutro quando `req.area` não está em `areas`.
+ * Roda ANTES da autenticação (uma rota CNPJ chamada no host CPF responde 404, não 401).
+ *
+ * - `areas` é uma lista de áreas (CNPJ, CPF, ADMIN) ou ANY_AREA (infraestrutura sem sessão).
+ * - `enabled` é o modo de áreas. No modo legado a guarda não bloqueia nada, como antes das áreas.
+ * - Host sem área (req.area nulo) só passa em ANY_AREA: falha fechada.
+ */
+export function onlyArea(areas, enabled) {
+  assertDeclared('onlyArea', areas);
+  if (!enabled || isAnyArea(areas)) return (req, res, next) => next();
+  const allowed = new Set(areas);
+  return (req, res, next) => (allowed.has(req.area) ? next() : notFoundApi(req, res, next));
+}
+
+/** Recusa montagem sem áreas declaradas ou com área desconhecida (erro na partida do servidor). */
+function assertDeclared(who, areas) {
+  if (!Array.isArray(areas) || areas.length === 0) {
+    throw new TypeError(`${who}: declare as áreas da montagem (${AREAS.join(', ')} ou ANY_AREA)`);
+  }
+  if (isAnyArea(areas)) return;
+  for (const area of areas) {
+    if (!AREAS.includes(area)) throw new TypeError(`${who}: área desconhecida: ${String(area)}`);
+  }
+}
+
+/**
+ * Liga o registro de montagens do app e diz em que modo ele roda. `mountArea` recusa montar
+ * antes disto (falha fechada: um app sem modo declarado não pode montar rota sem guarda).
+ */
+export function initAreaMounts(app, config) {
+  app.set('areaMode', Boolean(config.areas?.enabled));
+  app.locals.areaMounts = [];
+  return app;
+}
+
+/**
+ * Monta `router` em `path` precedido de `onlyArea(areas)` e registra a montagem para os testes
+ * (deriva contra o manifesto e isolamento de rota). É o único jeito de montar API em app.js.
+ * Sem áreas declaradas, lança erro: toda rota nasce com a sua área.
+ */
+export function mountArea(app, path, areas, router) {
+  const mode = app.get('areaMode');
+  if (typeof mode !== 'boolean') throw new Error('mountArea: o app não declarou o modo de áreas (chame initAreaMounts antes)');
+  if (typeof path !== 'string' || !path.startsWith('/')) throw new TypeError(`mountArea: caminho inválido: ${String(path)}`);
+  if (typeof router !== 'function') throw new TypeError(`mountArea: ${path} sem router`);
+  assertDeclared(`mountArea ${path}`, areas);
+  app.locals.areaMounts.push(Object.freeze({ path, areas: Object.freeze([...areas]) }));
+  app.use(path, onlyArea(areas, mode), router);
+}
+
+/** Montagens registradas por `mountArea` neste app, na ordem em que foram feitas. */
+export function mountsOf(app) {
+  return [...(app.locals.areaMounts ?? [])];
+}
+
+export { ANY_AREA };
