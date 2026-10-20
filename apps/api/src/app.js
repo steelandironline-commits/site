@@ -35,7 +35,7 @@ export function buildServices(opts = {}) {
   return buildPlatform(opts);
 }
 
-export function createApp({ services = buildServices(), hub = null, serveWeb = true } = {}) {
+export function createApp({ services = buildServices(), hub = null, serveWeb = true, webDist = path.join(ROOT_DIR, 'apps/web/dist') } = {}) {
   const { config } = services;
   const app = express();
   const limiters = buildLimiters(config);
@@ -115,8 +115,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/admin', adminRoutes(ctx));
   app.use('/api', notFoundApi);
 
-  // Production: serve the built SPA from the same origin.
-  const webDist = path.join(ROOT_DIR, 'apps/web/dist');
+  // Production: serve the built SPA from the same origin (`webDist` is overridable for tests).
   if (serveWeb && fs.existsSync(path.join(webDist, 'index.html'))) {
     app.use(
       '/assets',
