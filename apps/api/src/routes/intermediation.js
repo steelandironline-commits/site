@@ -5,6 +5,6 @@ import { requireAuth } from '../middleware/session.js';
 export function intermediationRoutes({ intermediation }) {
   const r = Router();
   r.use(requireAuth);
-  r.get('/', async (req, res) => res.json(await intermediation.overview(req.user.companyId)));
+  r.get('/', async (req, res) => res.json(await intermediation.overview(req.user.companyId, { area: req.area })));
   return r;
 }

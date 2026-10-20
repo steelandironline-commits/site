@@ -9,7 +9,9 @@ import {
   profileSides,
 } from '@autopix/shared';
 import { getPrisma } from '../db.js';
+import { getConfig } from '../config.js';
 import { notFound } from '../errors.js';
+import { accountTypeForHost } from '../security/area.js';
 
 const MAX_CANDIDATES = 500;
 const MAX_RESULTS = 12;
@@ -37,13 +39,27 @@ function needText(request) {
  * shown anonymously (type and city only); contact happens through TemPix.
  */
 export class IntermediationService {
-  constructor({ prisma = getPrisma() } = {}) {
+  constructor({ prisma = getPrisma(), config = getConfig() } = {}) {
     this.prisma = prisma;
+    this.config = config;
   }
 
-  async overview(companyId) {
+  /**
+   * Area mode (ARQUITETURA 6.6): the counterparts are only accounts of the caller's own area
+   * (COMPANY for CNPJ, PERSON for CPF), and the caller must be of that area too. `area` comes from
+   * the caller, never from global state; missing or unknown is an error. Legacy mode: no filter.
+   */
+  #accountTypeOf(area) {
+    if (!this.config?.areas?.enabled) return null;
+    const accountType = accountTypeForHost(area);
+    if (!accountType) throw new TypeError(`IntermediationService: área inválida: ${String(area)}`);
+    return accountType;
+  }
+
+  async overview(companyId, { area } = {}) {
+    const areaType = this.#accountTypeOf(area);
     const me = await this.prisma.company.findUnique({ where: { id: companyId } });
-    if (!me) throw notFound('Empresa não encontrada.');
+    if (!me || (areaType && me.accountType !== areaType)) throw notFound('Empresa não encontrada.');
     const profile = normalizeOperationalProfile(me.operationalProfile);
     const sides = profileSides(profile);
     const self = { profile, city: me.city, state: me.state, serviceLocations: me.serviceLocations };
@@ -51,6 +67,7 @@ export class IntermediationService {
     const others = await this.prisma.company.findMany({
       where: {
         id: { not: companyId },
+        ...(areaType ? { accountType: areaType } : {}),
         onboardingCompletedAt: { not: null },
         operationalProfileUpdatedAt: { not: null },
         users: { some: { status: 'ACTIVE' } },

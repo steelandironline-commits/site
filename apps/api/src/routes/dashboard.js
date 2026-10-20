@@ -5,7 +5,7 @@ export function dashboardRoutes({ dashboard }) {
   const r = Router();
   r.use(requireAuth);
   r.get('/', async (req, res) => {
-    res.json(await dashboard.overview(req.user.companyId));
+    res.json(await dashboard.overview(req.user.companyId, { area: req.area }));
   });
   return r;
 }

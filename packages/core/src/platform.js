@@ -64,7 +64,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
     payments: new PaymentService({ prisma, config, email, events, audit }),
     commissions: new CommissionService({ prisma }),
     subscriptions: new SubscriptionService({ prisma, config }),
-    dashboard: new DashboardService({ prisma }),
+    dashboard: new DashboardService({ prisma, config }),
     agents: new AgentService({ prisma, config }),
     queue: new JobQueue({ prisma }),
     freight: new FreightService({ prisma, config, events }),
@@ -77,7 +77,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
   // TemPix Pay — provider-independent financial layer.
   s.transactions = new MarketplaceTransactionService({ prisma, config, events, commissions: s.commissions, audit, payments: s.payments });
   s.social = new SocialService({ prisma, transactions: s.transactions, config });
-  s.intermediation = new IntermediationService({ prisma });
+  s.intermediation = new IntermediationService({ prisma, config });
   s.refunds = new RefundService({ prisma, config, events, audit, transactions: s.transactions });
   s.workforce.payments = s.payments;
   s.workforce.refunds = s.refunds;

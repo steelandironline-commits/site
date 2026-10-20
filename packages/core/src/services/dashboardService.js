@@ -1,14 +1,28 @@
 import { getPrisma } from '../db.js';
+import { getConfig } from '../config.js';
+import { accountTypeForHost } from '../security/area.js';
 
 const DAY = 86_400_000;
 
 export class DashboardService {
-  constructor({ prisma = getPrisma() } = {}) {
+  constructor({ prisma = getPrisma(), config = getConfig() } = {}) {
     this.prisma = prisma;
+    this.config = config;
   }
 
-  /** Every metric is computed from stored data — nothing is hardcoded. */
-  async overview(companyId) {
+  /**
+   * Every metric is computed from stored data — nothing is hardcoded.
+   *
+   * Area mode (ARQUITETURA 6.6): the KPIs are the company's (opportunities, search jobs, signals) and
+   * belong to the CNPJ area; the CPF gets an empty overview and no company table is read. `area` comes
+   * from the caller; missing or unknown is an error. Legacy mode: the same overview as always.
+   */
+  async overview(companyId, { area } = {}) {
+    if (this.config?.areas?.enabled) {
+      const accountType = accountTypeForHost(area);
+      if (!accountType) throw new TypeError(`DashboardService: área inválida: ${String(area)}`);
+      if (accountType === 'PERSON') return { metrics: {}, pipeline: {}, flow: {}, latestJob: null };
+    }
     const openStatuses = ['NEW', 'RESEARCHING', 'CONTACTED', 'INTERESTED', 'PROPOSAL'];
     const since24h = new Date(Date.now() - DAY);
     const [total, high, potential, analyzed, won, last24h, byStatus, recentJobs, latestJob, signals24h] = await Promise.all([
