@@ -30,6 +30,14 @@ enum SessionScope {
   FULL
 }
 
+/// Área de acesso (Tem CNPJ, Tem CPF, admin da plataforma). Só sessões e tokens a gravam: a área
+/// de um registro de negócio vem do dono (Company.accountType). Nula = criado antes das áreas.
+enum Area {
+  CNPJ
+  CPF
+  ADMIN
+}
+
 enum SubscriptionStatus {
   PENDING
   ACTIVE
@@ -377,6 +385,8 @@ model Session {
   userId     String
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   scope      SessionScope @default(FULL)
+  /// Área em que a sessão vale (o "aud" do token). Nula em sessão antiga: vale só no modo legado.
+  area       Area?
   expiresAt  DateTime
   lastSeenAt DateTime     @default(now())
   ipAddress  String?
@@ -393,6 +403,8 @@ model LoginChallenge {
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   codeHash   String
   attempts   Int       @default(0)
+  /// Área do host onde o login começou: o código só vale lá.
+  area       Area?
   expiresAt  DateTime
   consumedAt DateTime?
   ipAddress  String?
@@ -702,6 +714,8 @@ model ActivationToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String    @unique
   emailSentAt DateTime?
+  /// Área do link. Nula em token antigo: vale a área do dono.
+  area      Area?
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
@@ -714,6 +728,8 @@ model PasswordResetToken {
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String    @unique
+  /// Área do link. Nula em token antigo: vale a área do dono.
+  area      Area?
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
