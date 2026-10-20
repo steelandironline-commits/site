@@ -57,6 +57,10 @@ describe('areaBoundary · import proibido derruba o build', () => {
     ['bad-manifest.js', /packages\/areas\/src\/manifest\.js.*só de servidor/s],
     ['bad-server-only.js', /packages\/areas\/src\/index\.js.*só de servidor/s],
     ['bad-server-only-areas.js', /packages\/areas\/src\/areas\.js.*só de servidor/s],
+    // O build legado (App.jsx, legacyNav.js, legacy/) tem o vocabulário das duas áreas e nunca entra numa área.
+    ['bad-legacy-folder.js', /src\/legacy\/old\.js.*arquivo do build legado/s],
+    ['bad-legacy-nav.js', /src\/legacyNav\.js.*arquivo do build legado/s],
+    ['bad-legacy-app.js', /src\/App\.jsx.*arquivo do build legado/s],
   ];
   for (const [file, message] of cases) {
     it(file, async () => {
@@ -85,6 +89,18 @@ describe('areaBoundary · com a árvore real de apps/web', () => {
     ['CPF importando o menu do CNPJ', 'cpf', 'src/areas/cnpj/nav.js'],
     ['CNPJ importando a Home do CPF', 'cnpj', 'src/areas/cpf/Home.jsx'],
     ['CNPJ importando a tela de admin', 'cnpj', 'src/pages/app/Admin.jsx'],
+    ['CPF importando o painel da empresa', 'cpf', 'src/pages/app/Overview.jsx'],
+    ['CPF importando o cartão de equipe', 'cpf', 'src/pages/app/TeamCard.jsx'],
+    ['CPF importando a chave Pix de repasse', 'cpf', 'src/pages/app/PayoutCard.jsx'],
+    ['CPF importando os cartões de oportunidade e de empresa', 'cpf', 'src/components/cards/Cards.jsx'],
+    ['CPF importando o cadastro da empresa', 'cpf', 'src/areas/cnpj/Onboarding.jsx'],
+    ['CPF importando a cópia da empresa', 'cpf', 'src/areas/cnpj/copy.js'],
+    ['CNPJ importando "Meu perfil" do CPF', 'cnpj', 'src/areas/cpf/Profile.jsx'],
+    ['CNPJ importando a cópia do CPF', 'cnpj', 'src/areas/cpf/copy.js'],
+    ['CNPJ importando o cadastro do CPF', 'cnpj', 'src/areas/cpf/Onboarding.jsx'],
+    ['CPF importando o cadastro legado', 'cpf', 'src/legacy/Onboarding.jsx'],
+    ['CNPJ importando o menu legado', 'cnpj', 'src/legacyNav.js'],
+    ['CNPJ importando o roteador legado', 'cnpj', 'src/App.jsx'],
   ];
   for (const [label, area, file] of realCases) {
     it(label, async () => {
