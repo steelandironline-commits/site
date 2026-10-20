@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Navigate, useOutletContext, useParams } from 'react-router-dom';
 import { Copy } from 'lucide-react';
 import { PAYMENT_STATUS_LABELS, formatCents } from '@autopix/shared';
-import { BRLText, Badge, Button, DemoBadge, ErrorState, SkeletonCard, useApi, useVisibleInterval } from '@autopix/ui';
+import { BRLText, Badge, Button, DemoBadge, ErrorState, SkeletonCard, useApi, useBrand, useVisibleInterval } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
 import { PartnerNote } from './Pay.jsx';
@@ -15,6 +15,7 @@ export const STATUS_TONE = { CONFIRMED: 'revenue', PENDING: 'amber', FAILED: 'da
  * their transaction page, where every money action is available.
  */
 export default function PaymentDetail() {
+  const { name } = useBrand();
   const { id } = useParams();
   const toast = useToast();
   const { stream } = useOutletContext();
@@ -22,8 +23,8 @@ export default function PaymentDetail() {
   const p = data?.payment;
 
   useEffect(() => {
-    if (p) document.title = `${p.reference || 'Pagamento'} — TemPix`;
-  }, [p]);
+    if (p) document.title = `${p.reference || 'Pagamento'} — ${name}`;
+  }, [p, name]);
   useEffect(() => {
     if (stream.latest?.type === 'PAYMENT') reload();
   }, [stream.latest, reload]);

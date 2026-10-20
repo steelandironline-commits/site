@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
-import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton, get, post, useSession } from '@autopix/ui';
+import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton, get, post, useBrand, useSession } from '@autopix/ui';
 import s from './authPage.module.css';
 
 export default function Activate({ copy }) {
   const { token } = useParams();
   const navigate = useNavigate();
   const { refresh } = useSession();
+  const { name } = useBrand();
   const [info, setInfo] = useState(null);
   const [invalid, setInvalid] = useState(null);
   const [password, setPassword] = useState('');
@@ -17,7 +18,9 @@ export default function Activate({ copy }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = 'Criar senha — TemPix';
+    document.title = `Criar senha — ${name}`;
+  }, [name]);
+  useEffect(() => {
     get(`/api/auth/activate/${encodeURIComponent(token)}`)
       .then(setInfo)
       .catch((err) => setInvalid(err.message));

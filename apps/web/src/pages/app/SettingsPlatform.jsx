@@ -14,6 +14,7 @@ import {
   post,
   put,
   useApi,
+  useBrand,
   useInstallPrompt,
 } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
@@ -22,6 +23,7 @@ import s from './app.module.css';
 
 /** `copy.verified`: o que o número vinculado permite (os comandos são da área). */
 export function WhatsAppCard({ copy }) {
+  const { name } = useBrand();
   const toast = useToast();
   const { data, reload } = useApi('/api/whatsapp');
   const [phone, setPhone] = useState('');
@@ -109,7 +111,7 @@ export function WhatsAppCard({ copy }) {
           {verification && (
             <div className={s.verifyBox} role="status">
               <p>
-                Envie esta mensagem <strong>a partir do número informado</strong> para o WhatsApp do TemPix
+                Envie esta mensagem <strong>a partir do número informado</strong> para o WhatsApp do {name}
                 {verification.businessNumber ? ` (+${verification.businessNumber})` : ''}:
               </p>
               <p className={`${s.verifyCode} mono`}>{verification.message}</p>
@@ -224,6 +226,7 @@ export function NotificationPrefsCard({ categories }) {
 }
 
 export function InstallCard() {
+  const { name } = useBrand();
   const install = useInstallPrompt();
   const toast = useToast();
   if (install.installed) {
@@ -233,7 +236,7 @@ export function InstallCard() {
           <Smartphone size={15} style={{ verticalAlign: -2 }} aria-hidden="true" /> App instalado
         </h2>
         <p className={s.muted} style={{ fontSize: 13, marginTop: 6 }}>
-          Você está usando o TemPix como aplicativo.
+          Você está usando o {name} como aplicativo.
         </p>
       </section>
     );
@@ -251,10 +254,10 @@ export function InstallCard() {
           icon={Download}
           onClick={async () => {
             const outcome = await install.prompt();
-            if (outcome === 'accepted') toast.success('TemPix instalado.');
+            if (outcome === 'accepted') toast.success(`${name} instalado.`);
           }}
         >
-          Instalar TemPix
+          Instalar {name}
         </Button>
       ) : install.iosInstructions ? (
         <p style={{ fontSize: 13 }}>

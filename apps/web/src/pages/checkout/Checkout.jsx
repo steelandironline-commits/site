@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, ArrowLeft, Building2, Check, Clock, Copy, FlaskConical, Lock, QrCode, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react';
 import { COMPANY_PRICING_FEATURES, PLAN, PRICING, formatCents, formatCnpj } from '@autopix/shared';
-import { BRLText, Button, DemoBadge, ErrorState, Logo, LogoMark, Skeleton, api, post, useSession, useVisibleInterval } from '@autopix/ui';
+import { BRLText, Button, DemoBadge, ErrorState, Logo, LogoMark, Skeleton, api, post, useBrand, useSession, useVisibleInterval } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import s from './checkout.module.css';
 
@@ -41,6 +41,7 @@ async function copyText(text) {
 }
 
 export default function Checkout() {
+  const { name } = useBrand();
   const navigate = useNavigate();
   const toast = useToast();
   const { me, config, loading: sessionLoading, refresh } = useSession();
@@ -57,7 +58,7 @@ export default function Checkout() {
   const isRenewal = me?.scope === 'FULL';
 
   useEffect(() => {
-    document.title = 'Pagamento Pix — TemPix';
+    document.title = `Pagamento Pix — ${name}`;
   }, []);
 
   const createCharge = useCallback(async () => {
@@ -203,7 +204,7 @@ export default function Checkout() {
         <section className={`${s.summary} ${oneTime ? `${s.summaryGold} gold-icons` : ''}`} aria-labelledby="summary-title">
           <p className="eyebrow">{oneTime ? 'Taxa de cadastro · empresa' : 'Assinatura'}</p>
           <h1 id="summary-title" className={s.planName}>
-            TEMPIX
+            {name.toUpperCase()}
           </h1>
           <p className={`${s.planPrice} num`}>
             <BRLText>{formatCents(priceCents)}</BRLText>
@@ -219,7 +220,7 @@ export default function Checkout() {
           <dl className={s.lines}>
             <div>
               <dt>Plano</dt>
-              <dd>{oneTime ? 'TemPix · empresa' : 'TemPix · mensal'}</dd>
+              <dd>{oneTime ? `${name} · empresa` : `${name} · mensal`}</dd>
             </div>
             <div>
               <dt>{oneTime ? 'Mensalidade' : 'Período'}</dt>
@@ -385,7 +386,7 @@ export default function Checkout() {
                   {phase === 'activating' && (
                     <motion.div className={s.activating} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
                       <LogoMark size={22} animated />
-                      <span>Ativando seu TemPix...</span>
+                      <span>Ativando seu {name}...</span>
                     </motion.div>
                   )}
                 </AnimatePresence>

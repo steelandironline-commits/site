@@ -4,7 +4,7 @@ import { PageLoader } from '@autopix/ui';
 import { ScrollToTop } from '../../components/ScrollToTop.jsx';
 import { COMPANY_PRICING_FEATURES } from '@autopix/shared';
 import Landing from '../../pages/landing/Landing.jsx';
-import { COPY, LANDING } from './copy.js';
+import { COPY, LANDING, PAGES } from './copy.js';
 import { BACK, NAV, onboardingPath } from './nav.js';
 
 // Roteador da área de empresas: as rotas de PAGES.CNPJ (packages/areas/src/manifest.js) e nenhuma outra.
@@ -60,7 +60,7 @@ export default function App() {
             <Route path="opportunities/:id" element={<OpportunityDetail />} />
             <Route path="social" element={<Social copy={COPY.social} />} />
             <Route path="operacao" element={<Operations />} />
-            <Route path="intermediacao" element={<Intermediation />} />
+            <Route path="intermediacao" element={<Intermediation copy={PAGES.intermediation} />} />
             <Route path="activity" element={<Activity copy={COPY.activity} />} />
             <Route path="agents" element={<Agents />} />
             <Route path="company" element={<Company />} />
@@ -73,7 +73,7 @@ export default function App() {
             <Route path="freight" element={<Freight />} />
             <Route path="freight/matches/:id" element={<FreightMatchDetail />} />
             <Route path="workforce" element={<Workforce />} />
-            <Route path="workforce/matches/:id" element={<WorkforceMatchDetail />} />
+            <Route path="workforce/matches/:id" element={<WorkforceMatchDetail copy={PAGES.workforce} />} />
             <Route path="confirm/:id" element={<ConfirmChallenge copy={COPY.confirm} />} />
           </Route>
           <Route path="*" element={<NotFound />} />

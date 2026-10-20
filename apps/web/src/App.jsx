@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Landing from './pages/landing/Landing.jsx';
 import { PageLoader } from '@autopix/ui';
-import { COPY, LANDING } from './legacy/copy.js';
+import { COPY, LANDING, PAGES } from './legacy/copy.js';
 import { PersonPriceCard } from './legacy/PersonPriceCard.jsx';
 
 // Build legado (convive com os builds de área até o go-live): as telas de sempre, para os dois tipos de
@@ -68,7 +68,7 @@ export default function App() {
             <Route path="opportunities/:id" element={<OpportunityDetail />} />
             <Route path="social" element={<Social copy={COPY.social} />} />
             <Route path="operacao" element={<Operations />} />
-            <Route path="intermediacao" element={<Intermediation />} />
+            <Route path="intermediacao" element={<Intermediation copy={PAGES.intermediation} />} />
             <Route path="activity" element={<Activity copy={COPY.activity} />} />
             <Route path="agents" element={<Agents />} />
             <Route path="company" element={<Company />} />
@@ -82,7 +82,7 @@ export default function App() {
             <Route path="freight" element={<Freight />} />
             <Route path="freight/matches/:id" element={<FreightMatchDetail />} />
             <Route path="workforce" element={<Workforce />} />
-            <Route path="workforce/matches/:id" element={<WorkforceMatchDetail />} />
+            <Route path="workforce/matches/:id" element={<WorkforceMatchDetail copy={PAGES.workforce} />} />
             <Route path="confirm/:id" element={<ConfirmChallenge copy={COPY.confirm} />} />
             <Route path="*" element={<Navigate to="/app" replace />} />
           </Route>

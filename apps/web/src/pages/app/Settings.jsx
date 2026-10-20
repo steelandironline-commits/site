@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { LogOut, Monitor } from 'lucide-react';
-import { Badge, Button, DemoBadge, ErrorState, Field, PasswordInput, PasswordStrength, SkeletonCard, del, put, useApi } from '@autopix/ui';
+import { Badge, Button, DemoBadge, ErrorState, Field, PasswordInput, PasswordStrength, SkeletonCard, del, put, useApi, useBrand } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
 import { InstallCard, NotificationPrefsCard, WhatsAppCard } from './SettingsPlatform.jsx';
@@ -14,6 +14,7 @@ import s from './app.module.css';
  *   payout      elemento ou nada: o cartão da chave Pix de recebimento, se a área tem
  */
 export default function Settings({ copy, team = null, payout = null }) {
+  const { name } = useBrand();
   const toast = useToast();
   const { me, demoMode, onLogout } = useOutletContext();
   const sessions = useApi('/api/me/sessions');
@@ -23,8 +24,8 @@ export default function Settings({ copy, team = null, payout = null }) {
   const [revoking, setRevoking] = useState(false);
 
   useEffect(() => {
-    document.title = 'Configurações — TemPix';
-  }, []);
+    document.title = `Configurações — ${name}`;
+  }, [name]);
 
   const changePassword = async (e) => {
     e.preventDefault();

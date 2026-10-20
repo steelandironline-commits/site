@@ -13,6 +13,7 @@ import {
   Select,
   SkeletonCard,
   api,
+  useBrand,
   useDebounced,
   useVisibleInterval,
 } from '@autopix/ui';
@@ -68,6 +69,7 @@ function TenderCard({ item }) {
 }
 
 export default function Tenders() {
+  const { name } = useBrand();
   const { me } = useOutletContext();
   const [filters, setFilters] = useState(() => ({ state: me?.company?.state || '', city: '', q: '', modality: '', status: 'open' }));
   const [page, setPage] = useState(1);
@@ -78,8 +80,8 @@ export default function Tenders() {
   const q = useDebounced(filters.q, 400);
 
   useEffect(() => {
-    document.title = 'Licitações — TemPix';
-  }, []);
+    document.title = `Licitações — ${name}`;
+  }, [name]);
 
   const query = useMemo(() => {
     const p = new URLSearchParams({ status: filters.status, page: String(page), pageSize: '20' });

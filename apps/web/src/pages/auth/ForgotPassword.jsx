@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MailCheck } from 'lucide-react';
-import { AuthShell, Button, Field, FormError, Input, post } from '@autopix/ui';
+import { AuthShell, Button, Field, FormError, Input, post, useBrand } from '@autopix/ui';
 import s from './authPage.module.css';
 
 export default function ForgotPassword() {
@@ -10,10 +10,11 @@ export default function ForgotPassword() {
   const [error, setError] = useState(null);
   const [fieldError, setFieldError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { name } = useBrand();
 
   useEffect(() => {
-    document.title = 'Recuperar senha — TemPix';
-  }, []);
+    document.title = `Recuperar senha — ${name}`;
+  }, [name]);
 
   const submit = async (e) => {
     e.preventDefault();

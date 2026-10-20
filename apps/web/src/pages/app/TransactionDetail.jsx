@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Check, CheckCheck, Copy, MapPin, Navigation, Package, Play, Send, ShieldCheck, Truck, Undo2, Unlock, X } from 'lucide-react';
 import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, formatCents } from '@autopix/shared';
-import { BRLText, Badge, Button, DemoBadge, Dialog, ErrorState, Field, Input, SkeletonCard, Textarea, useApi, useVisibleInterval } from '@autopix/ui';
+import { BRLText, Badge, Button, DemoBadge, Dialog, ErrorState, Field, Input, SkeletonCard, Textarea, useApi, useBrand, useVisibleInterval } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
@@ -169,6 +169,7 @@ function TripPanel({ trip, role, onChange }) {
 }
 
 export default function TransactionDetail() {
+  const { name } = useBrand();
   const { id } = useParams();
   const { stream } = useOutletContext();
   const { data, error, reload } = useApi(`/api/pay/transactions/${id}`);
@@ -296,7 +297,7 @@ export default function TransactionDetail() {
                 Disputa em andamento
               </h2>
               <p className={s.notice}>
-                <AlertTriangle size={15} aria-hidden="true" /> {openDispute.reason} — a liberação está congelada até a decisão da equipe TemPix.
+                <AlertTriangle size={15} aria-hidden="true" /> {openDispute.reason} — a liberação está congelada até a decisão da equipe {name}.
               </p>
               <ul className={s.timeline} style={{ marginTop: 12 }}>
                 {(openDispute.metadata?.messages || []).map((m) => (
@@ -378,7 +379,7 @@ export default function TransactionDetail() {
         }
       >
         <p className={s.muted} style={{ fontSize: 13, marginBottom: 12 }}>
-          A liberação fica congelada. As duas partes podem se manifestar e a decisão é sempre de uma pessoa da equipe TemPix.
+          A liberação fica congelada. As duas partes podem se manifestar e a decisão é sempre de uma pessoa da equipe {name}.
         </p>
         <Field label="Motivo">{(a) => <Textarea {...a} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} />}</Field>
       </Dialog>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Save } from 'lucide-react';
 import { BR_STATES, INDUSTRY_SUGGESTIONS, formatCnpj, onlyDigits } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
-import { Button, ErrorState, Field, Input, Select, SkeletonCard, TagInput, Textarea, useApi } from '@autopix/ui';
+import { Button, ErrorState, Field, Input, Select, SkeletonCard, TagInput, Textarea, useApi, useBrand } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { CompanyCard } from '../../components/cards/Cards.jsx';
 import s from './app.module.css';
@@ -35,6 +35,7 @@ function Money({ value, onChange, ...rest }) {
 }
 
 export default function Company() {
+  const { name } = useBrand();
   const toast = useToast();
   const { data, error, reload, setData } = useApi('/api/company');
   const [form, setForm] = useState(null);
@@ -42,8 +43,8 @@ export default function Company() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    document.title = 'Empresa — TemPix';
-  }, []);
+    document.title = `Empresa — ${name}`;
+  }, [name]);
   useEffect(() => {
     if (data?.company) setForm(toForm(data.company));
   }, [data?.company]);

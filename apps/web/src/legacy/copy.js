@@ -59,7 +59,21 @@ export const COPY = {
 
 /** Página inicial: o preço fala dos dois cadastros. */
 export const LANDING = {
+  title: 'TemPix — Tem emprego, tem rota, tem serviço',
   priceLead: (fee) =>
     `Profissional entra grátis. Empresa paga só um cadastro, uma única vez. Depois, o TemPix só ganha quando você ganha: ${fee} dos valores intermediados com sucesso.`,
   finalSub: 'Profissional entra grátis · empresa paga só o cadastro, uma vez · sem mensalidade',
+  finalSlogan: { lead: 'Tem emprego, tem rota, tem serviço. ', accent: 'TemPix.' },
+  footerLine: 'TemPix. Tem emprego, tem rota, tem serviço.',
+  disclaimer: null,
+  products: { payment: 'TemPix Pay', maritime: 'TemPix Marítimo' },
+};
+
+/** Frases das telas compartilhadas que citam o módulo de pagamentos: o legado mantém o texto de sempre. */
+export const PAGES = {
+  intermediation: { payments: { before: 'Pagamentos seguem pelo ', label: 'TemPix Pay', after: '.' } },
+  workforce: {
+    hiringFeeNote: ' A taxa é aplicada no TemPix Pay após a conclusão confirmada.',
+    feeRule: 'Informe o salário mensal acordado. A taxa de 2% será aplicada ao valor intermediado com sucesso pelo TemPix Pay. Registrar o acordo não gera cobrança.',
+  },
 };

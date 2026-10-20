@@ -1,20 +1,21 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { formatRange } from '@autopix/shared';
-import { BRLText, DemoBadge, EmptyState, ErrorState, MiniRadar, Skeleton, useApi, useIsMobile } from '@autopix/ui';
+import { BRLText, DemoBadge, EmptyState, ErrorState, MiniRadar, Skeleton, useApi, useBrand, useIsMobile } from '@autopix/ui';
 import { compactBRL } from '../../lib/time.js';
 import LazyRadar from '../../components/radar/LazyRadar.jsx';
 import s from './app.module.css';
 
 export default function RadarPage() {
+  const { name } = useBrand();
   const navigate = useNavigate();
   const mobile = useIsMobile();
   const { demoMode, me } = useOutletContext();
   const { data, error, reload } = useApi('/api/opportunities?sort=score&pageSize=12');
 
   useEffect(() => {
-    document.title = 'Radar — TemPix';
-  }, []);
+    document.title = `Radar — ${name}`;
+  }, [name]);
 
   const nodes = useMemo(
     () =>

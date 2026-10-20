@@ -3,6 +3,7 @@
 // A cópia da outra área está em ../cpf/copy.js e nunca entra neste build.
 import { NOTIFICATION_CATEGORIES, NOTIFICATION_CATEGORY_LABELS, formatDocument } from '@autopix/shared';
 import { opportunityLink } from '../../lib/opportunityLink.js';
+import { AREA_NAME } from '@autopix/areas/brand/cnpj';
 
 export const COPY = {
   login: {
@@ -36,7 +37,7 @@ export const COPY = {
     eventLink: opportunityLink,
   },
   social: {
-    emptyNote: 'Depois que o cliente confirmar a conclusão de um serviço no TemPix Pay, você poderá compartilhar sua opinião e uma foto. Também vale para contratos do seu histórico.',
+    emptyNote: 'Depois que o cliente confirmar a conclusão de um serviço pela tela de Pagamentos, você poderá compartilhar sua opinião e uma foto. Também vale para contratos do seu histórico.',
     emptyAction: { to: '/app/pay', label: 'Ver meus contratos' },
   },
   confirm: {
@@ -59,7 +60,21 @@ export const COPY = {
 
 /** Página inicial da área de empresas: só o cadastro de empresa, uma vez, sem mensalidade. */
 export const LANDING = {
+  title: `${AREA_NAME} — Tem cliente, tem carga, tem serviço`,
   priceLead: (fee) =>
-    `Sua empresa paga só um cadastro, uma única vez. Depois, o TemPix só ganha quando você ganha: ${fee} dos valores intermediados com sucesso.`,
+    `Sua empresa paga só um cadastro, uma única vez. Depois, o ${AREA_NAME} só ganha quando você ganha: ${fee} dos valores intermediados com sucesso.`,
   finalSub: 'Empresa paga só o cadastro, uma vez · sem mensalidade',
+  finalSlogan: { lead: 'Tem cliente, tem carga, tem serviço. ', accent: 'Tem CNPJ.' },
+  footerLine: `${AREA_NAME}. Tem cliente, tem carga, tem serviço.`,
+  disclaimer: 'Tem CNPJ não tem vínculo com a Receita Federal.',
+  products: { payment: 'Pagamentos', maritime: 'Marítimo' },
+};
+
+/** Frases de telas que as duas áreas dividem e que citam o módulo de pagamentos (a tela recebe esta cópia). */
+export const PAGES = {
+  intermediation: { payments: { before: 'Os pagamentos seguem pela tela de ', label: 'Pagamentos', after: '.' } },
+  workforce: {
+    hiringFeeNote: ' A taxa é aplicada na tela de Pagamentos após a conclusão confirmada.',
+    feeRule: 'Informe o salário mensal acordado. A taxa de 2% será aplicada ao valor intermediado com sucesso pela tela de Pagamentos. Registrar o acordo não gera cobrança.',
+  },
 };

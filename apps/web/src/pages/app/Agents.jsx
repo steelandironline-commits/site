@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Pause, Play } from 'lucide-react';
 import { executeAction } from '../../lib/actions.js';
-import { Badge, Button, EmptyState, ErrorState, SkeletonCard, useApi } from '@autopix/ui';
+import { Badge, Button, EmptyState, ErrorState, SkeletonCard, useApi, useBrand } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, formatDuration, relative } from '../../lib/time.js';
 import { AgentCard } from '../../components/cards/Cards.jsx';
@@ -20,6 +20,7 @@ function metricsText(m) {
 }
 
 export default function Agents() {
+  const { name } = useBrand();
   const { stream, me } = useOutletContext();
   const toast = useToast();
   const agents = useApi('/api/agents');
@@ -28,8 +29,8 @@ export default function Agents() {
   const active = me.subscription?.status === 'ACTIVE';
 
   useEffect(() => {
-    document.title = 'Agentes — TemPix';
-  }, []);
+    document.title = `Agentes — ${name}`;
+  }, [name]);
 
   useEffect(() => {
     if (!stream.latest) return undefined;

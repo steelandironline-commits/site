@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Boxes, ClipboardList, FileSignature, Handshake, Inbox, Network, PackageSearch, Send, ShieldCheck, ShoppingCart, Store } from 'lucide-react';
-import { Badge, Button, EmptyState, ErrorState, SkeletonCard, useApi } from '@autopix/ui';
+import { Badge, Button, EmptyState, ErrorState, SkeletonCard, useApi, useBrand } from '@autopix/ui';
 import { CapabilityList, CompletenessMeter } from '../onboarding/operations/ProfileOverview.jsx';
 import s from './app.module.css';
 import x from './ops.module.css';
@@ -53,12 +53,13 @@ function MatchList({ title, icon: Icon, items, empty }) {
   );
 }
 
-export default function Intermediation() {
+export default function Intermediation({ copy }) {
   const { data, error, reload } = useApi('/api/intermediation');
+  const { name } = useBrand();
 
   useEffect(() => {
-    document.title = 'Intermediação — TemPix';
-  }, []);
+    document.title = `Intermediação — ${name}`;
+  }, [name]);
 
   if (error) return <ErrorState message={error.message} onRetry={reload} />;
   if (!data) return <SkeletonCard lines={6} />;
@@ -69,7 +70,7 @@ export default function Intermediation() {
       <header className={s.pageHead}>
         <div>
           <h1 className={s.pageTitle}>Intermediação</h1>
-          <p className={s.pageSub}>Quem precisa encontra quem fornece. Quem fornece encontra quem precisa. O TemPix faz a ponte.</p>
+          <p className={s.pageSub}>Quem precisa encontra quem fornece. Quem fornece encontra quem precisa. O {name} faz a ponte.</p>
         </div>
         <Button to="/app/operacao" variant="outline" icon={ClipboardList}>
           Perfil operacional
@@ -79,7 +80,7 @@ export default function Intermediation() {
       {!data.hasProfile && (
         <EmptyState
           title="Complete seu perfil operacional"
-          message="Conte o que sua empresa faz, quais equipamentos possui e o que precisa contratar. A partir disso o TemPix encontra compradores e fornecedores compatíveis."
+          message={`Conte o que sua empresa faz, quais equipamentos possui e o que precisa contratar. A partir disso o ${name} encontra compradores e fornecedores compatíveis.`}
           action={
             <Button to="/app/operacao" iconRight={ArrowRight}>
               Completar perfil
@@ -112,8 +113,7 @@ export default function Intermediation() {
           ))}
         </ol>
         <p className={x.note}>
-          <ShieldCheck size={13} style={{ verticalAlign: -2 }} aria-hidden="true" /> Os dados das empresas ficam protegidos: a aproximação, a cotação e o contrato acontecem pelo TemPix.
-          Pagamentos seguem pelo <Link to="/app/pay">TemPix Pay</Link>.
+          <ShieldCheck size={13} style={{ verticalAlign: -2 }} aria-hidden="true" /> Os dados das empresas ficam protegidos: a aproximação, a cotação e o contrato acontecem pelo {name}. {copy.payments.before}<Link to="/app/pay">{copy.payments.label}</Link>{copy.payments.after}
         </p>
       </section>
 

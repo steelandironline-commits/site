@@ -3,7 +3,7 @@ import { Link, useLocation, useOutletContext, useParams } from 'react-router-dom
 import { ArrowLeft, Building2, Check, Copy, ExternalLink, Globe, Mail, MapPin, Phone, RefreshCw, ShieldCheck } from 'lucide-react';
 import { OPPORTUNITY_STATUSES, OPPORTUNITY_STATUS_LABELS, formatRange } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
-import { BRLText, Button, DemoBadge, ErrorState, Field, ScoreRing, Select, SkeletonCard, Textarea, useApi } from '@autopix/ui';
+import { BRLText, Button, DemoBadge, ErrorState, Field, ScoreRing, Select, SkeletonCard, Textarea, useApi, useBrand } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
 import { PriorityBadge, SignalCard, StatusBadge } from '../../components/cards/Cards.jsx';
@@ -19,6 +19,7 @@ const BREAKDOWN = [
 const SOURCE_LABELS = { DEMO: 'Fonte DEMO', SEARCH: 'Busca web', WEBSITE: 'Website', NEWS: 'Notícia', PUBLIC_REGISTRY: 'Cadastro público' };
 
 export default function OpportunityDetail() {
+  const { name } = useBrand();
   const { id } = useParams();
   const { hash } = useLocation();
   const { stream } = useOutletContext();
@@ -30,7 +31,7 @@ export default function OpportunityDetail() {
 
   useEffect(() => {
     if (o) {
-      document.title = `${o.targetCompanyName} — TemPix`;
+      document.title = `${o.targetCompanyName} — ${name}`;
       setNotes(o.notes || '');
     }
   }, [o?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -162,7 +163,7 @@ export default function OpportunityDetail() {
 
           <section className={`${s.panel} ${s.panelPad}`} aria-labelledby="why">
             <h2 id="why" className="eyebrow" style={{ marginBottom: 12 }}>
-              Por que o TemPix selecionou
+              Por que o {name} selecionou
             </h2>
             <ul className={s.reasons}>
               {o.reasons.map((r) => (

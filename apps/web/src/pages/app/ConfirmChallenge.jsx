@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ShieldCheck, X } from 'lucide-react';
-import { Badge, Button, ErrorState, Field, Input, PasswordInput, SkeletonCard, post, useApi } from '@autopix/ui';
+import { Badge, Button, ErrorState, Field, Input, PasswordInput, SkeletonCard, post, useApi, useBrand } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
 import s from './app.module.css';
@@ -15,6 +15,7 @@ const STATUS = { PENDING: ['amber', 'Aguardando'], CONFIRMED: ['primary', 'Confi
  */
 /** `copy.afterConfirm(result)`: para onde ir depois de confirmar (cada área sabe quais telas tem). */
 export default function ConfirmChallenge({ copy }) {
+  const { name } = useBrand();
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -26,8 +27,8 @@ export default function ConfirmChallenge({ copy }) {
   const c = data?.challenge;
 
   useEffect(() => {
-    document.title = 'Confirmar ação — TemPix';
-  }, []);
+    document.title = `Confirmar ação — ${name}`;
+  }, [name]);
 
   const confirm = async (e) => {
     e.preventDefault();

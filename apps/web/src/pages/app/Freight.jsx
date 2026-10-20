@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, MapPin, Search, Truck, X } from 'lucide-react';
 import { formatBRL } from '@autopix/shared';
-import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard, useApi } from '@autopix/ui';
+import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard, useApi, useBrand } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { fmtDate, relative } from '../../lib/time.js';
 import s from './app.module.css';
@@ -34,14 +34,15 @@ function MatchRow({ m }) {
 }
 
 export default function Freight() {
+  const { name } = useBrand();
   const { data, error, reload } = useApi('/api/freight');
   const { run, busy } = useAction();
   const { stream } = useOutletContext();
   const [form, setForm] = useState({ origin: '', destination: '', date: '' });
 
   useEffect(() => {
-    document.title = 'Cargas — TemPix';
-  }, []);
+    document.title = `Cargas — ${name}`;
+  }, [name]);
   useEffect(() => {
     if (stream.latest?.source === 'Freight' || /Carga/.test(stream.latest?.title || '')) reload();
   }, [stream.latest, reload]);

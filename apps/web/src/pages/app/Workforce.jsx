@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarClock, Check, Send, Star, UserPlus, Users, X } from 'lucide-react';
-import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard, useApi } from '@autopix/ui';
+import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard, useApi, useBrand } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { fmtDate } from '../../lib/time.js';
 import s from './app.module.css';
@@ -15,14 +15,15 @@ const moneyToCents = (value) => {
 };
 
 export default function Workforce() {
+  const { name } = useBrand();
   const { data, error, reload } = useApi('/api/workforce');
   const { run, busy } = useAction();
   const { stream } = useOutletContext();
   const [form, setForm] = useState({ role: '', quantity: '1', startDate: '' });
 
   useEffect(() => {
-    document.title = 'Equipes — TemPix';
-  }, []);
+    document.title = `Equipes — ${name}`;
+  }, [name]);
   useEffect(() => {
     if (stream.latest?.source === 'Workforce' || /Profissional/.test(stream.latest?.title || '')) reload();
   }, [stream.latest, reload]);
@@ -116,7 +117,7 @@ export default function Workforce() {
   );
 }
 
-export function WorkforceMatchDetail() {
+export function WorkforceMatchDetail({ copy }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, error, setData } = useApi(`/api/workforce/matches/${id}`);
@@ -251,14 +252,14 @@ export function WorkforceMatchDetail() {
               <>
                 <p className={s.muted} style={{ marginTop: 8 }}>
                   <BRLText>Salário acordado: R$ {(m.agreedSalaryCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Intermediação de 2% após conclusão: R$ {(hiringFeeCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.</BRLText>
-                  {!m.hiringFeePaidAt && <> A taxa é aplicada no TemPix Pay após a conclusão confirmada.</>}
+                  {!m.hiringFeePaidAt && <>{copy.hiringFeeNote}</>}
                 </p>
                 {!m.hiringFeePaidAt && m.hiringPayment?.id && <Button variant="ghost" to={`/app/payments/${m.hiringPayment.id}`} style={{ marginTop: 12 }}>Ver Pix da contratação</Button>}
               </>
             ) : (
               <form onSubmit={hire} noValidate>
                 <p className={s.muted} style={{ margin: '8px 0 14px', fontSize: 13 }}>
-                  Informe o salário mensal acordado. A taxa de 2% será aplicada ao valor intermediado com sucesso pelo TemPix Pay. Registrar o acordo não gera cobrança.
+                  {copy.feeRule}
                 </p>
                 <div className={s.formGrid}>
                   <Field label="Salário acordado (R$)" hint="De R$ 1,00 a R$ 1.000.000,00">

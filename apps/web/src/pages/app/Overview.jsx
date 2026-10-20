@@ -3,7 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { Building2, CircleDollarSign, Play, Radar as RadarIcon, Target } from 'lucide-react';
 import { formatBRL } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
-import { Button, EmptyState, ErrorState, MiniRadar, SkeletonCard, useApi } from '@autopix/ui';
+import { Button, EmptyState, ErrorState, MiniRadar, SkeletonCard, useApi, useBrand } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { greeting, relative } from '../../lib/time.js';
 import { MetricCard, OpportunityCard } from '../../components/cards/Cards.jsx';
@@ -14,6 +14,7 @@ import { useOpportunityActions } from './useOpportunityActions.js';
 import s from './app.module.css';
 
 export default function Overview() {
+  const { name } = useBrand();
   const { stream, me } = useOutletContext();
   const toast = useToast();
   const dash = useApi('/api/dashboard');
@@ -23,8 +24,8 @@ export default function Overview() {
   const active = me.subscription?.status === 'ACTIVE';
 
   useEffect(() => {
-    document.title = 'Visão Geral — TemPix';
-  }, []);
+    document.title = `Visão Geral — ${name}`;
+  }, [name]);
 
   // Refresh metrics when the agents create something.
   const latest = stream.latest;
@@ -62,7 +63,7 @@ export default function Overview() {
             {greeting()}, {firstName}.
           </h1>
           <p className={s.pageSub}>
-            {active ? 'Seu TemPix está procurando oportunidades.' : 'Seus agentes estão pausados. Veja o seu plano para retomar.'}
+            {active ? `Seu ${name} está procurando oportunidades.` :'Seus agentes estão pausados. Veja o seu plano para retomar.'}
             {job && (
               <span className={s.muted}>
                 {' '}

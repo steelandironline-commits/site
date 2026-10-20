@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MessageCircle, Repeat2, Share2, ShieldCheck, Camera, Trash2 } from 'lucide-react';
 import { TRANSACTION_TYPE_LABELS } from '@autopix/shared';
-import { BRLText, Badge, Button, DemoBadge, ErrorState, Field, Select, SkeletonCard, Textarea, get, useApi } from '@autopix/ui';
+import { BRLText, Badge, Button, DemoBadge, ErrorState, Field, Select, SkeletonCard, Textarea, get, useApi, useBrand } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
@@ -96,13 +96,14 @@ function Post({ post, onChange }) {
 
 /** `copy`: { emptyNote, emptyAction } (texto do estado vazio e, se a área tem, o botão que leva aos contratos). */
 export default function Social({ copy }) {
+  const { name } = useBrand();
   const [params, setParams] = useSearchParams();
   const requested = params.get('transaction');
   const feed = useApi('/api/social/posts'), eligible = useApi('/api/social/eligible');
   const toast = useToast(), { run, busy } = useAction();
   const [transactionId, setTransactionId] = useState(requested || ''), [body, setBody] = useState(''), [photo, setPhoto] = useState(null), [preparing, setPreparing] = useState(false);
   const [more, setMore] = useState([]), [cursor, setCursor] = useState(undefined), [loadingMore, setLoadingMore] = useState(false);
-  useEffect(() => { document.title = 'Social — TemPix'; }, []);
+  useEffect(() => { document.title = `Social — ${name}`; }, [name]);
   useEffect(() => { setMore([]); setCursor(undefined); }, [feed.data]);
   useEffect(() => { if (requested) setTransactionId(requested); }, [requested]);
   const contracts = eligible.data?.items || [];
@@ -127,7 +128,7 @@ export default function Social({ copy }) {
           }} />}</Field>
           {preparing && <p role="status" className={s.note}>Preparando foto…</p>}
           {photo && <><img src={photo} className={s.preview} alt="Prévia da foto que será publicada" /><Button size="sm" variant="ghost" onClick={() => setPhoto(null)}>Remover foto</Button></>}
-          <p className={s.note}>Ao publicar, sua opinião, seu nome e a foto ficarão visíveis à comunidade TemPix. Valor, dados do cliente e detalhes privados do contrato permanecem protegidos.</p>
+          <p className={s.note}>Ao publicar, sua opinião, seu nome e a foto ficarão visíveis à comunidade {name}. Valor, dados do cliente e detalhes privados do contrato permanecem protegidos.</p>
           <Button icon={Share2} disabled={!selected || !body.trim() || preparing} loading={busy === 'PUBLISH_SOCIAL_POST'} onClick={publish}>Compartilhar minha opinião</Button>
         </> : <div className={s.empty}><Camera size={28} /><p>Suas próximas entregas merecem aparecer aqui.</p><p className={s.note}>{requested ? 'Este contrato já foi publicado ou ainda não está disponível. ' : ''}{copy.emptyNote}</p>{copy.emptyAction && <Button to={copy.emptyAction.to} variant="secondary">{copy.emptyAction.label}</Button>}</div>}
       </section>

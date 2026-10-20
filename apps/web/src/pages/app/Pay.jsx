@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Clock, Hourglass, Landmark, Plus, QrCode, ShieldCheck, Wallet } from 'lucide-react';
 import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, formatCents } from '@autopix/shared';
-import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, LogoMark, Select, SkeletonCard, api, useApi } from '@autopix/ui';
+import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, LogoMark, Select, SkeletonCard, api, useApi, useBrand } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { fmtDateTime } from '../../lib/time.js';
 import { MetricCard } from '../../components/cards/Cards.jsx';
@@ -37,6 +37,7 @@ export function PartnerNote({ caps, sandbox }) {
 }
 
 function NewCharge({ onCreated, reference, caps }) {
+  const { name } = useBrand();
   const { run, busy } = useAction();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -76,7 +77,7 @@ function NewCharge({ onCreated, reference, caps }) {
     );
     const t = created?.result?.transaction;
     if (!t) return;
-    await run('CREATE_TRANSACTION_PIX', { id: t.id }, { success: 'Cobrança TemPix criada.', key: 'create' });
+    await run('CREATE_TRANSACTION_PIX', { id: t.id }, { success: `Cobrança ${name} criada.`, key: 'create' });
     onCreated(t);
   };
 
@@ -107,7 +108,7 @@ function NewCharge({ onCreated, reference, caps }) {
         <Field label="Descrição" optional>
           {(a) => <Input {...a} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={140} />}
         </Field>
-        <Field label="E-mail do cliente" optional hint={caps?.protectedPayment?.enabled ? 'Cliente cadastrado no TemPix habilita o pagamento protegido.' : 'O cliente acompanha a cobrança se tiver conta no TemPix.'}>
+        <Field label="E-mail do cliente" optional hint={caps?.protectedPayment?.enabled ? `Cliente cadastrado no ${name} habilita o pagamento protegido.` : `O cliente acompanha a cobrança se tiver conta no ${name}.`}>
           {(a) => <Input {...a} type="email" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} maxLength={254} />}
         </Field>
         <Field label="Nome do cliente" optional>
@@ -217,6 +218,7 @@ function PaySettings({ caps }) {
 }
 
 export default function Pay() {
+  const { name } = useBrand();
   const navigate = useNavigate();
   const { stream } = useOutletContext();
   const [params, setParams] = useSearchParams();
@@ -228,8 +230,8 @@ export default function Pay() {
   const list = useApi(tab === 'settings' ? null : `/api/pay/transactions?view=${tab}`);
 
   useEffect(() => {
-    document.title = 'Pagamentos — TemPix';
-  }, []);
+    document.title = `Pagamentos — ${name}`;
+  }, [name]);
   useEffect(() => {
     if (stream.latest?.type === 'PAYMENT') {
       summary.reload();

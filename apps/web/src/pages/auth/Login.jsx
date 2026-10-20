@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { AuthShell, Button, Field, FormError, Input, PasswordInput, post, useSession } from '@autopix/ui';
+import { AuthShell, Button, Field, FormError, Input, PasswordInput, post, useBrand, useSession } from '@autopix/ui';
 import s from './authPage.module.css';
 
 /**
@@ -20,10 +20,11 @@ export default function Login({ copy }) {
   const [error, setError] = useState(params.get('expired') || expired ? 'Sua sessão expirou. Entre novamente.' : null);
   const [loading, setLoading] = useState(false);
   const next = params.get('next')?.startsWith('/app') ? params.get('next') : '/app';
+  const { name } = useBrand();
 
   useEffect(() => {
-    document.title = 'Entrar — TemPix';
-  }, []);
+    document.title = `Entrar — ${name}`;
+  }, [name]);
   useEffect(() => {
     if (!sessionLoading && isAuthenticated) navigate(next, { replace: true });
   }, [sessionLoading, isAuthenticated, navigate, next]);
@@ -67,7 +68,7 @@ export default function Login({ copy }) {
 
   return (
     <AuthShell
-      title="Entrar no TemPix"
+      title={`Entrar no ${name}`}
       subtitle={copy.subtitle}
       footer={
         <>

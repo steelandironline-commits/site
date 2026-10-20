@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { LayoutGrid, List, Search } from 'lucide-react';
-import { Button, EmptyState, ErrorState, Input, MiniRadar, Select, SkeletonCard, get, useDebounced } from '@autopix/ui';
+import { Button, EmptyState, ErrorState, Input, MiniRadar, Select, SkeletonCard, get, useBrand, useDebounced } from '@autopix/ui';
 import { OpportunityCard } from '../../components/cards/Cards.jsx';
 import { useOpportunityActions } from './useOpportunityActions.js';
 import s from './app.module.css';
@@ -24,6 +24,7 @@ const FILTERS = [
 const PAGE_SIZE = 24;
 
 export default function Opportunities() {
+  const { name } = useBrand();
   const [params, setParams] = useSearchParams();
   const filter = params.get('f') || 'all';
   const sort = params.get('sort') || 'recent';
@@ -60,8 +61,8 @@ export default function Opportunities() {
   );
 
   useEffect(() => {
-    document.title = 'Oportunidades — TemPix';
-  }, []);
+    document.title = `Oportunidades — ${name}`;
+  }, [name]);
   useEffect(() => {
     load(1);
   }, [load]);

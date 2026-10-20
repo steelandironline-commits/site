@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton, get, post } from '@autopix/ui';
+import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton, get, post, useBrand } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import s from './authPage.module.css';
 
@@ -16,8 +16,12 @@ export default function ResetPassword() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const { name } = useBrand();
+
   useEffect(() => {
-    document.title = 'Nova senha — TemPix';
+    document.title = `Nova senha — ${name}`;
+  }, [name]);
+  useEffect(() => {
     get(`/api/auth/reset-password/${encodeURIComponent(token)}`)
       .then(setInfo)
       .catch((err) => setInvalid(err.message));

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, Check, QrCode, ShieldCheck } from 'lucide-react';
 import { COMMISSION_PLAN_CODE, PLAN, PRICING, SUBSCRIPTION_STATUS_LABELS, formatCents } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
-import { BRLText, Badge, Button, Dialog, EmptyState, ErrorState, SkeletonCard, useApi, useSession } from '@autopix/ui';
+import { BRLText, Badge, Button, Dialog, EmptyState, ErrorState, SkeletonCard, useApi, useBrand, useSession } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDate } from '../../lib/time.js';
 import { PaymentCard } from '../../components/cards/Cards.jsx';
@@ -15,6 +15,7 @@ const TONE = { ACTIVE: 'primary', PENDING: 'amber', PAST_DUE: 'amber', CANCELED:
  * seus (a tela não sabe se a conta é de empresa ou de pessoa).
  */
 export default function Subscription({ features, gold = false }) {
+  const { name } = useBrand();
   const toast = useToast();
   const { refresh } = useSession();
   const sub = useApi('/api/subscription');
@@ -23,8 +24,8 @@ export default function Subscription({ features, gold = false }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    document.title = 'Plano — TemPix';
-  }, []);
+    document.title = `Plano — ${name}`;
+  }, [name]);
 
   const act = async (action, message) => {
     setBusy(true);
@@ -62,7 +63,7 @@ export default function Subscription({ features, gold = false }) {
           <section className={s.planCard} aria-labelledby="plan">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
               <h2 id="plan" className="mono" style={{ letterSpacing: '0.2em', fontSize: 16 }}>
-                TEMPIX
+                {name.toUpperCase()}
               </h2>
               {data && (
                 <Badge tone={TONE[data.status]} dot pulse={data.status === 'ACTIVE'}>
@@ -95,7 +96,7 @@ export default function Subscription({ features, gold = false }) {
             {data?.cancelAtPeriodEnd && (
               <div className={s.notice} style={{ marginTop: 16 }}>
                 <AlertTriangle size={15} aria-hidden="true" />
-                <span>Cancelamento agendado. Seu TemPix continua ativo até {fmtDate(data.currentPeriodEnd)}.</span>
+                <span>Cancelamento agendado. Seu {name} continua ativo até {fmtDate(data.currentPeriodEnd)}.</span>
               </div>
             )}
             {data && ['PAST_DUE', 'CANCELED', 'EXPIRED'].includes(data.status) && (
@@ -170,7 +171,7 @@ export default function Subscription({ features, gold = false }) {
           </>
         }
       >
-        Seu TemPix continua ativo até {fmtDate(data?.currentPeriodEnd)}. Depois disso, os agentes são pausados e nenhuma nova cobrança é gerada.
+        Seu {name} continua ativo até {fmtDate(data?.currentPeriodEnd)}. Depois disso, os agentes são pausados e nenhuma nova cobrança é gerada.
       </Dialog>
     </>
   );
@@ -178,6 +179,7 @@ export default function Subscription({ features, gold = false }) {
 
 /** TemPix has no subscription: signup is free and the fee is a share of each contract. */
 function CommissionPlan({ features, gold }) {
+  const { name } = useBrand();
   const fee = PRICING.commissionLabel;
   return (
     <>
@@ -191,7 +193,7 @@ function CommissionPlan({ features, gold }) {
         <section className={`${s.planCard} ${gold ? `${s.planGold} gold-icons` : ''}`} aria-labelledby="plan">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <h2 id="plan" className="mono" style={{ letterSpacing: '0.2em', fontSize: 16 }}>
-              TEMPIX
+              {name.toUpperCase()}
             </h2>
             <Badge tone="primary" dot pulse>
               Ativo
@@ -222,7 +224,7 @@ function CommissionPlan({ features, gold }) {
             quando a conclusão é confirmada. Chegada por GPS ou mensagem de WhatsApp sozinhas não liberam dinheiro.
           </p>
           <p className={s.pageSub}>
-            <BRLText>Exemplo: contrato de R$ 10.000,00 → taxa TemPix de R$ 500,00 ({fee}) e R$ 9.500,00 para quem executou.</BRLText>
+            <BRLText>{`Exemplo: contrato de R$ 10.000,00 → taxa ${name} de R$ 500,00 (${fee}) e R$ 9.500,00 para quem executou.`}</BRLText>
           </p>
         </section>
       </div>

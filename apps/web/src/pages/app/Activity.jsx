@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search } from 'lucide-react';
-import { Badge, Button, EmptyState, ErrorState, Input, MiniRadar, Skeleton, get, useDebounced } from '@autopix/ui';
+import { Badge, Button, EmptyState, ErrorState, Input, MiniRadar, Skeleton, get, useBrand, useDebounced } from '@autopix/ui';
 import { fmtDay } from '../../lib/time.js';
 import { ActivityCard } from '../../components/activity/ActivityCard.jsx';
 import s from './app.module.css';
 
 /** `copy`: { subtitle, empty, filters, eventLink } (os filtros são [{ key, label }]; a chave vazia é "tudo"; eventLink(evento) é a página que o evento abre, se houver). */
 export default function Activity({ copy }) {
+  const { name } = useBrand();
   const { stream } = useOutletContext();
   const [type, setType] = useState('');
   const [q, setQ] = useState('');
@@ -16,8 +17,8 @@ export default function Activity({ copy }) {
   const [state, setState] = useState({ items: [], hasMore: false, loading: true, error: null });
 
   useEffect(() => {
-    document.title = 'Atividade — TemPix';
-  }, []);
+    document.title = `Atividade — ${name}`;
+  }, [name]);
 
   const load = useCallback(
     async (before) => {

@@ -11,6 +11,7 @@ import {
   SkeletonCard,
   safeStorage,
   useActivityStream,
+  useBrand,
   useInstallPrompt,
   useIsMobile,
   useServiceWorkerUpdate,
@@ -19,6 +20,7 @@ import {
 import s from './app.module.css';
 
 function InstallBanner() {
+  const { name } = useBrand();
   const install = useInstallPrompt();
   const storage = safeStorage();
   const [dismissed, setDismissed] = useState(() => storage?.getItem('autopix:install-dismissed') === '1');
@@ -34,7 +36,7 @@ function InstallBanner() {
   return (
     <div className={s.banner} role="region" aria-label="Instalar aplicativo">
       <Download size={16} aria-hidden="true" />
-      <p>{install.canPrompt ? 'Instale o TemPix para usar em tela cheia.' : 'No Safari: Compartilhar → Adicionar à Tela de Início.'}</p>
+      <p>{install.canPrompt ? `Instale o ${name} para usar em tela cheia.` : 'No Safari: Compartilhar → Adicionar à Tela de Início.'}</p>
       {install.canPrompt && (
         <Button size="sm" onClick={() => install.prompt().then(close)}>
           Instalar
@@ -48,12 +50,13 @@ function InstallBanner() {
 }
 
 function UpdatePrompt() {
+  const { name } = useBrand();
   const update = useServiceWorkerUpdate();
   if (!update.available) return null;
   return (
     <div className={s.banner} role="status">
       <RefreshCw size={16} aria-hidden="true" />
-      <p>Nova versão do TemPix disponível.</p>
+      <p>Nova versão do {name} disponível.</p>
       <Button size="sm" onClick={update.apply}>
         Atualizar
       </Button>
@@ -62,11 +65,12 @@ function UpdatePrompt() {
 }
 
 function GlobalState({ subscription }) {
+  const { name } = useBrand();
   const active = subscription?.status === 'ACTIVE';
   return (
     <span className={`${s.globalState} ${active ? s.globalActive : s.globalPaused}`} role="status">
       <span className={s.globalDot} aria-hidden="true" />
-      {active ? 'TEMPIX ATIVO' : `TEMPIX PAUSADO · ${SUBSCRIPTION_STATUS_LABELS[subscription?.status] || 'conta inativa'}`}
+      {active ? `${name.toUpperCase()} ATIVO` : `${name.toUpperCase()} PAUSADO · ${SUBSCRIPTION_STATUS_LABELS[subscription?.status] || 'conta inativa'}`}
     </span>
   );
 }
@@ -94,6 +98,7 @@ function PageFallback() {
  *   copy        { offline } the paragraph of the offline screen
  */
 export default function AppLayout({ nav, back = [], onboardingTo, copy }) {
+  const { name } = useBrand();
   const { loading, me, isAuthenticated, demoMode, logout, offline, refresh } = useSession();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -141,7 +146,7 @@ export default function AppLayout({ nav, back = [], onboardingTo, copy }) {
         Pular para o conteúdo
       </a>
       <aside className={s.sidebar} aria-label="Navegação do painel">
-        <Link to="/app" className={s.sideLogo} aria-label="TemPix — visão geral">
+        <Link to="/app" className={s.sideLogo} aria-label={`${name} — visão geral`}>
           <Logo />
         </Link>
         <nav className={s.sideNav}>
@@ -176,7 +181,7 @@ export default function AppLayout({ nav, back = [], onboardingTo, copy }) {
                 <ArrowLeft size={18} /> <span>{backRow[2]}</span>
               </Link>
             ) : (
-              <Link to="/app" className={s.topLogo} aria-label="TemPix">
+              <Link to="/app" className={s.topLogo} aria-label={name}>
                 <Logo compact />
               </Link>
             );
