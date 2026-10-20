@@ -1,0 +1,18 @@
+{
+  "name": "@autopix/areas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./areas": "./src/areas.js",
+    "./urls": "./src/urls.js",
+    "./manifest": "./src/manifest.js",
+    "./brand/platform": "./src/brand/platform.js",
+    "./brand/cnpj": "./src/brand/cnpj.js",
+    "./brand/cpf": "./src/brand/cpf.js"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}
