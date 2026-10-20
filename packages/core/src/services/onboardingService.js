@@ -3,6 +3,8 @@ import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { hashToken } from '../security/tokens.js';
 import { badRequest, conflict, gone, unavailable } from '../errors.js';
+import { accountTypeForHost } from '../security/area.js';
+import { areaOf } from '@autopix/areas/areas';
 import { AuthService } from './authService.js';
 import { pickCompanyFields } from './companyService.js';
 
@@ -20,6 +22,11 @@ const DRAFT_TTL_MS = 60 * 60 * 1000;
  */
 const PAYMENT_GRACE_MS = 30 * 60 * 1000;
 
+/** Area mode: a signup the host does not take. Generic on purpose; it never names the other area. */
+const WRONG_SIGNUP_MESSAGE = 'Não foi possível iniciar o cadastro. Confira os dados e tente novamente.';
+/** Area mode: an unpaid draft of the other area holds the e-mail. Says nothing about which area. */
+const DRAFT_IN_PROGRESS_MESSAGE = 'Já existe um cadastro em andamento com este e-mail. Use outro e-mail ou tente novamente mais tarde.';
+
 export class OnboardingService {
   constructor({ prisma = getPrisma(), config = getConfig(), email } = {}) {
     this.prisma = prisma;
@@ -28,13 +35,32 @@ export class OnboardingService {
     this.auth = new AuthService({ prisma, config, email });
   }
 
+  /**
+   * Area mode (ARQUITETURA 6.2): the host sets the account type, CNPJ -> COMPANY and CPF -> PERSON.
+   * A body that declares another type is a generic 400 (checked before the schema, so the
+   * field errors never speak of the other area); a body that leaves it out gets the host's.
+   * Legacy mode: the body is returned untouched.
+   */
+  applyHostAccountType(body, hostArea) {
+    if (!this.config.areas?.enabled) return body;
+    const hostType = accountTypeForHost(hostArea);
+    const declared = body?.accountType;
+    if (!hostType || (declared !== undefined && declared !== hostType)) throw badRequest(WRONG_SIGNUP_MESSAGE);
+    return { ...body, accountType: hostType };
+  }
+
+  #assertHostAccountType(accountType, hostArea) {
+    if (this.config.areas?.enabled && accountType !== accountTypeForHost(hostArea)) throw badRequest(WRONG_SIGNUP_MESSAGE);
+  }
+
   async start({ name, email, companyName, accountType = 'COMPANY', document }, meta = {}) {
+    this.#assertHostAccountType(accountType, meta.hostArea);
     // A professional's account is named after the person.
     const accountName = accountType === 'PERSON' ? name : companyName;
     const loginId = document; // CNPJ (company) or CPF (person), digits only
     const { sessionUserId = null, ...sessionMeta } = meta;
     await this.#purgeExpiredDrafts();
-    const { existing, taken } = await this.#availability({ email, accountType, loginId, sessionUserId });
+    const { existing, taken } = await this.#availability({ email, accountType, loginId, hostArea: meta.hostArea });
     if (taken.email) throw conflict(taken.email, { field: 'email' });
     if (taken.document) throw conflict(taken.document, { field: 'document' });
     const pendingExpiresAt = new Date(Date.now() + DRAFT_TTL_MS);
@@ -62,9 +88,10 @@ export class OnboardingService {
   }
 
   /** First signup step: which of the e-mail and the CNPJ/CPF already have an account (message per field). */
-  async check({ email, accountType, document }, { sessionUserId = null } = {}) {
+  async check({ email, accountType, document }, meta = {}) {
+    this.#assertHostAccountType(accountType, meta.hostArea);
     await this.#purgeExpiredDrafts();
-    const { taken } = await this.#availability({ email, accountType, loginId: document, sessionUserId });
+    const { taken } = await this.#availability({ email, accountType, loginId: document, hostArea: meta.hostArea });
     return { available: !taken.email && !taken.document, taken };
   }
 
@@ -72,10 +99,17 @@ export class OnboardingService {
    * One account per e-mail, per CPF and per CNPJ. An unpaid draft holds its CPF/CNPJ
    * until its hour is up; the same e-mail may restart its own draft.
    */
-  async #availability({ email, accountType, loginId, sessionUserId = null }) {
+  async #availability({ email, accountType, loginId, hostArea }) {
     const taken = {};
-    const existing = await this.prisma.user.findUnique({ where: { email } });
-    if (existing && existing.status !== 'PENDING_PAYMENT') {
+    const found = await this.prisma.user.findUnique({ where: { email }, include: { company: { select: { accountType: true } } } });
+    // Area mode: an unpaid draft of the other area is not this host's to restart (restarting would
+    // flip its account type). It is not "the e-mail's own draft": the e-mail is simply held.
+    const otherAreaDraft = Boolean(
+      this.config.areas?.enabled && found?.status === 'PENDING_PAYMENT' && areaOf(found.company.accountType) !== hostArea,
+    );
+    const existing = otherAreaDraft ? null : found;
+    if (otherAreaDraft) taken.email = DRAFT_IN_PROGRESS_MESSAGE;
+    else if (existing && existing.status !== 'PENDING_PAYMENT') {
       taken.email = 'Já existe um cadastro com este e-mail. Use outro e-mail ou entre com a sua conta.';
     }
     const holder = loginId ? await this.prisma.user.findUnique({ where: { loginId } }) : null;

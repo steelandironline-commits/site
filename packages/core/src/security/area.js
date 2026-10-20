@@ -34,6 +34,16 @@ export function acceptedAreas(hostArea, config) {
   return [];
 }
 
+/**
+ * Tipo de conta que o cadastro de um host cria (Q8): CNPJ -> COMPANY, CPF -> PERSON. Host sem
+ * cadastro (ADMIN, sem área) devolve null.
+ */
+export function accountTypeForHost(hostArea) {
+  if (hostArea === 'CNPJ') return 'COMPANY';
+  if (hostArea === 'CPF') return 'PERSON';
+  return null;
+}
+
 /** O host aceita sessões/tokens desta área? No modo legado, sempre. */
 export function hostAccepts(hostArea, area, config) {
   return acceptedAreas(hostArea, config).includes(area);
