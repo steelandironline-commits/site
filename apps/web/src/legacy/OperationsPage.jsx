@@ -6,7 +6,7 @@ import Operations from '../pages/app/Operations.jsx';
 import { COPY } from './copy.js';
 
 // Perfil operacional do build legado: empresa e pessoa lêem /api/company, como sempre.
-const SOURCE = {
+export const SOURCE = {
   path: '/api/company',
   select: (data) => data.company,
   accountType: (company) => company?.accountType || 'COMPANY',

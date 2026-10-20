@@ -29,21 +29,27 @@ function toPayload(f) {
   return out;
 }
 
+/** Carrega o perfil e entrega ao formulário; erro e espera ficam aqui. */
 export default function Profile() {
-  const toast = useToast();
   const { data, error, reload, setData } = useApi('/api/profile');
-  const [form, setForm] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     document.title = 'Meu perfil';
   }, []);
-  useEffect(() => {
-    if (data?.profile) setForm(toForm(data.profile));
-  }, [data?.profile]);
 
-  const dirty = useMemo(() => form && data && JSON.stringify(form) !== JSON.stringify(toForm(data.profile)), [form, data]);
+  if (error) return <ErrorState title="Não foi possível carregar o seu perfil." message={error.message} onRetry={reload} />;
+  if (!data) return <SkeletonCard lines={8} />;
+  return <ProfileForm profile={data.profile} onSaved={(profile) => setData({ profile })} />;
+}
+
+/** O formulário de "Meu perfil": parte do perfil recebido e grava com PUT /api/profile. */
+export function ProfileForm({ profile, onSaved }) {
+  const toast = useToast();
+  const [form, setForm] = useState(() => toForm(profile));
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(toForm(profile)), [form, profile]);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v?.target ? v.target.value : v }));
 
   const submit = async (e) => {
@@ -52,7 +58,8 @@ export default function Profile() {
     setErrors({});
     try {
       const res = await put('/api/profile', toPayload(form));
-      setData({ profile: res.profile });
+      setForm(toForm(res.profile));
+      onSaved(res.profile);
       toast.success('Perfil salvo.');
     } catch (err) {
       setErrors(err.fields || {});
@@ -62,10 +69,6 @@ export default function Profile() {
     }
   };
 
-  if (error) return <ErrorState title="Não foi possível carregar o seu perfil." message={error.message} onRetry={reload} />;
-  if (!form) return <SkeletonCard lines={8} />;
-
-  const profile = data.profile;
   const place = [profile.city, profile.state].filter(Boolean).join(' / ');
 
   return (
@@ -124,7 +127,7 @@ export default function Profile() {
           <div className={s.stickyBar} style={{ margin: 12 }}>
             <p>{dirty ? 'Alterações não salvas.' : 'Tudo salvo.'}</p>
             <div className={s.pageActions}>
-              <Button variant="ghost" disabled={!dirty || saving} onClick={() => setForm(toForm(data.profile))}>
+              <Button variant="ghost" disabled={!dirty || saving} onClick={() => setForm(toForm(profile))}>
                 Descartar
               </Button>
               <Button type="submit" icon={Save} loading={saving} disabled={!dirty}>

@@ -6,7 +6,7 @@ import Operations from '../../pages/app/Operations.jsx';
 import { COPY } from './copy.js';
 
 // Perfil operacional da empresa: lê /api/company e grava pela ação UPDATE_COMPANY_PROFILE.
-const SOURCE = {
+export const SOURCE = {
   path: '/api/company',
   select: (data) => data.company,
   accountType: () => 'COMPANY',

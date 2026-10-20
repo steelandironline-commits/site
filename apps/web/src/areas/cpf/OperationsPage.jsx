@@ -4,7 +4,7 @@ import Operations from '../../pages/app/Operations.jsx';
 import { COPY } from './copy.js';
 
 // Perfil operacional da pessoa: lê e grava só GET/PUT /api/profile. A rota de empresa não existe neste host.
-const SOURCE = {
+export const SOURCE = {
   path: '/api/profile',
   select: (data) => data.profile,
   accountType: () => 'PERSON',
