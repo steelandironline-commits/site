@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:cnpj": "vite --mode cnpj",
+    "dev:cpf": "vite --mode cpf",
     "build": "vite build",
+    "build:cnpj": "vite build --mode cnpj",
+    "build:cpf": "vite build --mode cpf",
+    "build:areas": "npm run build:cnpj && npm run build:cpf",
     "preview": "vite preview",
     "test": "vitest run"
   },

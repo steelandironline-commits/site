@@ -20,7 +20,10 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "concurrently -k -n api,worker,web -c cyan,magenta,green \"npm run dev -w @autopix/api\" \"npm run dev -w @autopix/worker\" \"npm run dev -w @autopix/web\"",
+    "dev:cnpj": "npm run dev:cnpj -w @autopix/web",
+    "dev:cpf": "npm run dev:cpf -w @autopix/web",
     "build": "prisma generate && npm run build -w @autopix/web",
+    "build:areas": "npm run build:areas -w @autopix/web",
     "start": "node apps/api/src/server.js",
     "start:worker": "node apps/worker/src/index.js",
     "test": "npm test -w @autopix/shared -w @autopix/areas -w @autopix/core -w @autopix/api -w @autopix/web --if-present",

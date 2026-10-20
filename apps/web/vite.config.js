@@ -78,6 +78,8 @@ function areaConfig(area) {
   return {
     // A raiz continua sendo apps/web (src/, areas/): a entrada do build é areas/<área>/index.html.
     publicDir: path.join(webRoot, 'areas', own, 'public'),
+    // Cada área tem o seu cache: os dois servidores de dev podem rodar juntos sem se atropelar.
+    cacheDir: path.join(webRoot, 'node_modules', `.vite-${own}`),
     plugins: [
       react(),
       areaHtml(area, AREA_BRAND_NAMES[area]),
