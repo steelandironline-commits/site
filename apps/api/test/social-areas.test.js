@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { disconnectPrisma } from '@autopix/core';
 import { setupApp, resetDb, hasDb } from './helpers.js';
 import { AREA_ENV, CNPJ_HOST, CPF_HOST, DEV_COOKIE, call, insertSession, makeAccount } from './authAreaHelpers.js';
+import { deliveredPost as sharedDeliveredPost } from './isolation/support.js';
 
 // 4b · feed social por área (Q9). O post tem a área da empresa do autor: o feed, o comentário, o
 // repost e a foto de um host nunca mostram o conteúdo do outro.
@@ -24,22 +25,7 @@ describe.skipIf(!hasDb)('social por área · modo de áreas', () => {
   const act = (host, who, name, input) =>
     call(ctx.app, host, 'post', `/api/actions/${name}`, { body: { input }, cookie: `${DEV_COOKIE[host]}=${token[who]}` });
 
-  /** Negócio entregue e confirmado do vendedor, com a opinião já publicada. Devolve o id do post. */
-  async function deliveredPost(seller, { photo = PHOTO } = {}) {
-    const t = await ctx.services.transactions.create({ user: seller.user, company: seller.company, grossCents: 100000, description: 'Serviço', buyerEmail: null });
-    await ctx.prisma.marketplaceTransaction.update({
-      where: { id: t.id },
-      data: {
-        status: 'PAID',
-        sellerCompletedAt: new Date(),
-        buyerConfirmedAt: new Date(),
-        isSandbox: true,
-        payment: { create: { companyId: seller.company.id, idempotencyKey: `social-area-${t.id}`, kind: 'CHARGE', status: 'CONFIRMED', provider: 'mock', amountCents: 100000, paidAt: new Date(), isSandbox: true } },
-      },
-    });
-    const { post } = await ctx.services.social.publish({ user: seller.user, company: seller.company, transactionId: t.id, body: `Opinião de ${seller.user.name}`, photo });
-    return post.id;
-  }
+  const deliveredPost = (seller, opts) => sharedDeliveredPost(ctx, seller, opts);
 
   beforeAll(async () => {
     ctx = await setupApp({ ...AREA_ENV, DEMO_MODE: 'false' });

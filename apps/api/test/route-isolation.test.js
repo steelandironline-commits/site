@@ -1,43 +1,20 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { it, expect, beforeAll, afterAll } from 'vitest';
 import { isAnyArea } from '@autopix/areas';
 import { disconnectPrisma } from '@autopix/core';
 import { mountsOf } from '../src/middleware/area.js';
-import { setupApp, resetDb, hasDb } from './helpers.js';
+import { setupApp, resetDb } from './helpers.js';
 import { AREA_ENV, ADMIN_HOST, CNPJ_HOST, CPF_HOST, DEV_COOKIE, call, insertSession, makeAccount } from './authAreaHelpers.js';
+import { describeDb, foreignTo, leaks } from './isolation/support.js';
 
 // 4b · isolamento de rota. A lista de montagens vem do próprio app (mountsOf), não de uma
 // lista escrita à mão: rota nova entra no teste sozinha. Em cada host, toda montagem que não
-// declara a área daquele host responde 404 ANTES de autenticar, com ou sem sessão.
-
-const NOT_FOUND = { error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } };
-const METHODS = ['get', 'post', 'put', 'patch', 'delete'];
-const SUBPATHS = ['', '/qualquer', '/1/detalhe'];
+// declara a área daquele host responde 404 ANTES de autenticar, com ou sem sessão. Os auxiliares
+// (foreignTo, leaks, describeDb) são os da suíte de isolamento (isolation/support.js), a mesma que `npm run test:isolation` roda:
+// sem banco de teste o grupo aparece como PULADO com o motivo (e falha no CI), em vez de falhar na preparação.
 
 const HOST_OF = { CNPJ: CNPJ_HOST, CPF: CPF_HOST, ADMIN: ADMIN_HOST };
 
-/** Montagens em que o host da área NÃO existe (infraestrutura existe em todos). */
-const foreignTo = (mounts, area) => mounts.filter((m) => !isAnyArea(m.areas) && !m.areas.includes(area));
-
-/**
- * Pede toda montagem estranha ao host, com cada método e subcaminho, e devolve o que NÃO foi um 404
- * neutro (lista vazia = isolado). `auth` troca o jeito de se identificar.
- */
-async function leaks(app, host, mounts, auth = {}) {
-  const out = [];
-  for (const mount of mounts) {
-    for (const method of METHODS) {
-      for (const sub of SUBPATHS) {
-        const res = await call(app, host, method, `${mount.path}${sub}`, { body: method === 'get' ? undefined : {}, ...auth });
-        if (res.status !== 404 || JSON.stringify(res.body) !== JSON.stringify(NOT_FOUND)) {
-          out.push(`${method.toUpperCase()} ${host}${mount.path}${sub} -> ${res.status} ${JSON.stringify(res.body).slice(0, 80)}`);
-        }
-      }
-    }
-  }
-  return out;
-}
-
-describe.skipIf(!hasDb)('isolamento de rota · modo de áreas, admin dentro do host CNPJ', () => {
+describeDb('isolamento de rota · modo de áreas, admin dentro do host CNPJ', () => {
   let ctx;
   let mounts;
   let cnpj;
@@ -129,7 +106,7 @@ describe.skipIf(!hasDb)('isolamento de rota · modo de áreas, admin dentro do h
   });
 });
 
-describe.skipIf(!hasDb)('isolamento de rota · modo de áreas, com ADMIN_HOST', () => {
+describeDb('isolamento de rota · modo de áreas, com ADMIN_HOST', () => {
   let ctx;
   let mounts;
   let adminSession;

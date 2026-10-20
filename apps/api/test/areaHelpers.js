@@ -25,7 +25,7 @@ export const PRODUCTION_ENV = {
 };
 
 /** Banco de mentira: basta para /api/health. Quem tocar em outra tabela falha alto. */
-const stubPrisma = { $queryRaw: async () => [{ ok: 1 }] };
+export const stubPrisma = { $queryRaw: async () => [{ ok: 1 }] };
 
 /** Um dist mínimo: HTML, um asset com hash, sw, manifest, robots, favicon e um ícone. `tag` distingue o dono. */
 function writeDist(dir, tag, { assetName = 'app-abc123.js', title = 'spa-fixture' } = {}) {
