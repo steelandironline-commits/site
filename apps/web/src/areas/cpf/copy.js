@@ -4,6 +4,11 @@
 // entra neste build.
 import { formatCpf } from '@autopix/shared';
 
+/** Página inicial da área de pessoas. O rodapé cita só a própria marca (ARQUITETURA 11, item 3). */
+export const HOME = {
+  disclaimer: 'Tem CPF não tem vínculo com a Receita Federal.',
+};
+
 export const COPY = {
   login: {
     subtitle: 'Entre para acompanhar o seu perfil e os avisos da sua conta.',

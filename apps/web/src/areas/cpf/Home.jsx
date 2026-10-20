@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Button, Logo, useBrand, useSession } from '@autopix/ui';
 import s from './home.module.css';
+import { HOME } from './copy.js';
 
 /**
  * Página inicial mínima e neutra da área de pessoas. A home completa é das ETAPAS 5 e 6:
@@ -15,6 +16,7 @@ export default function Home() {
   }, [name]);
 
   return (
+    <>
     <main className={s.home}>
       <div className={s.card}>
         <Logo size={34} />
@@ -38,5 +40,9 @@ export default function Home() {
         </div>
       </div>
     </main>
+    <footer className={s.footer}>
+      <p>{HOME.disclaimer}</p>
+    </footer>
+    </>
   );
 }
