@@ -125,11 +125,18 @@ export class ActionEngine {
     try {
       if (!def) throw notFound('Ação desconhecida.');
 
-      // 1. Authentication
-      user = await this.#authenticate(def, channel, actor);
+      // 1. Authentication. Who the user is comes first; the session scope and channel are checked
+      //    after the area (1b), so that an action of another area answers the same 404 as one that
+      //    does not exist, even to a signup (ONBOARDING) session that has no access yet.
+      const loaded = await this.#loadUser(actor);
 
       // 1b. Area (area mode only): the owner's area must be one of the action's areas.
-      const area = this.config.areas?.enabled ? await this.#authorizeArea(def, user) : null;
+      let area = null;
+      if (this.config.areas?.enabled) {
+        user = loaded;
+        area = await this.#authorizeArea(def, loaded);
+      }
+      user = await this.#authenticate(def, channel, actor, loaded);
 
       // 2. Authorization
       if (!def.channels.includes(channel)) throw forbidden('Esta ação não está disponível neste canal.');
@@ -191,11 +198,15 @@ export class ActionEngine {
     }
   }
 
-  async #authenticate(def, channel, actor) {
+  /** The acting user: it must exist and not be disabled (the channel-specific checks come later). */
+  async #loadUser(actor) {
     if (!actor?.userId) throw unauthorized();
     const user = await this.prisma.user.findUnique({ where: { id: actor.userId } });
     if (!user || user.status === 'DISABLED') throw unauthorized();
+    return user;
+  }
 
+  async #authenticate(def, channel, actor, user) {
     if (channel === 'WEB' || channel === 'API') {
       if (!actor.sessionId) throw unauthorized();
       if (actor.sessionScope !== 'FULL' && !def.allowOnboarding) throw unauthorized();
