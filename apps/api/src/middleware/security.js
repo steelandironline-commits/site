@@ -4,6 +4,7 @@ import { areaOrigins } from './area.js';
 import { sessionCookieName } from './session.js';
 
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
+const NATIVE_SIGN_IN = /^\/auth\/native\/(login|verify-whatsapp)$/;
 
 /**
  * CSRF mitigation for cookie-authenticated endpoints:
@@ -17,7 +18,8 @@ const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
  * Area mode: cpf.* and the apex are same-site, so SameSite=Lax does not separate them. The
  * request must then carry an Origin equal to the origin of ITS OWN area (derived from `req.area`,
  * never from a header) plus X-Requested-With, and a request without Origin is refused. The
- * cookie it is judged by is the one of its own area. Legacy mode: exactly as before.
+ * cookie it is judged by is the one of its own area. Native sign-in (no cookie involved) may omit
+ * Origin. Legacy mode: exactly as before.
  */
 export function csrfGuard(config) {
   const allowed = new Set([config.appUrl, config.apiUrl].map((u) => new URL(u).origin));
@@ -32,7 +34,10 @@ export function csrfGuard(config) {
     const origin = req.get('origin');
     if (areaMode) {
       const own = ownOrigins.get(req.area);
-      if (!own || origin !== own) return next(forbidden('Origem não permitida.'));
+      // The two native sign-in endpoints neither read nor set a cookie, so there is no ambient
+      // credential to forge, and a native app sends no Origin. A wrong Origin is still refused.
+      const nativeSignIn = origin === undefined && NATIVE_SIGN_IN.test(req.path);
+      if (!own || (origin !== own && !nativeSignIn)) return next(forbidden('Origem não permitida.'));
     } else if (origin && !allowed.has(origin)) return next(forbidden('Origem não permitida.'));
     if (req.get('x-requested-with') !== 'autopix') return next(forbidden('Requisição não permitida.'));
     return next();
