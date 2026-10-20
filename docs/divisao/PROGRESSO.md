@@ -9,7 +9,7 @@ Atualizado: 2026-10-19
 | Etapa | Modelo | Estado | Entrega |
 |---|---|---|---|
 | 0 · Inventário | Opus (`arquiteto`) | **Concluída. Aguardando aprovação** | `docs/divisao/INVENTARIO.md`, subagentes em `.claude/agents/` |
-| 1 · Arquitetura | Opus (`arquiteto`) | Não iniciada | `docs/divisao/ARQUITETURA.md` |
+| 1 · Arquitetura | Opus (`arquiteto`) | **Concluída** | `docs/divisao/ARQUITETURA.md` (366 linhas, contrato das etapas 2 a 8) |
 | 2 · Base compartilhada sem mudar comportamento | Sonnet (`implementador`) | Não iniciada | — |
 | 3 · Roteamento por host e temas | Sonnet (`implementador`) | Não iniciada | — |
 | 4 · Autenticação e API isoladas | Opus desenha, Sonnet implementa | Não iniciada | Revisão de segurança do `arquiteto` antes de seguir |
