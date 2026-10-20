@@ -74,6 +74,16 @@ export const companyProfileSchema = z.object({
 
 export const companyUpdateSchema = companyProfileSchema.partial();
 
+/**
+ * Perfil da pessoa física (PUT /api/profile, só no host CPF): o subconjunto do perfil de empresa
+ * que uma pessoa preenche. Cada campo vem da mesma definição de companyProfileSchema, então a
+ * regra de validação é uma só. Não tem CNPJ, produtos, cliente ideal, ticket, setores nem palavras-chave.
+ */
+export const profileUpdateSchema = companyProfileSchema
+  .pick({ phone: true, postalCode: true, city: true, state: true, serviceRadiusKm: true, description: true, services: true, operationalProfile: true })
+  .extend({ name: trimmed(120).min(2, 'Informe seu nome') })
+  .partial();
+
 export const cpfSchema = z
   .string()
   .trim()

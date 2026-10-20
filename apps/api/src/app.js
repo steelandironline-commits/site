@@ -14,6 +14,7 @@ import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { onboardingRoutes } from './routes/onboarding.js';
 import { companyRoutes } from './routes/company.js';
+import { profileRoutes } from './routes/profile.js';
 import { opportunityRoutes } from './routes/opportunities.js';
 import { activityRoutes } from './routes/activity.js';
 import { agentRoutes } from './routes/agents.js';
@@ -109,6 +110,7 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   // Hosts in which each mount exists (ARQUITETURA 6.5). Anywhere else: 404, before authentication.
   // Keep packages/areas/src/manifest.js (API_MOUNTS) in step: a drift test compares both.
   const CNPJ_ONLY = ['CNPJ'];
+  const CPF_ONLY = ['CPF'];
   const BOTH = ['CNPJ', 'CPF'];
   const ALL = ['CNPJ', 'CPF', 'ADMIN'];
   // Q6: admin lives on ADMIN_HOST; without it, on the CNPJ host (platform-admin sessions only).
@@ -122,6 +124,8 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   mountArea(app, '/api/me', ALL, meRoutes(ctx));
   mountArea(app, '/api/onboarding', BOTH, onboardingRoutes(ctx));
   mountArea(app, '/api/company', CNPJ_ONLY, companyRoutes(ctx));
+  // The person's profile (ETAPA 5): only the CPF host. The company route above does not exist there.
+  mountArea(app, '/api/profile', CPF_ONLY, profileRoutes(ctx));
   mountArea(app, '/api/opportunities', CNPJ_ONLY, opportunityRoutes(ctx));
   mountArea(app, '/api/activity', BOTH, activityRoutes(ctx));
   mountArea(app, '/api/agents', CNPJ_ONLY, agentRoutes(ctx));

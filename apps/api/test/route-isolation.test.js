@@ -81,9 +81,9 @@ describe.skipIf(!hasDb)('isolamento de rota · modo de áreas, admin dentro do h
     expect(await leaks(ctx.app, CPF_HOST, foreignTo(mounts, 'CPF'), { bearer: cpfSession.token })).toEqual([]);
   });
 
-  it('do host CNPJ, toda rota só do CPF responde 404 (hoje não há nenhuma; a lista é a do app)', async () => {
+  it('do host CNPJ, toda rota só do CPF responde 404 (hoje só /api/profile; a lista é a do app)', async () => {
     const foreign = foreignTo(mounts, 'CNPJ');
-    expect(foreign.map((m) => m.path)).toEqual([]); // /api/session, /api/auth, etc. existem no CNPJ
+    expect(foreign.map((m) => m.path)).toEqual(['/api/profile']); // /api/session, /api/auth, etc. existem no CNPJ
     for (const auth of [{}, { cookie: `${DEV_COOKIE[CNPJ_HOST]}=${cnpjSession.token}` }, { cookie: `${DEV_COOKIE[CNPJ_HOST]}=${adminSession.token}` }]) {
       expect(await leaks(ctx.app, CNPJ_HOST, foreign, auth)).toEqual([]);
     }
@@ -103,6 +103,7 @@ describe.skipIf(!hasDb)('isolamento de rota · modo de áreas, admin dentro do h
       [CNPJ_HOST, '/api/social/posts', 401],
       [CNPJ_HOST, '/api/pay/summary', 401],
       [CPF_HOST, '/api/social/posts', 401],
+      [CPF_HOST, '/api/profile', 401],
       [CPF_HOST, '/api/dashboard', 401],
       [CPF_HOST, '/api/activity', 401],
       [CPF_HOST, '/api/events', 401],
