@@ -55,7 +55,10 @@ export function clearSessionCookie(res, config, area = null) {
  * `Authorization: Bearer <token>` (issued by POST /api/auth/native/login).
  */
 export function loadSession({ auth, config }) {
+  const areaMode = Boolean(config.areas?.enabled);
   return async (req, res, next) => {
+    // Area mode: a request without a host area (health check, webhooks) carries no session.
+    if (areaMode && !AREAS.includes(req.area)) return next();
     const header = req.get('authorization') || '';
     const bearer = /^Bearer\s+([A-Za-z0-9_-]{20,200})$/.exec(header)?.[1];
     const cookieName = sessionCookieName(req, config);
@@ -63,7 +66,7 @@ export function loadSession({ auth, config }) {
     if (!token) return next();
     req.authVia = bearer ? 'bearer' : 'cookie';
     try {
-      const session = await auth.resolveSession(token);
+      const session = await auth.resolveSession(token, { hostArea: req.area });
       if (!session) {
         if (!bearer) clearSessionCookie(res, config, req.area);
         return next();
@@ -74,6 +77,9 @@ export function loadSession({ auth, config }) {
       if (session.refreshed && !bearer) setSessionCookie(res, config, token, session.expiresAt, req.area);
       return next();
     } catch (err) {
+      // A token of another area never authenticates here. A cookie in this host's own name that
+      // holds it is just garbage: drop it so the browser is not stuck on a 403.
+      if (err?.code === 'WRONG_AREA' && !bearer) clearSessionCookie(res, config, req.area);
       return next(err);
     }
   };

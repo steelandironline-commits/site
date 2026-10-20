@@ -6,7 +6,7 @@ import { clearSessionCookie, sessionCookieName, setSessionCookie } from '../midd
 
 export function authRoutes({ auth, config, limiters }) {
   const r = Router();
-  const meta = (req) => ({ ip: req.ip, userAgent: req.get('user-agent') });
+  const meta = (req) => ({ ip: req.ip, userAgent: req.get('user-agent'), hostArea: req.area });
 
   r.post('/login', limiters.login, async (req, res) => {
     const { identifier, password } = parse(loginSchema, req.body);

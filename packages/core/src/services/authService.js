@@ -5,9 +5,15 @@ import { generateToken, hashToken } from '../security/tokens.js';
 import { hashPassword, verifyPassword, burnPasswordCheck } from '../security/password.js';
 import { AppError, badRequest, conflict, gone, notFound, unauthorized, unavailable } from '../errors.js';
 import { createOtp, hashOtp, verifyOtp } from '../security/otp.js';
+import { areaOfUser, hostAccepts } from '../security/area.js';
 
 const LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
+
+/** O que `areaOfUser` precisa de um usuário: a flag de admin e o tipo da empresa dona. */
+const AREA_SELECT = { isPlatformAdmin: true, company: { select: { accountType: true } } };
+
+const WRONG_AREA_MESSAGE = 'Esta sessão não vale neste endereço. Entre novamente.';
 
 const SESSION_INCLUDE = {
   user: {
@@ -34,13 +40,25 @@ export class AuthService {
 
   // ---------------------------------------------------------------- sessions
 
-  async createSession(userId, { scope = 'FULL', ip, userAgent } = {}, tx = this.prisma) {
+  /**
+   * Opens a session and records its area (the token's "aud"): ADMIN for a platform admin, else
+   * the area of the owning company. `hostArea` is `req.area`. In area mode the session is created
+   * only when that host accepts the user's area (acceptedAreas); the login flows check it first
+   * and answer like a wrong password, so this is the last line of defence, not the user-facing
+   * path. In legacy mode every host accepts every area: the area is just recorded.
+   */
+  async createSession(userId, { scope = 'FULL', hostArea = null, ip, userAgent } = {}, tx = this.prisma) {
+    const owner = await tx.user.findUnique({ where: { id: userId }, select: AREA_SELECT });
+    if (!owner) throw notFound('Usuário não encontrado.');
+    const area = areaOfUser(owner);
+    if (!hostAccepts(hostArea, area, this.config)) throw new AppError(403, 'WRONG_AREA', WRONG_AREA_MESSAGE);
     const token = generateToken();
     const ttl = scope === 'ONBOARDING' ? this.config.session.onboardingTtlMs : this.config.session.ttlMs;
     const session = await tx.session.create({
       data: {
         userId,
         scope,
+        area,
         tokenHash: hashToken(token, this.config.secrets.session),
         expiresAt: new Date(Date.now() + ttl),
         ipAddress: ip ? String(ip).slice(0, 64) : null,
@@ -50,8 +68,18 @@ export class AuthService {
     return { token, session };
   }
 
-  /** Resolve a raw cookie token into a live session (sliding expiration). */
-  async resolveSession(token) {
+  /**
+   * Resolve a raw cookie token into a live session (sliding expiration).
+   *
+   * Area mode (ARQUITETURA 6.3) adds the checks that the cookie name alone does not give, because a
+   * bearer token is not tied to a host:
+   *  - a session without area is invalid (fail closed; it is left alone, it only expires);
+   *  - the stored area must be the area of its owner, or the session is revoked: a forged or
+   *    stale "aud" never authenticates and never survives;
+   *  - the host must accept that area, or the answer is 403 WRONG_AREA.
+   * Legacy mode skips all of it: old sessions (no area) stay valid, nothing changes.
+   */
+  async resolveSession(token, { hostArea = null } = {}) {
     if (!token || typeof token !== 'string' || token.length > 200) return null;
     const tokenHash = hashToken(token, this.config.secrets.session);
     const session = await this.prisma.session.findUnique({ where: { tokenHash }, include: SESSION_INCLUDE });
@@ -62,6 +90,21 @@ export class AuthService {
       return null;
     }
     if (session.user.status === 'DISABLED') return null;
+
+    if (this.config.areas?.enabled) {
+      if (!session.area) return null;
+      let ownerArea = null;
+      try {
+        ownerArea = areaOfUser(session.user);
+      } catch {
+        // Owner without a company type: nothing to compare with, so the session is not valid.
+      }
+      if (session.area !== ownerArea) {
+        await this.prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+        return null;
+      }
+      if (!hostAccepts(hostArea, session.area, this.config)) throw new AppError(403, 'WRONG_AREA', WRONG_AREA_MESSAGE);
+    }
 
     // Slide the window when more than half of the TTL has elapsed.
     const ttl = session.scope === 'ONBOARDING' ? this.config.session.onboardingTtlMs : this.config.session.ttlMs;
