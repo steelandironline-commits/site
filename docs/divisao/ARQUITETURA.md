@@ -48,7 +48,7 @@ As 14 perguntas ainda não foram respondidas. Valem as recomendações do invent
 | O deploy roda `prisma migrate deploy` antes de subir | `.railway/railway.ts:61` | Toda migração que for para a branch roda em produção. Seção 7 |
 | O webhook do BB está registrado no domínio atual | `README.md:304-306` | Webhooks respondem em qualquer host |
 | O catálogo de ações já tem `roles` por ação | `actions/definitions.js`, `ActionEngine.js:117` | Ganha `areas` por ação, verificado no mesmo ponto |
-| Schemas compartilhados misturam textos de CNPJ e CPF | `packages/shared/src/schemas.js:49-138` | O teste de bundle vai acusar. A ETAPA 5 divide por área |
+| Schemas compartilhados misturam textos de CNPJ e CPF | `packages/shared/src/schemas.js:49-138` | O teste de bundle vai acusar. Resolvido na ETAPA 5: os builds de área tratam `packages/shared/src` como sem efeito colateral (módulo sem uso sai do bundle) e a lista de benefícios de cada lado é uma exportação própria |
 
 ## 3. Produção inerte
 
@@ -138,6 +138,10 @@ Não usar um build único com várias entradas: os chunks dividiriam o mesmo `/a
 - (b) nenhum módulo de `dist-cpf/modules.json` é de classe CNPJ ou ADMIN, e vice-versa;
 - (c) uma busca de texto em `dist-<área>/**/*.{js,css,html,json,webmanifest,txt,xml}` não acha os marcadores da outra área.
 
+A ETAPA 5 acrescentou a prova pelo lado de dentro, derivada do manifesto: cada `/api/...` que o bundle chama é uma montagem que o host da área tem; cada link de página que o bundle escreve é uma página da área; nenhuma montagem nem página exclusiva da outra área aparece. O plugin `areaBoundary` também recusa, em qualquer área, o código do build legado (`App.jsx`, `main.jsx`, `legacyNav.js`, `legacy/`).
+
+**Textos por build (ETAPA 5).** As telas que as duas áreas dividem (Login, ativação, Social, Atividade, confirmação, Configurações, perfil operacional, plano, AppLayout, Home do CNPJ) não têm texto, link nem chamada de uma área só: recebem por props a cópia (`areas/cnpj/copy.js`, `areas/cpf/copy.js`) e as peças da área (cartão de equipe, chave de repasse, fonte do perfil operacional). O build legado usa `src/legacy/copy.js`, que reproduz os textos de sempre, e invólucros em `src/legacy/` que escolhem pelo tipo da conta. O cadastro tem um motor comum (`pages/onboarding/OnboardingFlow.jsx`) e um fluxo por área (`areas/<área>/Onboarding.jsx`); o cadastro de antes, com a escolha entre empresa e pessoa, ficou intacto em `src/legacy/`.
+
 Os marcadores são escolhidos a dedo, nunca palavras soltas. Proibidos no CPF: `Tem CNPJ`, `CNPJ` (maiúsculas), `Licitações`, `Colaborador`, `/app/licitacoes`, `/api/team`, `/api/company`, `/api/pay`, `/checkout`. Proibidos no CNPJ: `Tem CPF`, `pessoa física`, `Meu perfil`, `/api/profile`. Proibidos nos dois: `/api/admin`, `Admin financeiro`. `CPF` não pode ser proibido no CNPJ, porque o colaborador entra com CPF (Q1). `temcnpj` não pode ser proibido no CPF, porque está no próprio host.
 
 ## 6. Sessão, tokens e guarda de área
@@ -161,6 +165,7 @@ Os tokens são opacos: 32 bytes aleatórios, guardados como HMAC (`authService.j
 - **Criação:** `createSession(userId, { scope, area })`, com `area = areaOfUser(user)`. Essa função devolve `ADMIN` quando `isPlatformAdmin`; senão, a área de `user.company.accountType`. A sessão só é criada se essa área estiver em `acceptedAreas(req.area)`. Isso vale para login, verificação por WhatsApp, ativação, `onboarding/start` e `native/*`.
 - **`acceptedAreas(host)`:** CNPJ aceita `[CNPJ]`, ou `[CNPJ, ADMIN]` sem `ADMIN_HOST`. CPF aceita `[CPF]`. ADMIN aceita `[ADMIN]`.
 - **Login na área errada:** mesma resposta e mesmo tempo da senha errada (verificação Argon2 feita ou queimada). Não revela que o documento existe na outra área.
+- **Mensagens de acesso por área (ETAPA 5):** `loginMessages(hostArea, config)`. No CPF: "CPF ou senha incorretos." e "Informe o CPF". No CNPJ, que aceita o CNPJ da empresa e o CPF do colaborador (Q1): "Documento ou senha incorretos." e "Informe o documento". O modo legado diz "CPF/CNPJ ou senha incorretos." e "Informe CPF ou CNPJ", como sempre.
 - **`LoginChallenge.area`:** o código de WhatsApp só vale no host onde o login começou.
 - **`ActivationToken.area` e `PasswordResetToken.area`:** o link é montado com `urlFor(area)`. Consumido em outro host, responde `404` "Link inválido", igual a um token inexistente. Quando `area` é nula (token antigo), vale a área do dono.
 - **Esqueci a senha em outra área:** mesma resposta, nenhum e-mail enviado.
@@ -212,7 +217,8 @@ Hosts em que a montagem existe. Em qualquer outro host, responde 404.
 | 94 | `/api/auth` | `authRoutes` | CNPJ, CPF, ADMIN | Seção 6.2 |
 | 95 | `/api/me` | `meRoutes` | CNPJ, CPF, ADMIN | Devolve `area`, a da sessão (a de um admin no host CNPJ é `ADMIN`); `/api/session` devolve o mesmo campo. Modo legado: `null` |
 | 96 | `/api/onboarding` | `onboardingRoutes` | CNPJ, CPF | Tipo imposto pelo host |
-| 97 | `/api/company` | `companyRoutes` | CNPJ | O CPF ganha `/api/profile` na ETAPA 5 |
+| 97 | `/api/company` | `companyRoutes` | CNPJ | A pessoa física lê e grava o perfil em `/api/profile` (linha seguinte) |
+| — | `/api/profile` | `profileRoutes` | CPF | ETAPA 5. `GET`/`PUT` do perfil da conta `PERSON`, com a regra de `CompanyService` (mesmo patch e mesma detecção de mudança) e sem busca de oportunidades. Devolve só `PROFILE_FIELDS` e o CPF mascarado: nada de CNPJ, cobrança, comissão, equipe nem chave de repasse. Conta que não é `PERSON` recebe o 404 de rota inexistente, também no modo legado |
 | 98 | `/api/opportunities` | `opportunityRoutes` | CNPJ | |
 | 99 | `/api/activity` | `activityRoutes` | CNPJ, CPF | Por `companyId`. O hub SSE já é por empresa |
 | 100 | `/api/agents` | `agentRoutes` | CNPJ | |

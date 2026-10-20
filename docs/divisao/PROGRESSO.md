@@ -13,7 +13,7 @@ Atualizado: 2026-10-20
 | 2 · Base compartilhada sem mudar comportamento | Sonnet (`implementador`) | **Concluída. Aguardando aprovação** | Pacote `packages/ui` (`@autopix/ui`). Testes, build e lint verdes |
 | 3 · Roteamento por host e temas | Sonnet (`implementador`) | Não iniciada | — |
 | 4 · Autenticação e API isoladas | Opus desenha, Sonnet implementa | Não iniciada | Revisão de segurança do `arquiteto` antes de seguir |
-| 5 · Separação das telas e funções | Sonnet (`implementador`) | Não iniciada | Depende das respostas do inventário |
+| 5 · Separação das telas e funções | Sonnet (`implementador`) | **Concluída. Aguardando aprovação** | Telas por área, cópia por build, `GET/PUT /api/profile`. Os dois bundles sem marcador cruzado |
 | 6 · Textos, SEO e identidade | Haiku (`auxiliar`) | Não iniciada | Depende da decisão de marca (Q7) |
 | 7 · Testes de isolamento, CI e deploy | Sonnet (`implementador`) | Não iniciada | Deploy configurado, **sem publicar** |
 | 8 · Revisão final | Opus (`arquiteto`) | Não iniciada | `GO_LIVE.md`. Publicação só com sua autorização |
@@ -54,6 +54,27 @@ Só o `packages/ui`, como decidido na seção 11 (item 1) da arquitetura. As reg
 - `MiniRadar` e `ScoreRing` têm rótulo padrão com vocabulário de oportunidade ("Radar procurando oportunidades", "Opportunity Score").
 - `global.css` usa o gradiente `#tempix-gold`, definido no `index.html` do `apps/web`. Cada `index.html` de área precisa trazê-lo.
 - Não há rota nem endpoint novo nesta etapa, então não há entrada nova no manifesto (ele nasce na ETAPA 3).
+
+## ETAPA 5 · O que foi feito
+
+Premissas do `ARQUITETURA.md` seção 1 (as perguntas Q1 a Q14 seguem sem resposta).
+
+- [x] **`/api/profile` (só no host CPF):** `GET`/`PUT` do perfil da conta `PERSON`, com a regra de `CompanyService`. Sem CNPJ, cobrança, comissão, equipe nem chave de repasse. No host CNPJ responde 404 antes de autenticar; conta que não é `PERSON` recebe 404 também no modo legado.
+- [x] **Cadastro por área:** motor comum (`pages/onboarding/OnboardingFlow.jsx`) e um fluxo por área. O CNPJ só aceita CNPJ e termina na taxa única pelo Pix (`/checkout`). O CPF só aceita CPF, é grátis e termina no link de ativação por e-mail, sem cobrança nem checkout. O cadastro de antes (com a escolha entre empresa e pessoa) ficou intacto em `src/legacy/`.
+- [x] **Telas que as duas áreas dividem** (Login, ativação, Social, Atividade, confirmação, Configurações, perfil operacional, plano, `AppLayout`, Home do CNPJ) pedem a cópia e as peças da área por props. Cada build tem a sua cópia: `areas/cnpj/copy.js`, `areas/cpf/copy.js` e `src/legacy/copy.js` (o legado reproduz os textos de sempre).
+- [x] **CPF:** painel próprio (`areas/cpf/Overview.jsx`), "Meu perfil" (`/app/perfil`, página nova do manifesto) e perfil operacional pela fonte `/api/profile`. Sem Equipe, sem chave Pix de repasse (Q4 em aberto), sem Pagamentos, Cargas, Equipes, Intermediação nem Licitações.
+- [x] **Menu:** cada área tem o seu em `nav.js`. `companyOnly`, `personLabel` e o item do admin saíram do `AppLayout` e ficaram no invólucro do legado (`src/legacy/LegacyLayout.jsx`).
+- [x] **Mensagens de acesso por área** (`loginMessages`): CPF lê "CPF ou senha incorretos."; CNPJ lê "Documento ou senha incorretos." (o host aceita o CPF do colaborador, Q1); o legado diz o que sempre disse.
+- [x] **Fronteira do build:** o plugin `areaBoundary` recusa o código do build legado em qualquer área, e o manifesto classifica os arquivos de empresa (painel, cartões, equipe, chave de repasse) como exclusivos do CNPJ.
+- [x] **Prova:** `bundle-isolation.test.js` procura os marcadores da `ARQUITETURA.md` seção 5 em todo arquivo de saída e deriva do manifesto que cada `/api/...` chamado e cada link escrito existe na própria área.
+- [x] **Testes:** 702 no total (shared 32, areas 37, core 90, api 391, web 152; eram 612 na base da 4c).
+- [x] **Build legado:** o legado construído tem os mesmos literais de texto do commit `09348bc` (diferenças: só o nome de uma classe de CSS nova, e um texto de ambiente das Configurações que perdeu o espaço inicial); o HTML renderizado das rotas públicas é igual.
+
+**Fica para depois (resíduos conhecidos):**
+
+- O catálogo do perfil operacional (`packages/shared/src/operations`, ~1.200 linhas) e os rótulos de `platform.js` continuam comuns, filtrados por `accountType` em tempo de execução. Os dois bundles levam o vocabulário do outro ali dentro (por exemplo "Equipes" nos módulos). Dividir exige duplicar o catálogo por área (Q10) e é decisão de produto.
+- Marca e módulo ainda fixos nas telas e no `packages/ui` ("TemPix" no `AppLayout`, rótulos do `MiniRadar`): ETAPA 6.
+- A linha da ETAPA 3 e a da ETAPA 4 desta tabela não foram atualizadas por aquelas etapas.
 
 ## Pendências abertas (fora do plano, já conhecidas)
 
