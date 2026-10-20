@@ -28,6 +28,7 @@
     "start:worker": "node apps/worker/src/index.js",
     "test": "npm test -w @autopix/shared -w @autopix/areas -w @autopix/core -w @autopix/api -w @autopix/web --if-present",
     "test:isolation": "node scripts/test-isolation.mjs",
+    "test:e2e": "playwright test -c e2e/playwright.config.js",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
@@ -44,6 +45,7 @@
     "prisma": "6.19.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "concurrently": "10.0.6",
     "vitest": "4.0.18"
   }
