@@ -28,10 +28,10 @@ export function registerCoreActions(engine) {
     handler: (ctx, input) => s().social.publish({ user: ctx.user, company: ctx.company, ...input }) });
   engine.register({ name: 'COMMENT_SOCIAL_POST', areas: BOTH, channels: ['WEB', 'API'],
     schema: z.object({ postId: id, body: z.string().trim().min(1).max(1000), parentId: id.optional().nullable() }),
-    handler: (ctx, input) => s().social.comment({ user: ctx.user, ...input }) });
+    handler: (ctx, input) => s().social.comment({ user: ctx.user, ...input, area: ctx.area }) });
   engine.register({ name: 'REPOST_SOCIAL_POST', areas: BOTH, channels: ['WEB', 'API'],
     schema: z.object({ postId: id, body: z.string().trim().max(2000).default('') }),
-    handler: (ctx, input) => s().social.repost({ user: ctx.user, ...input }) });
+    handler: (ctx, input) => s().social.repost({ user: ctx.user, ...input, area: ctx.area }) });
   engine.register({ name: 'DELETE_SOCIAL_POST', areas: BOTH, channels: ['WEB', 'API'], schema: byId,
     handler: (ctx, input) => s().social.remove({ user: ctx.user, ...input }) });
 
