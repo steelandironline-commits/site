@@ -27,16 +27,39 @@ export const PRODUCTION_ENV = {
 /** Banco de mentira: basta para /api/health. Quem tocar em outra tabela falha alto. */
 const stubPrisma = { $queryRaw: async () => [{ ok: 1 }] };
 
-/** Pasta com um "SPA" mínimo, para os testes não dependerem de um build em apps/web/dist. */
+/** Um dist mínimo: HTML, um asset com hash, sw, manifest, robots, favicon e um ícone. `tag` distingue o dono. */
+function writeDist(dir, tag, { assetName = 'app-abc123.js', title = 'spa-fixture' } = {}) {
+  fs.mkdirSync(path.join(dir, 'assets'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'icons'));
+  fs.writeFileSync(path.join(dir, 'index.html'), `<!doctype html><title>${title}</title><div id="root"></div>`);
+  fs.writeFileSync(path.join(dir, 'assets', assetName), `console.log("asset ${tag}");`);
+  fs.writeFileSync(path.join(dir, 'sw.js'), `self.addEventListener("fetch",()=>{}); // ${tag}`);
+  fs.writeFileSync(path.join(dir, 'manifest.webmanifest'), `{"name":"fixture ${tag}"}`);
+  fs.writeFileSync(path.join(dir, 'robots.txt'), `User-agent: *\n# ${tag}\n`);
+  fs.writeFileSync(path.join(dir, 'favicon.svg'), `<svg xmlns="http://www.w3.org/2000/svg"><!-- ${tag} --></svg>`);
+  fs.writeFileSync(path.join(dir, 'icons', 'icon-192.png'), `icon ${tag}`);
+  fs.writeFileSync(path.join(dir, 'modules.json'), `{"area":"${tag}","modules":[]}`);
+}
+
+/**
+ * Pasta com os "SPAs" mínimos, para os testes não dependerem de um build em apps/web:
+ *   <tmp>/dist         legado (título "spa-fixture")
+ *   <tmp>/dist-cnpj    área CNPJ (título "spa-fixture-cnpj", asset cnpj-abc123.js)
+ *   <tmp>/dist-cpf     área CPF  (título "spa-fixture-cpf",  asset cpf-abc123.js)
+ * Devolve o caminho do `dist` legado (o `webDist`); `removeWebDist` apaga tudo.
+ */
 export function makeWebDist() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tempix-spa-'));
-  fs.mkdirSync(path.join(dir, 'assets'));
-  fs.writeFileSync(path.join(dir, 'index.html'), '<!doctype html><title>spa-fixture</title><div id="root"></div>');
-  fs.writeFileSync(path.join(dir, 'assets', 'app-abc123.js'), 'console.log("asset");');
-  fs.writeFileSync(path.join(dir, 'sw.js'), 'self.addEventListener("fetch",()=>{});');
-  fs.writeFileSync(path.join(dir, 'manifest.webmanifest'), '{"name":"fixture"}');
-  fs.writeFileSync(path.join(dir, 'robots.txt'), 'User-agent: *\n');
-  return dir;
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tempix-spa-'));
+  const legacy = path.join(root, 'dist');
+  writeDist(legacy, 'legacy');
+  writeDist(path.join(root, 'dist-cnpj'), 'cnpj', { assetName: 'cnpj-abc123.js', title: 'spa-fixture-cnpj' });
+  writeDist(path.join(root, 'dist-cpf'), 'cpf', { assetName: 'cpf-abc123.js', title: 'spa-fixture-cpf' });
+  fs.writeFileSync(path.join(root, 'dist-cnpj', 'icons', 'so-cnpj.png'), 'so cnpj');
+  return legacy;
+}
+
+export function removeWebDist(webDist) {
+  fs.rmSync(path.dirname(webDist), { recursive: true, force: true });
 }
 
 /** Aplicação real (createApp) sem banco, com as variáveis informadas. */

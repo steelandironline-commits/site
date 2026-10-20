@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import fs from 'node:fs';
 import request from 'supertest';
-import { HOSTS, PRODUCTION_ENV, areaApp, makeWebDist, probeApp } from './areaHelpers.js';
+import { HOSTS, PRODUCTION_ENV, areaApp, makeWebDist, probeApp, removeWebDist } from './areaHelpers.js';
 
 const area = (app, host, path = '/qualquer', extra = {}) => {
   let r = request(app).get(path).set('Host', host);
@@ -79,7 +78,7 @@ describe('hostArea · app completo, modo de áreas', () => {
     prod = areaApp({ ...PRODUCTION_ENV, ...HOSTS }, { webDist }).app;
     dev = areaApp({ ...HOSTS }, { webDist }).app;
   });
-  afterAll(() => fs.rmSync(webDist, { recursive: true, force: true }));
+  afterAll(() => removeWebDist(webDist));
 
   const STRANGERS = ['x.up.railway.app', 'evil.example', '203.0.113.9', 'temcnpj.com.br.evil.example'];
 
@@ -129,10 +128,13 @@ describe('hostArea · app completo, modo de áreas', () => {
       expect(session.status, host).toBe(200);
       expect(session.body).toEqual({ session: null });
       expect((await area(prod, host, '/api/me')).status).toBe(401);
-      const page = await area(prod, host, '/app/radar');
+      // /app/social existe nas duas áreas; /app/radar só no CNPJ (test/area-spa.test.js cobre o resto).
+      const page = await area(prod, host, '/app/social');
       expect(page.status).toBe(200);
       expect(page.text).toContain('spa-fixture');
     }
+    expect((await area(prod, 'temcnpj.com.br', '/app/radar')).status).toBe(200);
+    expect((await area(prod, 'cpf.temcnpj.com.br', '/app/radar')).status).toBe(404);
   });
 
   it('redireciona o host de redirecionamento com 301 para o host da área, mantendo caminho e consulta', async () => {

@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { ROOT_DIR, buildPlatform } from '@autopix/core';
 import { buildLimiters, csrfGuard } from './middleware/security.js';
 import { hostArea } from './middleware/area.js';
+import { areaSpa } from './middleware/spa.js';
 import { loadSession } from './middleware/session.js';
 import { errorHandler, notFoundApi } from './middleware/errors.js';
 import { authRoutes } from './routes/auth.js';
@@ -119,8 +120,11 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   app.use('/api/admin', adminRoutes(ctx));
   app.use('/api', notFoundApi);
 
-  // Production: serve the built SPA from the same origin (`webDist` is overridable for tests).
-  if (serveWeb && fs.existsSync(path.join(webDist, 'index.html'))) {
+  // Area mode: each host gets only its own build, apps/web/dist-<area> (next to `webDist`).
+  if (serveWeb && config.areas.enabled) {
+    app.use(areaSpa({ webDist, areas: config.areas }));
+  } else if (serveWeb && fs.existsSync(path.join(webDist, 'index.html'))) {
+    // Legacy mode: serve the built SPA from the same origin (`webDist` is overridable for tests).
     app.use(
       '/assets',
       express.static(path.join(webDist, 'assets'), { immutable: true, maxAge: '1y', index: false }),

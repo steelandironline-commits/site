@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import fs from 'node:fs';
 import request from 'supertest';
 import { disconnectPrisma } from '@autopix/core';
-import { areaApp, makeWebDist, probeApp } from './areaHelpers.js';
+import { areaApp, makeWebDist, probeApp, removeWebDist } from './areaHelpers.js';
 import { setupApp, resetDb, createActiveUser, hasDb, STRONG_PASSWORD } from './helpers.js';
 
 // T3. Sem PUBLIC_HOST_CNPJ e PUBLIC_HOST_CPF o servidor se comporta como antes das áreas:
@@ -22,7 +21,7 @@ describe('T3 · modo legado inerte', () => {
     webDist = makeWebDist();
     ({ app, config } = areaApp({}, { webDist }));
   });
-  afterAll(() => fs.rmSync(webDist, { recursive: true, force: true }));
+  afterAll(() => removeWebDist(webDist));
 
   const get = (host, path, headers = {}) => {
     let r = request(app).get(path).set('Host', host);
