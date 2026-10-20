@@ -54,8 +54,9 @@ export class WhatsAppCommandService {
       case 'LIST_TODAY_OPPORTUNITIES': {
         const { result } = await this.run(connection, 'LIST_TODAY_OPPORTUNITIES', { limit: 5 });
         if (!result.total) return this.messenger.reply(connection, 'Nenhuma oportunidade nova nas últimas 24h. Seus agentes continuam procurando.');
+        const area = await this.messenger.areaOf(connection);
         const lines = result.items.map(
-          (o, i) => `${i + 1}. ${o.targetCompanyName} — ${o.score}% · ${formatBRL(o.estimatedMaxValue)}${o.isDemo ? ' [DEMO]' : ''}\n   ${this.messenger.provider.link(deepLinks.opportunity(o.id))}`,
+          (o, i) => `${i + 1}. ${o.targetCompanyName} — ${o.score}% · ${formatBRL(o.estimatedMaxValue)}${o.isDemo ? ' [DEMO]' : ''}\n   ${this.messenger.provider.link(deepLinks.opportunity(o.id), area)}`,
         );
         return this.messenger.reply(connection, `📈 ${result.total} oportunidade(s) nas últimas 24h:\n\n${lines.join('\n')}`);
       }
@@ -120,15 +121,23 @@ export class WhatsAppCommandService {
     try {
       const out = await this.run(connection, pending.intent, pending.params);
       if (out.status === 'CONFIRMATION_REQUIRED') {
+        const area = await this.messenger.areaOf(connection);
         return this.messenger.reply(
           connection,
-          `🔒 Por segurança, confirme no app TemPix:\n${this.messenger.provider.link(out.challenge.confirmPath)}`,
+          `🔒 Por segurança, confirme no app TemPix:\n${this.messenger.provider.link(out.challenge.confirmPath, area)}`,
         );
       }
       if (pending.intent === 'CREATE_PIX') {
         const payment = out.result.payment;
+        const area = await this.messenger.areaOf(connection);
         return this.messenger.send(connection, 'sendPaymentNotification', [
-          { payment, title: '💳 Cobrança TemPix criada', link: out.result.transaction ? deepLinks.transaction(out.result.transaction.id) : deepLinks.payment(payment.id), includePixCode: true },
+          {
+            payment,
+            title: '💳 Cobrança TemPix criada',
+            link: out.result.transaction ? deepLinks.transaction(out.result.transaction.id) : deepLinks.payment(payment.id),
+            includePixCode: true,
+            ...(area ? { area } : {}),
+          },
         ]);
       }
       return this.messenger.reply(connection, describeResult(pending.intent, out.result));

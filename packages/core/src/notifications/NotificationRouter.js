@@ -3,6 +3,8 @@ import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { logger } from '../logger.js';
 import { PreferenceService } from './PreferenceService.js';
+import { areaOfUser } from '../security/area.js';
+import { urlFor } from '@autopix/areas/urls';
 
 /** TemPix Pay copy (section 17). Deep links only — never an action button for money. */
 const PAY_COPY = {
@@ -106,9 +108,10 @@ export class NotificationRouter {
     // High-priority supersedes the generic "created" notification on push/WhatsApp.
     const supersededByHighPriority = event.type === 'OPPORTUNITY_CREATED' && event.payload?.priority === 'HIGH';
 
+    const areaMode = Boolean(this.config.areas?.enabled);
     const users = await this.prisma.user.findMany({
       where: { companyId: event.companyId, status: 'ACTIVE', ...(event.type === 'SENSITIVE_ACTION_REQUESTED' ? { id: event.userId } : {}) },
-      include: { whatsappConnection: true },
+      include: { whatsappConnection: true, ...(areaMode ? { company: { select: { accountType: true } } } : {}) },
     });
     const entity = await this.#entity(event);
     const message = composeNotification(event, entity);
@@ -125,9 +128,9 @@ export class NotificationRouter {
         let status = 'SKIPPED';
         let error = null;
         try {
-          if (channel === 'WHATSAPP') status = await this.#whatsapp(user, event, entity, message);
+          if (channel === 'WHATSAPP') status = await this.#whatsapp(user, event, entity, message, this.#areaFor(user));
           if (channel === 'PUSH') status = this.push ? await this.push.sendToUser(user.id, { ...message, tag: event.type }) : 'SKIPPED';
-          if (channel === 'EMAIL') status = await this.#email(user, message);
+          if (channel === 'EMAIL') status = await this.#email(user, message, this.#areaFor(user));
         } catch (err) {
           status = 'FAILED';
           error = String(err.message || err).slice(0, 500);
@@ -141,18 +144,24 @@ export class NotificationRouter {
     }
   }
 
-  async #whatsapp(user, event, entity, message) {
-    const conn = user.whatsappConnection;
-    if (!this.whatsapp || !conn || conn.status !== 'VERIFIED') return 'SKIPPED';
-    return this.whatsapp.notify(conn, event, entity, message);
+  /** Area of the recipient, for links on the host of their area. Null in legacy mode (APP_URL). */
+  #areaFor(user) {
+    return this.config.areas?.enabled ? areaOfUser(user) : null;
   }
 
-  async #email(user, message) {
+  async #whatsapp(user, event, entity, message, area) {
+    const conn = user.whatsappConnection;
+    if (!this.whatsapp || !conn || conn.status !== 'VERIFIED') return 'SKIPPED';
+    return this.whatsapp.notify(conn, event, entity, message, { area });
+  }
+
+  async #email(user, message, area) {
     if (!this.email || this.config.email.provider !== 'resend') return 'SKIPPED';
+    const link = area ? urlFor(area, message.url, this.config) : `${this.config.appUrl}${message.url}`;
     const ok = await this.email.send({
       to: user.email,
       subject: `TemPix — ${message.title}`,
-      text: `${message.title}\n${message.body}\n\n${this.config.appUrl}${message.url}`,
+      text: `${message.title}\n${message.body}\n\n${link}`,
     });
     return ok ? 'SENT' : 'FAILED';
   }

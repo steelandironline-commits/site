@@ -1,5 +1,6 @@
 import { getPrisma } from '../db.js';
 import { logger } from '../logger.js';
+import { areaOfUser } from '../security/area.js';
 
 /**
  * Sends through the configured WhatsAppProvider and records every outbound
@@ -9,6 +10,19 @@ export class WhatsAppMessenger {
   constructor({ prisma = getPrisma(), provider }) {
     this.prisma = prisma;
     this.provider = provider;
+  }
+
+  /**
+   * Area of the owner of a connection, to build links on the host of the recipient's area.
+   * Area mode only (the provider has `linkFor`); legacy mode returns null and links use APP_URL.
+   */
+  async areaOf(connection) {
+    if (!this.provider.linkFor) return null;
+    const user = await this.prisma.user.findUnique({
+      where: { id: connection?.userId ?? '' },
+      select: { isPlatformAdmin: true, company: { select: { accountType: true } } },
+    });
+    return areaOfUser(user);
   }
 
   /** method: provider method name; args: its arguments after `to`. */
@@ -53,33 +67,35 @@ export class WhatsAppNotifier {
     this.messenger = messenger;
   }
 
-  async notify(connection, event, entity, message) {
+  /** `area` is the recipient's area (area mode); null in legacy mode, where links use APP_URL. */
+  async notify(connection, event, entity, message, { area = null } = {}) {
     const opts = { domainEventId: event.id };
+    const withArea = area ? { area } : {};
     let out;
     switch (event.type) {
       case 'OPPORTUNITY_CREATED':
       case 'OPPORTUNITY_HIGH_PRIORITY':
         if (!entity) return 'SKIPPED';
-        out = await this.messenger.send(connection, 'sendOpportunityNotification', [{ opportunity: entity, link: message.url }], opts);
+        out = await this.messenger.send(connection, 'sendOpportunityNotification', [{ opportunity: entity, link: message.url, ...withArea }], opts);
         break;
       case 'FREIGHT_MATCH_CREATED':
       case 'RETURN_LOAD_FOUND':
         if (!entity) return 'SKIPPED';
-        out = await this.messenger.send(connection, 'sendFreightMatchNotification', [{ match: entity, link: message.url }], opts);
+        out = await this.messenger.send(connection, 'sendFreightMatchNotification', [{ match: entity, link: message.url, ...withArea }], opts);
         break;
       case 'WORKFORCE_MATCH_CREATED':
         if (!entity) return 'SKIPPED';
-        out = await this.messenger.send(connection, 'sendWorkforceMatchNotification', [{ match: entity, link: message.url }], opts);
+        out = await this.messenger.send(connection, 'sendWorkforceMatchNotification', [{ match: entity, link: message.url, ...withArea }], opts);
         break;
       default:
         if (event.aggregateType === 'transaction' || event.aggregateType === 'freightMatch') {
           // Financial/trip updates: text + deep link only. Release is never a WhatsApp button.
-          const link = this.messenger.provider.link(message.url);
+          const link = this.messenger.provider.link(message.url, area);
           out = await this.messenger.reply(connection, [message.title, message.body, message.cta ? `[${message.cta}] ${link}` : link].filter(Boolean).join('\n'), opts);
         } else if (event.aggregateType === 'payment' && entity) {
-          out = await this.messenger.send(connection, 'sendPaymentNotification', [{ payment: entity, title: message.title, link: message.url }], opts);
+          out = await this.messenger.send(connection, 'sendPaymentNotification', [{ payment: entity, title: message.title, link: message.url, ...withArea }], opts);
         } else {
-          out = await this.messenger.reply(connection, `${message.title}\n${message.body}\n${this.messenger.provider.link(message.url)}`.trim(), opts);
+          out = await this.messenger.reply(connection, `${message.title}\n${message.body}\n${this.messenger.provider.link(message.url, area)}`.trim(), opts);
         }
     }
     return out.status;

@@ -105,7 +105,9 @@ export class WhatsAppInboundService {
       return { handled: 'unknown_button' };
     }
     const action = WHATSAPP_DECISIONS[d.decision]?.[d.kind];
-    const link = this.provider.link((LINK_FOR[d.kind] || (() => '/app'))(d.id));
+    // Links go to the host of the recipient's area (area mode); APP_URL in legacy mode.
+    const area = await this.messenger.areaOf(connection);
+    const link = this.provider.link((LINK_FOR[d.kind] || (() => '/app'))(d.id), area);
     if (!action) {
       // VER ROTA / ABRIR TEMPIX: navigation only, no state change.
       await this.messenger.reply(connection, `Abra no TemPix: ${link}`);
@@ -118,7 +120,7 @@ export class WhatsAppInboundService {
       actor: { userId: connection.userId, whatsappConnectionId: connection.id },
     });
     if (out.status === 'CONFIRMATION_REQUIRED') {
-      await this.messenger.reply(connection, `🔒 Confirme no app TemPix: ${this.provider.link(out.challenge.confirmPath)}`);
+      await this.messenger.reply(connection, `🔒 Confirme no app TemPix: ${this.provider.link(out.challenge.confirmPath, area)}`);
       return { handled: 'challenge', action };
     }
     await this.messenger.reply(connection, `${describeResult(action, out.result)}\n${link}`);

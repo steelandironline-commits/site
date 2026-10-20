@@ -35,9 +35,11 @@ export class WhatsAppProvider {
   name = 'abstract';
   enabled = true;
 
-  constructor({ templates = {}, appUrl = '' } = {}) {
+  constructor({ templates = {}, appUrl = '', linkFor = null } = {}) {
     this.templates = templates;
     this.appUrl = appUrl;
+    // Area mode only: (area, path) -> absolute URL on the host of that area. Null in legacy mode.
+    this.linkFor = linkFor;
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -100,7 +102,12 @@ export class WhatsAppProvider {
     return this.sendTemplate(to, { name, bodyParams: [code], urlButtons: [code] });
   }
 
-  link(path) {
+  /**
+   * Absolute link to an app path. Area mode: on the host of the recipient's `area` (a missing or
+   * unknown area throws, so a link never points at the wrong host). Legacy mode: APP_URL, as always.
+   */
+  link(path, area) {
+    if (this.linkFor) return this.linkFor(area, path);
     return `${this.appUrl}${path}`;
   }
 
@@ -111,13 +118,13 @@ export class WhatsAppProvider {
     return this.sendInteractiveMessage(to, { header, body, buttons, footer: 'TemPix' });
   }
 
-  async sendOpportunityNotification(to, { opportunity: o, link }) {
+  async sendOpportunityNotification(to, { opportunity: o, link, area }) {
     const value = formatRange(o.estimatedMinValue, o.estimatedMaxValue);
     const place = [o.city, o.state].filter(Boolean).join('/');
     return this.#decision(to, {
       template: this.templates.opportunity,
       header: o.priority === 'HIGH' ? 'Oportunidade · ALTA PRIORIDADE' : 'Nova oportunidade',
-      body: `${o.targetCompanyName}${place ? ` (${place})` : ''}\nMatch ${o.score}% · ${o.signal}\nPotencial: ${value}${o.isDemo ? '\n[DEMO]' : ''}\n\n${this.link(link)}`,
+      body: `${o.targetCompanyName}${place ? ` (${place})` : ''}\nMatch ${o.score}% · ${o.signal}\nPotencial: ${value}${o.isDemo ? '\n[DEMO]' : ''}\n\n${this.link(link, area)}`,
       params: [o.targetCompanyName, `${o.score}%`, o.signal, value],
       buttons: [
         { id: decisionPayload('ANALISAR', 'o', o.id), title: 'ANALISAR' },
@@ -127,11 +134,11 @@ export class WhatsAppProvider {
     });
   }
 
-  async sendFreightMatchNotification(to, { match: m, link }) {
+  async sendFreightMatchNotification(to, { match: m, link, area }) {
     return this.#decision(to, {
       template: this.templates.freight,
       header: m.isReturnLoad ? 'Carga de retorno encontrada' : 'Carga compatível',
-      body: `${m.origin} → ${m.destination}\n${m.cargo || 'Carga geral'}${m.price ? ` · ${formatBRL(m.price)}` : ''}${m.isDemo ? '\n[DEMO]' : ''}\n\n${this.link(link)}`,
+      body: `${m.origin} → ${m.destination}\n${m.cargo || 'Carga geral'}${m.price ? ` · ${formatBRL(m.price)}` : ''}${m.isDemo ? '\n[DEMO]' : ''}\n\n${this.link(link, area)}`,
       params: [m.origin, m.destination, m.price ? formatBRL(m.price) : '—'],
       buttons: [
         { id: decisionPayload('TENHO INTERESSE', 'f', m.id), title: 'TENHO INTERESSE' },
@@ -141,11 +148,11 @@ export class WhatsAppProvider {
     });
   }
 
-  async sendWorkforceMatchNotification(to, { match: m, link }) {
+  async sendWorkforceMatchNotification(to, { match: m, link, area }) {
     return this.#decision(to, {
       template: this.templates.workforce,
       header: 'Profissional compatível',
-      body: `${m.professionalName} · ${m.role}${m.city ? ` · ${m.city}` : ''}${m.isDemo ? '\n[DEMO]' : ''}\n\n${this.link(link)}`,
+      body: `${m.professionalName} · ${m.role}${m.city ? ` · ${m.city}` : ''}${m.isDemo ? '\n[DEMO]' : ''}\n\n${this.link(link, area)}`,
       params: [m.professionalName, m.role],
       buttons: [
         { id: decisionPayload('CONVIDAR', 'w', m.id), title: 'CONVIDAR' },
@@ -156,11 +163,11 @@ export class WhatsAppProvider {
   }
 
   /** Payment notification. Never includes provider credentials. */
-  async sendPaymentNotification(to, { payment: p, title, link, includePixCode = false }) {
+  async sendPaymentNotification(to, { payment: p, title, link, includePixCode = false, area }) {
     const lines = [title || 'Pagamento', `Valor: ${formatCents(p.amountCents)}`];
     if (p.reference) lines.push(`Referência: ${p.reference}`);
     if (includePixCode && p.pixCopyPaste) lines.push('', 'Pix copia e cola:', p.pixCopyPaste);
-    lines.push('', `Detalhes: ${this.link(link)}`);
+    lines.push('', `Detalhes: ${this.link(link, area)}`);
     if (this.templates.payment && !includePixCode) {
       return this.sendTemplate(to, { name: this.templates.payment, bodyParams: [title || 'Pagamento', formatCents(p.amountCents), p.reference || '—'] });
     }
