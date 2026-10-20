@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { z } from 'zod';
+import { AREAS, AREA_HOST_VARS, REDIRECT_HOST_VARS, hostnameOf, parseHost } from '@autopix/areas/areas';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT_DIR = path.resolve(here, '../../..');
@@ -31,11 +32,37 @@ const optional = z
   .optional()
   .transform((v) => (v === undefined || v.trim() === '' ? undefined : v.trim()));
 
+const HOST_HINT = 'must be a host (name[:port]) with no scheme, path or spaces, e.g. temcnpj.com.br or localhost:5173';
+
+/** A public host, `name[:port]`. Optional; stored lowercase. */
+const publicHost = optional
+  .refine((v) => v === undefined || parseHost(v) !== null, { message: HOST_HINT })
+  .transform((v) => (v === undefined ? undefined : parseHost(v)));
+
+/** Comma separated list of hosts. Optional; entries are trimmed, lowercased and deduplicated. */
+const publicHostList = z
+  .string()
+  .optional()
+  .transform((v) => (v ?? '').split(',').map((s) => s.trim()).filter(Boolean))
+  .superRefine((list, ctx) => {
+    for (const host of list) {
+      if (parseHost(host) === null) ctx.addIssue({ code: z.ZodIssueCode.custom, message: `"${host}" ${HOST_HINT}` });
+    }
+  })
+  .transform((list) => [...new Set(list.map((h) => parseHost(h)).filter(Boolean))]);
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: optional,
   APP_URL: optional,
   API_URL: optional,
+  // Area mode (Tem CNPJ / Tem CPF on one site). Optional: without PUBLIC_HOST_CNPJ and
+  // PUBLIC_HOST_CPF the server keeps the legacy behaviour (host is ignored).
+  PUBLIC_HOST_CNPJ: publicHost,
+  PUBLIC_HOST_CPF: publicHost,
+  PUBLIC_HOST_CNPJ_REDIRECT: publicHostList,
+  PUBLIC_HOST_CPF_REDIRECT: publicHostList,
+  ADMIN_HOST: publicHost,
   SESSION_SECRET: optional,
   ACTIVATION_TOKEN_SECRET: optional,
   PASSWORD_RESET_SECRET: optional,
@@ -151,6 +178,50 @@ function mtlsFrom(e) {
   return null;
 }
 
+/**
+ * Area mode switch. It turns on only when PUBLIC_HOST_CNPJ and PUBLIC_HOST_CPF are both
+ * set. Anything half-configured is an error at startup: better a deploy that does not
+ * boot than a site isolated by half. Problems are pushed to `errors`.
+ */
+function areasFrom(e, errors) {
+  const hosts = { CNPJ: e.PUBLIC_HOST_CNPJ ?? null, CPF: e.PUBLIC_HOST_CPF ?? null, ADMIN: e.ADMIN_HOST ?? null };
+  const redirects = [
+    ...e.PUBLIC_HOST_CNPJ_REDIRECT.map((host) => ({ host, area: 'CNPJ' })),
+    ...e.PUBLIC_HOST_CPF_REDIRECT.map((host) => ({ host, area: 'CPF' })),
+  ];
+  const enabled = Boolean(hosts.CNPJ && hosts.CPF);
+
+  if (!enabled) {
+    const setOnes = ['CNPJ', 'CPF'].filter((a) => hosts[a]).map((a) => AREA_HOST_VARS[a]);
+    if (setOnes.length === 1) {
+      const missing = AREA_HOST_VARS[hosts.CNPJ ? 'CPF' : 'CNPJ'];
+      errors.push(`${setOnes[0]} is set but ${missing} is not: area mode needs ${AREA_HOST_VARS.CNPJ} and ${AREA_HOST_VARS.CPF} together. Set both, or remove ${setOnes[0]} to keep the legacy mode`);
+    } else if (hosts.ADMIN || redirects.length) {
+      const extra = [];
+      if (hosts.ADMIN) extra.push(AREA_HOST_VARS.ADMIN);
+      for (const area of Object.keys(REDIRECT_HOST_VARS)) if (redirects.some((r) => r.area === area)) extra.push(REDIRECT_HOST_VARS[area]);
+      errors.push(`${extra.join(', ')} ${extra.length > 1 ? 'have' : 'has'} no effect without ${AREA_HOST_VARS.CNPJ} and ${AREA_HOST_VARS.CPF}. Set both, or remove ${extra.length > 1 ? 'them' : 'it'}`);
+    }
+  } else {
+    // One role per host name (the port is ignored when matching).
+    const roles = new Map();
+    const claim = (host, label) => {
+      const name = hostnameOf(host);
+      const owner = roles.get(name);
+      if (owner && owner !== label) errors.push(`host "${name}" is used by both ${owner} and ${label}: each host must have a single role`);
+      else roles.set(name, label);
+    };
+    for (const area of AREAS) if (hosts[area]) claim(hosts[area], AREA_HOST_VARS[area]);
+    for (const { host, area } of redirects) claim(host, REDIRECT_HOST_VARS[area]);
+  }
+
+  return Object.freeze({
+    enabled,
+    hosts: Object.freeze(hosts),
+    redirects: Object.freeze(redirects.map((r) => Object.freeze(r))),
+  });
+}
+
 export function loadConfig(env = process.env) {
   const parsed = schema.safeParse(env);
   if (!parsed.success) {
@@ -179,6 +250,7 @@ export function loadConfig(env = process.env) {
     appUrl: (e.APP_URL || `http://localhost:${isProduction ? e.PORT : 5173}`).replace(/\/$/, ''),
     apiUrl: (e.API_URL || e.APP_URL || `http://localhost:${e.PORT}`).replace(/\/$/, ''),
     port: e.PORT,
+    areas: areasFrom(e, errors),
     secrets: {
       session: secret('SESSION_SECRET'),
       activation: secret('ACTIVATION_TOKEN_SECRET'),

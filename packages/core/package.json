@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@autopix/areas": "1.0.0",
     "@autopix/shared": "1.0.0",
     "@prisma/client": "6.19.3",
     "argon2": "0.44.0",
