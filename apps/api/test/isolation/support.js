@@ -14,10 +14,12 @@ import { testConfig } from '../helpers.js';
 //
 // Regra da suíte: nada é pulado em silêncio. Sem banco de teste ou sem o build das áreas, o grupo
 // que depende deles aparece como PULADO com o motivo no próprio título (e o script da raiz soma e
-// avisa). No CI (variável CI) o mesmo caso FALHA, em vez de pular: a suíte é obrigatória lá.
+// avisa). No modo estrito (ISOLATION_STRICT=1, que `npm run test:isolation` liga sozinho quando CI=true)
+// o mesmo caso FALHA, em vez de pular: a suíte é obrigatória lá. `npm test` não é estrito, porque no
+// CI ele roda antes de `npm run build:areas`; quem garante o build é o `test:isolation`.
 
-/** CI, ou ISOLATION_STRICT=1: pular vira falha. */
-export const STRICT = process.env.CI === 'true' || process.env.ISOLATION_STRICT === '1';
+/** ISOLATION_STRICT=1 (ligado por scripts/test-isolation.mjs no CI ou com --strict): pular vira falha. */
+export const STRICT = process.env.ISOLATION_STRICT === '1';
 
 /** O globalSetup do vitest (apps/api/test/globalSetup.js) liga isto quando o banco de teste migrou. */
 export const dbReady = process.env.AUTOPIX_TEST_DB_READY === '1';
@@ -25,13 +27,13 @@ export const dbReady = process.env.AUTOPIX_TEST_DB_READY === '1';
 const NO_DB = 'sem banco de teste: defina DATABASE_URL ou TEST_DATABASE_URL de um Postgres local (o nome deve conter "test") e rode de novo';
 const NO_BUILD = 'sem os builds das áreas: rode "npm run build:areas" antes';
 
-/** Um grupo que precisa de banco. Sem banco: PULADO com motivo (local) ou FALHA (CI). */
+/** Um grupo que precisa de banco. Sem banco: PULADO com motivo, ou FALHA no modo estrito. */
 export function describeDb(name, fn) {
   if (dbReady) return describe(name, fn);
   return unavailable(name, fn, NO_DB);
 }
 
-/** Um grupo que precisa de apps/web/dist-cnpj e dist-cpf. Sem eles: PULADO com motivo (local) ou FALHA (CI). */
+/** Um grupo que precisa de apps/web/dist-cnpj e dist-cpf. Sem eles: PULADO com motivo, ou FALHA no modo estrito. */
 export function describeBuild(name, fn) {
   if (realBuildReady) return describe(name, fn);
   return unavailable(name, fn, NO_BUILD);
@@ -46,7 +48,7 @@ export function describeDbAndBuild(name, fn) {
 function unavailable(name, fn, reason) {
   if (STRICT) {
     return describe(name, () => {
-      it(`PRECISA rodar no CI: ${reason}`, () => {
+      it(`obrigatório no modo estrito (CI): ${reason}`, () => {
         throw new Error(`${name}: ${reason}`);
       });
     });

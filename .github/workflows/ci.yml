@@ -1,0 +1,91 @@
+# CI do TemPix / Tem CNPJ e Tem CPF (PLANO_DIVISAO, ETAPA 7, item 3).
+#
+# Um job: instala, migra o banco de teste, roda os testes, o lint, o build das duas áreas, a suíte
+# de isolamento (obrigatória: aqui pular um caso é falha) e o ponta a ponta com Playwright.
+# Não publica nada e não usa segredo: o Postgres é um serviço descartável do próprio job.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Uma execução por branch; a mais nova cancela a anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Testes, isolamento e ponta a ponta
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: autopix_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d autopix_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      # O nome do banco precisa conter "test": a suíte da API e o ponta a ponta recusam outro (e zeram as tabelas).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/autopix_test?schema=public
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/autopix_test?schema=public
+      PRISMA_HIDE_UPDATE_MESSAGE: "1"
+
+    steps:
+      - name: Código
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Migrar o banco de teste
+        run: npm run db:migrate
+
+      - name: Testes (shared, areas, core, api, web)
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build das duas áreas
+        run: npm run build:areas
+
+      - name: Suíte de isolamento
+        run: npm run test:isolation
+
+      - name: Chromium para o Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Ponta a ponta (Playwright)
+        run: npm run test:e2e
+
+      - name: Relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
