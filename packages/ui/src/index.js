@@ -5,7 +5,8 @@
 export * from './components/ui.jsx';
 export * from './components/PageLoader.jsx';
 
-// Marca e símbolo do real
+// Marca (contexto fornecido pela entrada do app), logo e símbolo do real
+export * from './brand/BrandContext.jsx';
 export * from './brand/BRLIcon.jsx';
 export * from './brand/Logo.jsx';
 

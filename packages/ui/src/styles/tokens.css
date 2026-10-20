@@ -1,4 +1,4 @@
-/* TemPix design tokens — dark-first command center */
+/* Design tokens — dark-first command center. Cada área pode redefinir os de destaque (--primary*) no seu theme.css. */
 :root {
   color-scheme: dark;
 

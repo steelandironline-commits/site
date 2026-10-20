@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Logo } from '../brand/Logo.jsx';
+import { useBrand } from '../brand/BrandContext.jsx';
 import s from './auth.module.css';
 
 /** › › › rows with a light running through them (no radar). */
@@ -19,6 +20,7 @@ function ChevronFlow() {
 }
 
 export function AuthShell({ title, subtitle, children, footer }) {
+  const { name, slogan, support } = useBrand();
   return (
     <div className={s.shell}>
       <aside className={s.aside} aria-hidden="true">
@@ -27,12 +29,12 @@ export function AuthShell({ title, subtitle, children, footer }) {
         </Link>
         <div className={s.asideCenter}>
           <ChevronFlow />
-          <p className={s.asideQuote}>Tem emprego, tem rota, tem serviço. TemPix.</p>
+          <p className={s.asideQuote}>{slogan}</p>
         </div>
-        <p className={s.asideFoot}>Clientes, cargas, profissionais e Pix numa tela só.</p>
+        <p className={s.asideFoot}>{support}</p>
       </aside>
       <main className={s.main}>
-        <Link to="/" className={s.mobileLogo} aria-label="TemPix — início">
+        <Link to="/" className={s.mobileLogo} aria-label={`${name} — início`}>
           <Logo />
         </Link>
         <motion.div className={s.panel} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>

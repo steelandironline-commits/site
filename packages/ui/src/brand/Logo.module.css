@@ -13,6 +13,10 @@
   line-height: 1;
 }
 
+.word[data-spaced='true'] {
+  gap: 0.26em;
+}
+
 .tem {
   color: var(--text);
 }

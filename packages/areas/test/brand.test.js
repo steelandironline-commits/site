@@ -11,12 +11,28 @@ const source = (name) => fs.readFileSync(path.join(brandDir, name), 'utf8');
 
 describe('marca', () => {
   it('cada arquivo exporta só o que é seu', () => {
-    expect(Object.keys(platform)).toEqual(['PLATFORM_NAME']);
-    expect(Object.keys(cnpj)).toEqual(['AREA_NAME']);
-    expect(Object.keys(cpf)).toEqual(['AREA_NAME']);
+    expect(Object.keys(platform)).toEqual(['PLATFORM_NAME', 'PLATFORM_BRAND']);
+    expect(Object.keys(cnpj)).toEqual(['AREA_NAME', 'AREA_BRAND']);
+    expect(Object.keys(cpf)).toEqual(['AREA_NAME', 'AREA_BRAND']);
     expect(platform.PLATFORM_NAME).toBe('TemPix');
     expect(cnpj.AREA_NAME).toBe('Tem CNPJ');
     expect(cpf.AREA_NAME).toBe('Tem CPF');
+  });
+
+  it('o conjunto de marca de cada arquivo tem o formato do BrandProvider e o nome bate', () => {
+    for (const [brand, name] of [
+      [platform.PLATFORM_BRAND, 'TemPix'],
+      [cnpj.AREA_BRAND, 'Tem CNPJ'],
+      [cpf.AREA_BRAND, 'Tem CPF'],
+    ]) {
+      expect(Object.keys(brand)).toEqual(['name', 'wordmark', 'slogan', 'support']);
+      expect(brand.name).toBe(name);
+      expect(brand.wordmark).toHaveLength(2);
+      // O logo escreve as duas partes; sem o espaço, elas têm de formar o nome.
+      expect(brand.wordmark.join('')).toBe(name.replaceAll(' ', ''));
+      for (const text of [brand.slogan, brand.support, ...brand.wordmark]) expect(text.trim().length).toBeGreaterThan(0);
+      expect(Object.isFrozen(brand)).toBe(true);
+    }
   });
 
   it('o arquivo de uma área não cita a outra nem importa nada', () => {

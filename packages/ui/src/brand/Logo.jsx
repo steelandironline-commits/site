@@ -1,8 +1,9 @@
 import { useId } from 'react';
+import { useBrand } from './BrandContext.jsx';
 import styles from './Logo.module.css';
 
 /**
- * TemPix symbol: a raised 2.5D tile (same language as the landing islands)
+ * Brand symbol: a raised 2.5D tile (same language as the landing islands)
  * with a check — "tem": it's there, it's done. Deliberately unrelated to the
  * official Pix mark (no interlocking shapes, own colours).
  */
@@ -30,14 +31,20 @@ export function LogoMark({ size = 28, animated = false, className = '' }) {
   );
 }
 
+/**
+ * Symbol and wordmark of the current brand (see BrandProvider). When the brand name has a
+ * space that the two wordmark parts do not carry, the parts are spaced.
+ */
 export function Logo({ size = 26, animated = false, compact = false }) {
+  const { name, wordmark } = useBrand();
+  const [lead, accent] = wordmark;
   return (
-    <span className={styles.logo} aria-label="TemPix">
+    <span className={styles.logo} aria-label={name}>
       <LogoMark size={size} animated={animated} />
       {!compact && (
-        <span className={styles.word} aria-hidden="true">
-          <span className={styles.tem}>Tem</span>
-          <span className={styles.pix}>Pix</span>
+        <span className={styles.word} data-spaced={name !== `${lead}${accent}`} aria-hidden="true">
+          <span className={styles.tem}>{lead}</span>
+          <span className={styles.pix}>{accent}</span>
         </span>
       )}
     </span>

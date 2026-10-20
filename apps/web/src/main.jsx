@@ -9,21 +9,25 @@ import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '@fontsource/ibm-plex-mono/600.css';
 import '@autopix/ui/styles/global.css';
+import { PLATFORM_BRAND } from '@autopix/areas/brand/platform';
 import App from './App.jsx';
-import { SessionProvider, registerServiceWorker } from '@autopix/ui';
+import { BrandProvider, SessionProvider, registerServiceWorker } from '@autopix/ui';
 import { ToastProvider } from './lib/toast.jsx';
 
 registerServiceWorker();
 
+// Build legado (até o go-live): a marca é a da plataforma, com os textos de sempre.
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <MotionConfig reducedMotion="user">
-        <SessionProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </SessionProvider>
+        <BrandProvider brand={PLATFORM_BRAND}>
+          <SessionProvider>
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </SessionProvider>
+        </BrandProvider>
       </MotionConfig>
     </BrowserRouter>
   </StrictMode>,
