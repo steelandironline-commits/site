@@ -10,11 +10,12 @@ export const SUCCESSFUL_DELIVERY = {
 };
 const authorSelect = { select: { name: true } };
 const txSelect = { select: { type: true, buyerConfirmedAt: true, isSandbox: true, isDemo: true } };
-const postSelect = {
+/** `filter` is the author's area filter ({} in legacy mode): the counts follow the feed's area too. */
+const postSelectFor = (filter) => ({
   id: true, body: true, authorUserId: true, createdAt: true, author: authorSelect,
   transaction: txSelect, repostOfId: true,
-  _count: { select: { comments: true, reposts: { where: { deletedAt: null } } } },
-};
+  _count: { select: { comments: Object.keys(filter).length ? { where: filter } : true, reposts: { where: { deletedAt: null, ...filter } } } },
+});
 
 /**
  * Only opt-in content is public inside the authenticated community.
@@ -73,6 +74,7 @@ export class SocialService {
     };
   }
   async list({ user, cursor, area }) {
+    const postSelect = postSelectFor(this.authorWhere(area));
     const items = await this.prisma.socialPost.findMany({
       where: this.visibleWhere(area), select: { ...postSelect, repostOf: { select: postSelect } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 21,
