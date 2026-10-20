@@ -376,8 +376,9 @@ describe.skipIf(!hasDb)('área da sessão · modo de áreas', () => {
       expect(check.body.taken.email).toMatch(IN_PROGRESS);
       expect(check.body.taken.email).not.toMatch(GIVEAWAYS);
 
-      // E a mesma área continua podendo reiniciar o próprio rascunho.
-      const own = await call(ctx.app, CNPJ_HOST, 'post', '/api/onboarding/start', { body: company({ email }) });
+      // E a mesma área continua podendo reiniciar o próprio rascunho. 4c (item H): "próprio" é quem
+      // tem a sessão de cadastro dele (o cookie do primeiro pedido); só o e-mail já não basta.
+      const own = await call(ctx.app, CNPJ_HOST, 'post', '/api/onboarding/start', { body: company({ email }), cookie: cookiePair(setCookieOf(draft, CNPJ_COOKIE)) });
       expect(own.status).toBe(201);
       expect((await ctx.prisma.user.findUnique({ where: { email } })).id).toBe(user.id);
     });

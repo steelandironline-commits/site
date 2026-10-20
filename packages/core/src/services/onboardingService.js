@@ -24,7 +24,10 @@ const PAYMENT_GRACE_MS = 30 * 60 * 1000;
 
 /** Area mode: a signup the host does not take. Generic on purpose; it never names the other area. */
 const WRONG_SIGNUP_MESSAGE = 'Não foi possível iniciar o cadastro. Confira os dados e tente novamente.';
-/** Area mode: an unpaid draft of the other area holds the e-mail. Says nothing about which area. */
+/**
+ * Area mode: an unpaid draft in progress holds its e-mail, for everyone who is not the draft's own
+ * onboarding session, on every host. Says nothing about which area the draft belongs to.
+ */
 const DRAFT_IN_PROGRESS_MESSAGE = 'Já existe um cadastro em andamento com este e-mail. Use outro e-mail ou tente novamente mais tarde.';
 
 export class OnboardingService {
@@ -53,14 +56,18 @@ export class OnboardingService {
     if (this.config.areas?.enabled && accountType !== accountTypeForHost(hostArea)) throw badRequest(WRONG_SIGNUP_MESSAGE);
   }
 
-  async start({ name, email, companyName, accountType = 'COMPANY', document }, meta = {}) {
+  /**
+   * `meta.sessionUserId` is the user of the onboarding session the request carries, if any: it is how
+   * the owner of a draft proves it is theirs (see #availability). The rest of `meta` goes to the session.
+   */
+  async start({ name, email, companyName, accountType = 'COMPANY', document }, { sessionUserId = null, ...meta } = {}) {
     this.#assertHostAccountType(accountType, meta.hostArea);
     // A professional's account is named after the person.
     const accountName = accountType === 'PERSON' ? name : companyName;
     const loginId = document; // CNPJ (company) or CPF (person), digits only
     const { sessionUserId = null, ...sessionMeta } = meta;
     await this.#purgeExpiredDrafts();
-    const { existing, taken } = await this.#availability({ email, accountType, loginId, hostArea: meta.hostArea });
+    const { existing, taken } = await this.#availability({ email, accountType, loginId, hostArea: meta.hostArea, sessionUserId });
     if (taken.email) throw conflict(taken.email, { field: 'email' });
     if (taken.document) throw conflict(taken.document, { field: 'document' });
     const pendingExpiresAt = new Date(Date.now() + DRAFT_TTL_MS);
@@ -91,7 +98,7 @@ export class OnboardingService {
   async check({ email, accountType, document }, meta = {}) {
     this.#assertHostAccountType(accountType, meta.hostArea);
     await this.#purgeExpiredDrafts();
-    const { taken } = await this.#availability({ email, accountType, loginId: document, hostArea: meta.hostArea });
+    const { taken } = await this.#availability({ email, accountType, loginId: document, hostArea: meta.hostArea, sessionUserId: meta.sessionUserId });
     return { available: !taken.email && !taken.document, taken };
   }
 
@@ -99,16 +106,21 @@ export class OnboardingService {
    * One account per e-mail, per CPF and per CNPJ. An unpaid draft holds its CPF/CNPJ
    * until its hour is up; the same e-mail may restart its own draft.
    */
-  async #availability({ email, accountType, loginId, hostArea }) {
+  async #availability({ email, accountType, loginId, hostArea, sessionUserId = null }) {
     const taken = {};
     const found = await this.prisma.user.findUnique({ where: { email }, include: { company: { select: { accountType: true } } } });
-    // Area mode: an unpaid draft of the other area is not this host's to restart (restarting would
-    // flip its account type). It is not "the e-mail's own draft": the e-mail is simply held.
-    const otherAreaDraft = Boolean(
-      this.config.areas?.enabled && found?.status === 'PENDING_PAYMENT' && areaOf(found.company.accountType) !== hostArea,
+    // Area mode: an unpaid draft is restarted only by the onboarding session that owns it. For anyone
+    // else, on any host, the e-mail is simply held, with one neutral message: comparing the two hosts
+    // must not tell which area a draft belongs to, and a stranger who knows the e-mail must not wipe
+    // it. A draft of the other area is never this host's to restart either (it would flip the account
+    // type), whoever asks. Legacy mode keeps restarting by e-mail alone.
+    const heldDraft = Boolean(
+      this.config.areas?.enabled &&
+        found?.status === 'PENDING_PAYMENT' &&
+        (found.id !== sessionUserId || areaOf(found.company.accountType) !== hostArea),
     );
-    const existing = otherAreaDraft ? null : found;
-    if (otherAreaDraft) taken.email = DRAFT_IN_PROGRESS_MESSAGE;
+    const existing = heldDraft ? null : found;
+    if (heldDraft) taken.email = DRAFT_IN_PROGRESS_MESSAGE;
     else if (existing && existing.status !== 'PENDING_PAYMENT') {
       taken.email = 'Já existe um cadastro com este e-mail. Use outro e-mail ou entre com a sua conta.';
     }

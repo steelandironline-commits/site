@@ -8,7 +8,8 @@ export function onboardingRoutes({ onboarding, config, limiters }) {
 
   r.post('/start', limiters.onboarding, async (req, res) => {
     const input = parse(onboardingStartSchema, onboarding.applyHostAccountType(req.body, req.area));
-    const { token, session, user } = await onboarding.start(input, { ip: req.ip, userAgent: req.get('user-agent'), hostArea: req.area });
+    // The draft's owner proves it with the onboarding session cookie of this host (see OnboardingService).
+    const { token, session, user } = await onboarding.start(input, { ip: req.ip, userAgent: req.get('user-agent'), hostArea: req.area, sessionUserId: req.user?.id ?? null });
     setSessionCookie(res, config, token, session.expiresAt, req.area);
     res.status(201).json(await onboarding.state(user));
   });
@@ -16,7 +17,7 @@ export function onboardingRoutes({ onboarding, config, limiters }) {
   /** First step: tells whether the e-mail or the CNPJ/CPF already has an account, before anything is saved. */
   r.post('/check', limiters.onboardingCheck, async (req, res) => {
     const input = parse(onboardingCheckSchema, onboarding.applyHostAccountType(req.body, req.area));
-    res.json(await onboarding.check(input, { hostArea: req.area }));
+    res.json(await onboarding.check(input, { hostArea: req.area, sessionUserId: req.user?.id ?? null }));
   });
 
   r.get('/', requireOnboardingSession, async (req, res) => {

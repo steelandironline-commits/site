@@ -164,7 +164,7 @@ Os tokens são opacos: 32 bytes aleatórios, guardados como HMAC (`authService.j
 - **`LoginChallenge.area`:** o código de WhatsApp só vale no host onde o login começou.
 - **`ActivationToken.area` e `PasswordResetToken.area`:** o link é montado com `urlFor(area)`. Consumido em outro host, responde `404` "Link inválido", igual a um token inexistente. Quando `area` é nula (token antigo), vale a área do dono.
 - **Esqueci a senha em outra área:** mesma resposta, nenhum e-mail enviado.
-- **Cadastro:** o host impõe o tipo (CNPJ → `COMPANY`, CPF → `PERSON`). Um `accountType` diferente no corpo gera `400` genérico. Reiniciar um rascunho de outra área responde "Já existe um cadastro em andamento com este e-mail", sem citar a área.
+- **Cadastro:** o host impõe o tipo (CNPJ → `COMPANY`, CPF → `PERSON`). Um `accountType` diferente no corpo gera `400` genérico. Um rascunho em andamento só é reiniciado (e verificado como "disponível") pela sessão de cadastro que é dele, o cookie do primeiro pedido. Para qualquer outra pessoa, em qualquer dos dois hosts, a resposta é a mesma: "Já existe um cadastro em andamento com este e-mail", sem citar a área, então comparar os hosts não revela a área do rascunho, e quem só sabe o e-mail não o apaga. No modo legado o reinício por e-mail continua como era.
 
 ### 6.3 Por que isso basta, e onde não basta
 
