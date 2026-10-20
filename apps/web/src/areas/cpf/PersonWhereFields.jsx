@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { Field, Input, api } from '@autopix/ui';
 import { travelEstimate } from '@autopix/shared';
-import s from './onboarding.module.css';
+import s from '../../pages/onboarding/onboarding.module.css';
+import w from './personWhere.module.css';
 
 /** Pessoa física: the CEP where the person lives, and how far they accept to travel for work. */
 export function PersonWhereFields({ form, set, errors = {} }) {
@@ -60,11 +61,11 @@ export function PersonWhereFields({ form, set, errors = {} }) {
         )}
       </Field>
       {place.state === 'found' && (
-        <p className={s.cepPlace} role="status">
+        <p className={w.cepPlace} role="status">
           <MapPin size={14} aria-hidden="true" /> {place.label}
         </p>
       )}
-      {place.state === 'offline' && <p className={s.cepNote}>{place.message}</p>}
+      {place.state === 'offline' && <p className={w.cepNote}>{place.message}</p>}
       <Field
         label={`Até quantos km você aceita ir para o trabalho: ${km} km`}
         hint={trip ? `Tempo estimado a 80 km/h: ${trip.oneWay} só de ida, ou ${trip.roundTrip} ida e volta.` : 'Escolha a distância máxima.'}

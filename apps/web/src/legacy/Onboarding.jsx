@@ -23,11 +23,11 @@ import {
 } from '@autopix/shared';
 import { BRLText, Button, Field, Input, Logo, LogoMark, Select, TagInput, Textarea, post, put, safeStorage, useSession } from '@autopix/ui';
 import { AccountStartFields } from './AccountStartFields.jsx';
-import { PersonWhereFields } from './PersonWhereFields.jsx';
-import { OperationFields } from './operations/OperationFields.jsx';
-import { CapabilityList, CompletenessMeter } from './operations/ProfileOverview.jsx';
-import { OPS_COPY } from './operations/copy.js';
-import s from './onboarding.module.css';
+import { PersonWhereFields } from '../areas/cpf/PersonWhereFields.jsx';
+import { OperationFields } from '../pages/onboarding/operations/OperationFields.jsx';
+import { CapabilityList, CompletenessMeter } from '../pages/onboarding/operations/ProfileOverview.jsx';
+import { OPS_COPY } from '../pages/onboarding/operations/copy.js';
+import s from '../pages/onboarding/onboarding.module.css';
 
 const ease = [0.22, 1, 0.36, 1];
 const DRAFT_KEY = 'autopix:onboarding-draft';

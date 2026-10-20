@@ -7,7 +7,7 @@ import { BACK, NAV } from './nav.js';
 
 // Roteador da área de empresas: as rotas de PAGES.CNPJ (packages/areas/src/manifest.js) e nenhuma outra.
 // Caminho fora da lista cai em NotFound, nunca em redirecionamento. Há teste de deriva contra o manifesto.
-const Onboarding = lazy(() => import('../../pages/onboarding/Onboarding.jsx'));
+const Onboarding = lazy(() => import('./Onboarding.jsx'));
 const Checkout = lazy(() => import('../../pages/checkout/Checkout.jsx'));
 const Login = lazy(() => import('../../pages/auth/Login.jsx'));
 const Activate = lazy(() => import('../../pages/auth/Activate.jsx'));

@@ -8,7 +8,7 @@ import { BACK, NAV } from './nav.js';
 // Roteador da área de pessoas: as rotas de PAGES.CPF (packages/areas/src/manifest.js) e nenhuma outra.
 // Caminho fora da lista cai em NotFound, nunca em redirecionamento. Há teste de deriva contra o manifesto.
 // As telas comuns ainda são as de sempre; a ETAPA 5 as divide por área.
-const Onboarding = lazy(() => import('../../pages/onboarding/Onboarding.jsx'));
+const Onboarding = lazy(() => import('./Onboarding.jsx'));
 const Login = lazy(() => import('../../pages/auth/Login.jsx'));
 const Activate = lazy(() => import('../../pages/auth/Activate.jsx'));
 const ForgotPassword = lazy(() => import('../../pages/auth/ForgotPassword.jsx'));

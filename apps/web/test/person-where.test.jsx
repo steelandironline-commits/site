@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { PersonWhereFields } from '../src/pages/onboarding/PersonWhereFields.jsx';
+import { PersonWhereFields } from '../src/areas/cpf/PersonWhereFields.jsx';
 
 describe('pessoa física: onde trabalha', () => {
   it('asks only the CEP and the km accepted, with the travel time at 80 km/h', () => {

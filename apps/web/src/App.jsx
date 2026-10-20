@@ -4,7 +4,7 @@ import Landing from './pages/landing/Landing.jsx';
 import { PageLoader } from '@autopix/ui';
 import { ADMIN_NAV, BACK, NAV } from './legacyNav.js';
 
-const Onboarding = lazy(() => import('./pages/onboarding/Onboarding.jsx'));
+const Onboarding = lazy(() => import('./legacy/Onboarding.jsx'));
 const Checkout = lazy(() => import('./pages/checkout/Checkout.jsx'));
 const Login = lazy(() => import('./pages/auth/Login.jsx'));
 const Activate = lazy(() => import('./pages/auth/Activate.jsx'));

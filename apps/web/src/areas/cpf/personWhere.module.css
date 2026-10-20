@@ -1,0 +1,15 @@
+/* Do CEP à cidade, no endereço da pessoa. */
+.cepPlace {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -6px 0 4px;
+  font-size: var(--fs-13);
+  color: var(--primary);
+}
+
+.cepNote {
+  margin: -6px 0 4px;
+  font-size: var(--fs-12);
+  color: var(--muted);
+}

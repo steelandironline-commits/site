@@ -27,7 +27,7 @@ export default function Home() {
             </Button>
           ) : (
             <>
-              <Button to="/onboarding?tipo=profissional" size="lg" block>
+              <Button to="/onboarding" size="lg" block>
                 Criar conta
               </Button>
               <Button to="/login" size="lg" variant="outline" block>

@@ -1,13 +1,14 @@
 import { Building2, UserRound } from 'lucide-react';
 import { formatCnpj, formatCpf } from '@autopix/shared';
 import { BRLText, Field, Input } from '@autopix/ui';
-import s from './onboarding.module.css';
+import s from '../pages/onboarding/onboarding.module.css';
+import t from './accountStart.module.css';
 
 /** Shared first step: both account types require an e-mail; company name is separate. */
 export function AccountStartFields({ account, setAccount, errors = {}, hasSession, feeLabel }) {
   return (
     <>
-      <div className={s.typeChoice} role="radiogroup" aria-label="Tipo de cadastro">
+      <div className={t.typeChoice} role="radiogroup" aria-label="Tipo de cadastro">
         {[
           { type: 'PERSON', Icon: UserRound, title: 'Cadastro Pessoa Física', note: 'Login pelo CPF · grátis' },
           { type: 'COMPANY', Icon: Building2, title: 'Cadastro Empresas', note: `CNPJ ou MEI · taxa única de ${feeLabel}` },
@@ -17,7 +18,7 @@ export function AccountStartFields({ account, setAccount, errors = {}, hasSessio
             type="button"
             role="radio"
             aria-checked={account.accountType === type}
-            className={[account.accountType === type ? s.typeOn : '', type === 'COMPANY' ? `${s.typeGold} gold-icons` : ''].join(' ').trim() || undefined}
+            className={[account.accountType === type ? t.typeOn : '', type === 'COMPANY' ? `${t.typeGold} gold-icons` : ''].join(' ').trim() || undefined}
             disabled={hasSession}
             onClick={() => setAccount({ ...account, accountType: type, document: account.accountType === type ? account.document : '' })}
           >
