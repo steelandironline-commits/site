@@ -198,14 +198,16 @@ npm run db:studio
 |---------|-------------|
 | `npm install` | Install all workspaces and generate the Prisma client. |
 | `npm run dev` | API (watch) + worker (watch) + Vite dev server. |
-| `npm run build` | Prisma generate + production build of the web app. |
+| `npm run build` | Prisma generate + production build of the web app (legacy `dist`) and of both areas (`npm run build:areas`). |
 | `npm run build:areas` | Production build of the Tem CNPJ and Tem CPF areas (`apps/web/dist-cnpj`, `apps/web/dist-cpf`). |
 | `npm run dev:cnpj` | Vite dev server of the Tem CNPJ area (port 5173). |
 | `npm run dev:cpf` | Vite dev server of the Tem CPF area (port 5174). |
 | `npm run lint` | `node --check` on every `.js` file of the API, the worker and the packages. |
 | `npm run start` | Start the API (serves the built SPA). |
 | `npm run start:worker` | Start the background worker. |
-| `npm test` | Unit + integration tests (shared, core, api). |
+| `npm test` | Unit + integration tests (shared, areas, core, api, web). |
+| `npm run test:isolation` | Isolation suite between the two areas (routes, cookies, tokens, bundles, files), with the case count per item. Needs the test database and `npm run build:areas`; in CI (`CI=true`) or with `-- --strict`, a skipped case is a failure. |
+| `npm run test:e2e` | Playwright end-to-end of both areas in Chromium (`e2e/`), with the production host names mapped to the local server. Needs `npm run build:areas` and the test database. See `docs/divisao/DEPLOY_AREAS.md` for the deploy plan. |
 | `npm run db:migrate` | Apply migrations. |
 | `npm run db:seed` | Seed agents (+ demo data in DEMO mode). |
 

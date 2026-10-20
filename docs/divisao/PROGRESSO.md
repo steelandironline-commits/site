@@ -15,7 +15,7 @@ Atualizado: 2026-10-20
 | 4 · Autenticação e API isoladas | Opus desenha, Sonnet implementa | Não iniciada | Revisão de segurança do `arquiteto` antes de seguir |
 | 5 · Separação das telas e funções | Sonnet (`implementador`) | **Concluída. Aguardando aprovação** | Telas por área, cópia por build, `GET/PUT /api/profile`. Os dois bundles sem marcador cruzado |
 | 6 · Textos, SEO e identidade | Haiku (`auxiliar`) | Não iniciada | Depende da decisão de marca (Q7) |
-| 7 · Testes de isolamento, CI e deploy | Sonnet (`implementador`) | Não iniciada | Deploy configurado, **sem publicar** |
+| 7 · Testes de isolamento, CI e deploy | Sonnet (`implementador`) | **Concluída. Aguardando aprovação** | `npm run test:isolation`, `npm run test:e2e`, `.github/workflows/ci.yml`, `docs/divisao/DEPLOY_AREAS.md`. Nada publicado |
 | 8 · Revisão final | Opus (`arquiteto`) | Não iniciada | `GO_LIVE.md`. Publicação só com sua autorização |
 
 ## ETAPA 0 · O que foi feito
@@ -75,6 +75,25 @@ Premissas do `ARQUITETURA.md` seção 1 (as perguntas Q1 a Q14 seguem sem respos
 - O catálogo do perfil operacional (`packages/shared/src/operations`, ~1.200 linhas) e os rótulos de `platform.js` continuam comuns, filtrados por `accountType` em tempo de execução. Os dois bundles levam o vocabulário do outro ali dentro (por exemplo "Equipes" nos módulos). Dividir exige duplicar o catálogo por área (Q10) e é decisão de produto.
 - Marca e módulo ainda fixos nas telas e no `packages/ui` ("TemPix" no `AppLayout`, rótulos do `MiniRadar`): ETAPA 6.
 - A linha da ETAPA 3 e a da ETAPA 4 desta tabela não foram atualizadas por aquelas etapas.
+
+## ETAPA 7 · O que foi feito
+
+Nada foi publicado: sem push, sem migração fora do banco local, sem mudança em `railway.ts`, `.env` nem DNS.
+
+- [x] **Suíte de isolamento** (`npm run test:isolation`, script `scripts/test-isolation.mjs`): 485 casos, por item: a 194, b 90, c 96, d 77, e 28. As listas vêm do `app.js` (`mountsOf`), do manifesto (`API_MOUNTS`, `PAGES`) e do catálogo de ações do motor; a coleta falha se uma vier vazia. Sem banco ou sem `build:areas` o grupo aparece como PULADO com o motivo; com `CI=true` ou `--strict` pular é falha.
+- [x] **Marcadores de bundle** numa lista só (`packages/areas/src/markers.js`), lida pelo teste de bundle do web e pela suíte (o mesmo conjunto, aplicado ao que o servidor entrega a partir do build do deploy).
+- [x] **Ponta a ponta** (`npm run test:e2e`, `@playwright/test` 1.56.1 fixo): 19 cenários verdes e 1 `test.fixme` (favicon com arte própria). Chromium já instalado, `--host-resolver-rules` com os nomes de produção trocando a porta.
+- [x] **CI** (`.github/workflows/ci.yml`): Node 22, Postgres 16, `npm ci`, migração do banco de teste, `npm test`, lint, `build:areas`, `test:isolation`, Playwright. Escrito e validado como YAML; não foi executado no GitHub.
+- [x] **Deploy preparado** (`docs/divisao/DEPLOY_AREAS.md`): serviço único, cinco hostnames, variáveis do web e do worker, 301, ordem do go-live e rollback R1 a R4. `apps/api/test/deploy-areas.test.js` segura o que o guia promete.
+- [x] **Testes:** 1176 no `npm test` (shared 32, areas 43, core 90, api 826, web 185; eram 735).
+
+**Achados:**
+
+- O script `build` do `package.json` gerava só o `dist` legado, e o Railway roda `npm run build`: ligar as variáveis de host deixaria os dois hosts em 404. Passou a rodar `build:areas` também (`railway.ts` intacto, ele já chama o script). Muda o build da próxima publicação (cerca de 25 s a mais).
+- Os dois `favicon.svg` e todos os ícones de `apps/web/areas/<área>/public/icons` são o mesmo desenho. Cada área serve o próprio arquivo, mas a arte própria depende da decisão de marca (Q7).
+- A ARQUITETURA 6.3 diz que o host é conferido antes do dono da sessão; o código confere o dono primeiro (sessão forjada: 401 e revogada; sessão do dono, host errado: 403). Não muda a segurança; a tabela do item c fixa a ordem real.
+- As contas do ponta a ponta nascem direto no banco de teste: o cadastro do CPF só entrega o token de ativação por e-mail.
+- O que só se confere no go-live está listado na seção 6 do `DEPLOY_AREAS.md`.
 
 ## Pendências abertas (fora do plano, já conhecidas)
 
