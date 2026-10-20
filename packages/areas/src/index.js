@@ -12,3 +12,13 @@ export {
   hostFor,
 } from './areas.js';
 export { urlFor } from './urls.js';
+export {
+  COMMON_PAGES,
+  EXCLUSIVE_PAGES,
+  PAGES,
+  API_MOUNTS,
+  ALL_PAGES,
+  pagesOf,
+  isPageOf,
+  areasOfPage,
+} from './manifest.js';
