@@ -208,7 +208,7 @@ Hosts em que a montagem existe. Em qualquer outro host, responde 404.
 |---|---|---|---|---|
 | 79-80 | `/api/webhooks` | `whatsappWebhookRoutes`, `webhookRoutes` | qualquer (infra) | Assinatura. Área vem do registro (Payment, WhatsAppConnection) |
 | 82 | `/api/actions/PUBLISH_SOCIAL_POST` | `express.json` 750kb | — | Só parser |
-| 93 | `/api` | `systemRoutes` | `/health` qualquer; `/session` CNPJ, CPF, ADMIN; `/cep` CNPJ, CPF; `/config` CNPJ, CPF | `/config` responde por área |
+| 93 | `/api/health`, `/api/session`, `/api/cep`, `/api/config` | `healthRoutes`, `sessionRoutes`, `cepRoutes`, `configRoutes` | `/health` qualquer; `/session` CNPJ, CPF, ADMIN; `/cep` CNPJ, CPF; `/config` CNPJ, CPF | Uma montagem por rota (cada uma tem as suas áreas). `/config` responde por área: o CPF recebe só `demoMode` |
 | 94 | `/api/auth` | `authRoutes` | CNPJ, CPF, ADMIN | Seção 6.2 |
 | 95 | `/api/me` | `meRoutes` | CNPJ, CPF, ADMIN | Devolve `area` |
 | 96 | `/api/onboarding` | `onboardingRoutes` | CNPJ, CPF | Tipo imposto pelo host |
@@ -220,7 +220,7 @@ Hosts em que a montagem existe. Em qualquer outro host, responde 404.
 | 102 | `/api/payments` | `paymentRoutes` | CNPJ | Taxa de cadastro |
 | 103 | `/api/subscription` | `subscriptionRoutes` | CNPJ | |
 | 104 | `/api/team` | `teamRoutes` | CNPJ | Papéis já checados pelas ações |
-| 105 | `/api` | `actionRoutes` (`/actions`, `/challenges/*`) | CNPJ, CPF | Ação de outra área: 404 "Ação desconhecida" |
+| 105 | `/api/actions`, `/api/challenges` | `actionRoutes`, `challengeRoutes` | CNPJ, CPF, ADMIN | Duas montagens. Ação de outra área: 404 "Ação desconhecida", pela área do dono da conta, em todo canal. ADMIN entra porque as ações de administração só existem para essa área |
 | 106 | `/api/whatsapp` | `whatsappRoutes` | CNPJ, CPF | Textos por área |
 | 107 | `/api/notifications` | `notificationRoutes` | CNPJ, CPF | |
 | 108 | `/api/freight` | `freightRoutes` | CNPJ | Q13 |
@@ -230,10 +230,10 @@ Hosts em que a montagem existe. Em qualquer outro host, responde 404.
 | 112 | `/api/pay` | `payRoutes` | CNPJ | Q4 pendente |
 | 113 | `/api/social` | `socialRoutes` | CNPJ, CPF | Feed, comentário, repost e foto filtrados por área |
 | 114 | `/api/intermediation` | `intermediationRoutes` | CNPJ | Só candidatos `COMPANY` |
-| 115 | `/api/admin` | `adminRoutes` | `ADMIN_HOST`, ou CNPJ sem ele | Sessão `ADMIN` com `isPlatformAdmin`. Qualquer outra sessão: **404** |
+| 115 | `/api/admin` | `adminRoutes` | `ADMIN_HOST`, ou CNPJ sem ele | Sessão `ADMIN` com `isPlatformAdmin`. Qualquer outra coisa, inclusive sem sessão: **404** |
 | 116 | `/api` | `notFoundApi` | todos | |
 
-Os números de linha são de `apps/api/src/app.js`.
+Os números de linha são de `apps/api/src/app.js` na base `321511e`. Desde a 4b o app monta tudo por `mountArea`, e `API_MOUNTS` (`packages/areas/src/manifest.js`) lista as mesmas montagens; um teste de deriva falha se divergirem.
 
 ### 6.6 Serviços que precisam de filtro explícito (ETAPA 4)
 
