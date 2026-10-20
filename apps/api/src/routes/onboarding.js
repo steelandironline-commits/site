@@ -8,12 +8,8 @@ export function onboardingRoutes({ onboarding, config, limiters }) {
 
   r.post('/start', limiters.onboarding, async (req, res) => {
     const input = parse(onboardingStartSchema, req.body);
-    const { token, session, user } = await onboarding.start(input, {
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-      sessionUserId: req.user?.id ?? null,
-    });
-    setSessionCookie(res, config, token, session.expiresAt);
+    const { token, session, user } = await onboarding.start(input, { ip: req.ip, userAgent: req.get('user-agent') });
+    setSessionCookie(res, config, token, session.expiresAt, req.area);
     res.status(201).json(await onboarding.state(user));
   });
 

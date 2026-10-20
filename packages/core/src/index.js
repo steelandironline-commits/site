@@ -3,6 +3,7 @@ export { getPrisma, disconnectPrisma } from './db.js';
 export * from './errors.js';
 export { logger } from './logger.js';
 export { generateToken, hashToken, safeEqual, hmacHex } from './security/tokens.js';
+export { areaOfUser, acceptedAreas, hostAccepts } from './security/area.js';
 export { hashPassword, verifyPassword } from './security/password.js';
 export { EmailService } from './email/emailService.js';
 export { CepService } from './geo/cepService.js';
