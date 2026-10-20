@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Landing from './pages/landing/Landing.jsx';
 import { PageLoader } from '@autopix/ui';
+import { ADMIN_NAV, BACK, NAV } from './legacyNav.js';
 
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding.jsx'));
 const Checkout = lazy(() => import('./pages/checkout/Checkout.jsx'));
@@ -55,7 +56,7 @@ export default function App() {
           <Route path="/activate/:token" element={<Activate />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/app" element={<AppLayout />}>
+          <Route path="/app" element={<AppLayout nav={NAV} back={BACK} adminNav={ADMIN_NAV} />}>
             <Route index element={<Overview />} />
             <Route path="radar" element={<RadarPage />} />
             <Route path="licitacoes" element={<Tenders />} />

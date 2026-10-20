@@ -1,35 +1,12 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Activity as ActivityIcon,
-  MessageCircle,
-  ArrowLeft,
-  Building2,
-  Download,
-  HardHat,
-  Landmark,
-  RefreshCw,
-  Truck,
-  Cpu,
-  CreditCard,
-  LayoutDashboard,
-  LogOut,
-  MoreHorizontal,
-  Radar,
-  Network,
-  ClipboardList,
-  Settings,
-  ShieldAlert,
-  Target,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, Download, LogOut, MoreHorizontal, RefreshCw, X } from 'lucide-react';
 import { SUBSCRIPTION_STATUS_LABELS } from '@autopix/shared';
 import {
   Button,
   DemoBadge,
   Logo,
-  LogoMark,
   PageLoader,
   SkeletonCard,
   safeStorage,
@@ -41,45 +18,12 @@ import {
 } from '@autopix/ui';
 import s from './app.module.css';
 
-/** The TemPix symbol, used as the icon of the Pagamentos shortcut. */
-function TemPixSymbol({ size = 17 }) {
-  return <LogoMark size={size} />;
-}
-
-const NAV = [
-  { to: '/app', label: 'Visão Geral', icon: LayoutDashboard, end: true },
-  { to: '/app/radar', label: 'Radar', icon: Radar },
-  { to: '/app/opportunities', label: 'Oportunidades', icon: Target },
-  { to: '/app/licitacoes', label: 'Licitações', icon: Landmark, companyOnly: true },
-  { to: '/app/intermediacao', label: 'Intermediação', icon: Network },
-  { to: '/app/social', label: 'Social', icon: MessageCircle },
-  { to: '/app/activity', label: 'Atividade', icon: ActivityIcon },
-  { to: '/app/pay', label: 'Pagamentos', icon: TemPixSymbol },
-  { to: '/app/freight', label: 'Cargas', icon: Truck },
-  { to: '/app/workforce', label: 'Equipes', icon: HardHat },
-  { to: '/app/agents', label: 'Agentes', icon: Cpu },
-  { to: '/app/company', label: 'Empresa', icon: Building2 },
-  { to: '/app/operacao', label: 'Perfil operacional', icon: ClipboardList },
-  { to: '/app/subscription', label: 'Plano', icon: CreditCard },
-  { to: '/app/settings', label: 'Configurações', icon: Settings },
-];
-const MOBILE_TABS = NAV.filter((n) => ['/app', '/app/opportunities', '/app/social', '/app/pay'].includes(n.to));
-const MORE = NAV.filter((n) => !MOBILE_TABS.includes(n));
-const ADMIN_NAV = { to: '/app/admin', label: 'Admin financeiro', icon: ShieldAlert };
-/** Professionals (pessoa física) see their profile where companies see "Empresa". */
-/** Items an account sees: licitações are for companies only. */
+/**
+ * Items an account sees: an item marked `companyOnly` is hidden from a pessoa física, and
+ * `personLabel` replaces the label for her. Both come from the navigation the entry passes in.
+ */
 const navFor = (items, me) => items.filter((i) => !i.companyOnly || me?.company?.accountType !== 'PERSON');
-const labelFor = (item, me) => (item.to === '/app/company' && me?.company?.accountType === 'PERSON' ? 'Meu perfil' : item.label);
-
-/** Deep pages get a native-style back header on mobile. */
-const BACK = [
-  [/^\/app\/opportunities\/[^/]+$/, '/app/opportunities', 'Oportunidades'],
-  [/^\/app\/payments\/[^/]+$/, '/app/pay', 'Pagamentos'],
-  [/^\/app\/pay\/transactions\/[^/]+$/, '/app/pay', 'Pagamentos'],
-  [/^\/app\/freight\/matches\/[^/]+$/, '/app/freight', 'Cargas'],
-  [/^\/app\/workforce\/matches\/[^/]+$/, '/app/workforce', 'Equipes'],
-  [/^\/app\/confirm\/[^/]+$/, '/app', 'Painel'],
-];
+const labelFor = (item, me) => (item.personLabel && me?.company?.accountType === 'PERSON' ? item.personLabel : item.label);
 
 function InstallBanner() {
   const install = useInstallPrompt();
@@ -147,7 +91,15 @@ function PageFallback() {
   );
 }
 
-export default function AppLayout() {
+/**
+ * Panel shell. The navigation belongs to the entry that mounts it (see legacyNav.js and
+ * areas/<área>/nav.js), so this file lists no screen of its own:
+ *   nav       items { to, label, icon, end?, tab?, shortLabel?, companyOnly?, personLabel? };
+ *             `tab` items go to the mobile tab bar, the others to the "Mais" sheet
+ *   back      [pathRegExp, backTo, backLabel] rows: deep pages get a native-style back header on mobile
+ *   adminNav  extra item for a platform admin (legacy build only)
+ */
+export default function AppLayout({ nav, back = [], adminNav = null }) {
   const { loading, me, isAuthenticated, demoMode, logout, offline, refresh } = useSession();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -158,6 +110,9 @@ export default function AppLayout() {
   // rendering its own route, not the new one (prevents double mounts).
   const onLogoutRef = useRef(null);
   const outlet = useOutlet({ stream, me, demoMode, onLogout: () => onLogoutRef.current?.() });
+  const mobileTabs = nav.filter((n) => n.tab);
+  const moreItems = nav.filter((n) => !n.tab);
+  const withAdmin = (items) => (me?.user?.isPlatformAdmin && adminNav ? [...items, adminNav] : items);
 
   useEffect(() => setMoreOpen(false), [location.pathname]);
 
@@ -197,7 +152,7 @@ export default function AppLayout() {
           <Logo />
         </Link>
         <nav className={s.sideNav}>
-          {navFor(me?.user?.isPlatformAdmin ? [...NAV, ADMIN_NAV] : NAV, me).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon, end }) => (
+          {navFor(withAdmin(nav), me).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => `${s.navItem} ${isActive ? s.navActive : ''}`}>
               {({ isActive }) => (
                 <>
@@ -222,10 +177,10 @@ export default function AppLayout() {
       <div className={s.content}>
         <header className={s.topbar}>
           {(() => {
-            const back = mobile && BACK.find(([re]) => re.test(location.pathname));
-            return back ? (
-              <Link to={back[1]} className={s.topBack} aria-label={`Voltar para ${back[2]}`}>
-                <ArrowLeft size={18} /> <span>{back[2]}</span>
+            const backRow = mobile && back.find(([re]) => re.test(location.pathname));
+            return backRow ? (
+              <Link to={backRow[1]} className={s.topBack} aria-label={`Voltar para ${backRow[2]}`}>
+                <ArrowLeft size={18} /> <span>{backRow[2]}</span>
               </Link>
             ) : (
               <Link to="/app" className={s.topLogo} aria-label="TemPix">
@@ -264,10 +219,10 @@ export default function AppLayout() {
 
       {/* Mobile navigation */}
       <nav className={s.tabbar} aria-label="Navegação principal">
-        {MOBILE_TABS.map(({ to, label, icon: Icon, end }) => (
+        {mobileTabs.map(({ to, label, shortLabel, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => `${s.tab} ${isActive ? s.tabActive : ''}`}>
             <Icon size={20} aria-hidden="true" />
-            <span>{label === 'Visão Geral' ? 'Visão' : label === 'Oportunidades' ? 'Oportun.' : label}</span>
+            <span>{shortLabel ?? label}</span>
           </NavLink>
         ))}
         <button type="button" className={`${s.tab} ${moreOpen ? s.tabActive : ''}`} onClick={() => setMoreOpen(true)} aria-expanded={moreOpen}>
@@ -295,7 +250,7 @@ export default function AppLayout() {
                   <X size={18} />
                 </button>
               </div>
-              {navFor(me?.user?.isPlatformAdmin ? [...MORE, ADMIN_NAV] : MORE, me).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon }) => (
+              {navFor(withAdmin(moreItems), me).map((item) => ({ ...item, label: labelFor(item, me) })).map(({ to, label, icon: Icon }) => (
                 <NavLink key={to} to={to} className={({ isActive }) => `${s.sheetItem} ${isActive ? s.navActive : ''}`}>
                   <Icon size={18} aria-hidden="true" /> {label}
                 </NavLink>
