@@ -1,5 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { forbidden } from '@autopix/core';
+import { areaOrigins } from './area.js';
+import { sessionCookieName } from './session.js';
 
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -11,16 +13,27 @@ const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
  *     which only APP_URL passes);
  *  3. if an Origin header is present it must be one of ours.
  * Payment webhooks are excluded (they are verified by signature instead).
+ *
+ * Area mode: cpf.* and the apex are same-site, so SameSite=Lax does not separate them. The
+ * request must then carry an Origin equal to the origin of ITS OWN area (derived from `req.area`,
+ * never from a header) plus X-Requested-With, and a request without Origin is refused. The
+ * cookie it is judged by is the one of its own area. Legacy mode: exactly as before.
  */
 export function csrfGuard(config) {
   const allowed = new Set([config.appUrl, config.apiUrl].map((u) => new URL(u).origin));
+  const areaMode = Boolean(config.areas?.enabled);
+  const ownOrigins = areaOrigins(config);
   return (req, res, next) => {
     if (SAFE.has(req.method)) return next();
     if (req.path.startsWith('/webhooks/')) return next();
     // Bearer-token clients (native apps) carry no ambient credentials.
-    if (/^Bearer\s+/i.test(req.get('authorization') || '') && !req.cookies?.[config.session.cookieName]) return next();
+    const cookieName = sessionCookieName(req, config);
+    if (/^Bearer\s+/i.test(req.get('authorization') || '') && !(cookieName && req.cookies?.[cookieName])) return next();
     const origin = req.get('origin');
-    if (origin && !allowed.has(origin)) return next(forbidden('Origem não permitida.'));
+    if (areaMode) {
+      const own = ownOrigins.get(req.area);
+      if (!own || origin !== own) return next(forbidden('Origem não permitida.'));
+    } else if (origin && !allowed.has(origin)) return next(forbidden('Origem não permitida.'));
     if (req.get('x-requested-with') !== 'autopix') return next(forbidden('Requisição não permitida.'));
     return next();
   };

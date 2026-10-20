@@ -6,7 +6,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { ROOT_DIR, buildPlatform } from '@autopix/core';
 import { buildLimiters, csrfGuard } from './middleware/security.js';
-import { hostArea } from './middleware/area.js';
+import { areaOrigins, hostArea } from './middleware/area.js';
 import { areaSpa } from './middleware/spa.js';
 import { loadSession } from './middleware/session.js';
 import { errorHandler, notFoundApi } from './middleware/errors.js';
@@ -70,14 +70,23 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   // Right after helmet (ARQUITETURA 6.4): picks the area by host, or 301/404. Legacy mode: no-op.
   app.use(hostArea(config));
 
+  // CORS: only the origin of the request's own area (area mode) or APP_URL (legacy). No wildcard.
+  const corsBase = {
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'X-Requested-With', 'Last-Event-ID', 'Authorization', 'X-TemPix-Client'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  };
+  const ownOrigins = areaOrigins(config);
   app.use(
     '/api',
-    cors({
-      origin: (origin, cb) => cb(null, !origin || origin === new URL(config.appUrl).origin),
-      credentials: true,
-      allowedHeaders: ['Content-Type', 'X-Requested-With', 'Last-Event-ID', 'Authorization', 'X-TemPix-Client'],
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    }),
+    cors(
+      config.areas.enabled
+        ? (req, cb) => {
+            const own = ownOrigins.get(req.area);
+            cb(null, { ...corsBase, origin: (origin, ok) => ok(null, !origin || (own !== undefined && origin === own)) });
+          }
+        : { ...corsBase, origin: (origin, cb) => cb(null, !origin || origin === new URL(config.appUrl).origin) },
+    ),
   );
 
   // Webhooks need the raw body → mounted before the JSON parser.
