@@ -119,8 +119,15 @@ export class OnboardingService {
         found?.status === 'PENDING_PAYMENT' &&
         (found.id !== sessionUserId || areaOf(found.company.accountType) !== hostArea),
     );
-    const existing = heldDraft ? null : found;
-    if (heldDraft) taken.email = DRAFT_IN_PROGRESS_MESSAGE;
+    // Any mode: a draft whose signup fee is in play (a Pix that is open or can still be confirmed, or
+    // already paid) is restarted only by its own session. Restarting by e-mail alone would hand the
+    // session, and with it the activation token that `finish` returns, to whoever knew the e-mail
+    // while someone else paid the fee. The owner resumes with the session they already hold.
+    const paymentHeld = Boolean(
+      found?.status === 'PENDING_PAYMENT' && found.id !== sessionUserId && (await this.#hasPaymentAtStake(found.companyId)),
+    );
+    const existing = heldDraft || paymentHeld ? null : found;
+    if (heldDraft || paymentHeld) taken.email = DRAFT_IN_PROGRESS_MESSAGE;
     else if (existing && existing.status !== 'PENDING_PAYMENT') {
       taken.email = 'Já existe um cadastro com este e-mail. Use outro e-mail ou entre com a sua conta.';
     }
@@ -165,7 +172,7 @@ export class OnboardingService {
 
   /**
    * Is the signup fee of this company in play? A confirmed (or refunded) payment, or a pending one
-   * whose Pix is open or expired less than PAYMENT_GRACE_MS ago. The purge and the restart use this
+   * whose Pix is open or expired less than PAYMENT_GRACE_MS ago. The purge and the restart use the
    * same rule, so a draft that cannot be purged cannot be restarted by a stranger either.
    */
   async #hasPaymentAtStake(companyId, now = new Date()) {
