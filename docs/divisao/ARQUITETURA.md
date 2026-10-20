@@ -233,6 +233,8 @@ Hosts em que a montagem existe. Em qualquer outro host, responde 404.
 | 115 | `/api/admin` | `adminRoutes` | `ADMIN_HOST`, ou CNPJ sem ele | Sessão `ADMIN` com `isPlatformAdmin`. Qualquer outra coisa, inclusive sem sessão: **404** |
 | 116 | `/api` | `notFoundApi` | todos | |
 
+Sessão `ADMIN` fora do host de admin (sem `ADMIN_HOST`, o admin vive no host CNPJ, Q6): ela não vale como sessão de cliente. `onlyArea` só deixa essa sessão alcançar as montagens que declaram a área `ADMIN` (`/api/session`, `/api/auth`, `/api/me`, `/api/actions`, `/api/challenges` e `/api/admin`); qualquer outra responde o 404 de rota inexistente. A regra sai do próprio manifesto: montagem nova nasce fechada para o admin, a menos que declare `ADMIN`.
+
 Os números de linha são de `apps/api/src/app.js` na base `321511e`. Desde a 4b o app monta tudo por `mountArea`, e `API_MOUNTS` (`packages/areas/src/manifest.js`) lista as mesmas montagens; um teste de deriva falha se divergirem.
 
 ### 6.6 Serviços que precisam de filtro explícito (ETAPA 4)

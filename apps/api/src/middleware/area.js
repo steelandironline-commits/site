@@ -87,12 +87,21 @@ export function hostArea(config) {
  * - `areas` é uma lista de áreas (CNPJ, CPF, ADMIN) ou ANY_AREA (infraestrutura sem sessão).
  * - `enabled` é o modo de áreas. No modo legado a guarda não bloqueia nada, como antes das áreas.
  * - Host sem área (req.area nulo) só passa em ANY_AREA: falha fechada.
+ * - Sessão ADMIN fora do host de admin (Q6: o admin vive no host CNPJ quando não há ADMIN_HOST): a
+ *   sessão não vale como sessão de cliente, então só alcança as montagens que declaram a área ADMIN.
+ *   Para qualquer outra, responde o mesmo 404 de uma rota que não existe. A sessão já foi carregada
+ *   por `loadSession` (que vem antes das montagens), e é a área gravada nela que decide, não o host.
  */
 export function onlyArea(areas, enabled) {
   assertDeclared('onlyArea', areas);
   if (!enabled || isAnyArea(areas)) return (req, res, next) => next();
   const allowed = new Set(areas);
-  return (req, res, next) => (allowed.has(req.area) ? next() : notFoundApi(req, res, next));
+  const adminReaches = allowed.has('ADMIN');
+  return (req, res, next) => {
+    if (!allowed.has(req.area)) return notFoundApi(req, res, next);
+    if (req.session?.area === 'ADMIN' && req.area !== 'ADMIN' && !adminReaches) return notFoundApi(req, res, next);
+    return next();
+  };
 }
 
 /** Recusa montagem sem áreas declaradas ou com área desconhecida (erro na partida do servidor). */
