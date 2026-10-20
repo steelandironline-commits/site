@@ -6,6 +6,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { ROOT_DIR, buildPlatform } from '@autopix/core';
 import { buildLimiters, csrfGuard } from './middleware/security.js';
+import { hostArea } from './middleware/area.js';
 import { loadSession } from './middleware/session.js';
 import { errorHandler, notFoundApi } from './middleware/errors.js';
 import { authRoutes } from './routes/auth.js';
@@ -64,6 +65,9 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
       strictTransportSecurity: config.isProduction ? undefined : false,
     }),
   );
+
+  // Right after helmet (ARQUITETURA 6.4): picks the area by host, or 301/404. Legacy mode: no-op.
+  app.use(hostArea(config));
 
   app.use(
     '/api',
