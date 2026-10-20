@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { API_MOUNTS, AREAS, EXCLUSIVE_FILES, PAGES, isAnyArea, isPageOf } from '@autopix/areas';
+import { API_MOUNTS, AREAS, BUNDLE_MARKERS as MARKERS, EXCLUSIVE_FILES, PAGES, isAnyArea, isPageOf } from '@autopix/areas';
 import { AREA_BRAND as CNPJ_BRAND } from '@autopix/areas/brand/cnpj';
 import { AREA_BRAND as CPF_BRAND } from '@autopix/areas/brand/cpf';
 
@@ -172,17 +172,9 @@ describe('modules.json: nenhum módulo da outra área', () => {
 });
 
 // ------------------------------------------------------------------------------------------------
-// ETAPA 5 · marcadores. Escritos literalmente, nunca palavras soltas: "CPF" pode aparecer no CNPJ
-// (o colaborador entra com CPF, Q1) e "temcnpj" pode aparecer no CPF (está no host dele).
-
-const MARKERS = {
-  // O CPF não pode ter nada de empresa, de licitação, de equipe, de pagamento nem de cobrança.
-  cpf: ['Tem CNPJ', 'CNPJ', 'Licitações', 'Colaborador', '/app/licitacoes', '/api/team', '/api/company', '/api/pay', '/checkout'],
-  // O CNPJ não pode ter nada da área de pessoas.
-  cnpj: ['Tem CPF', 'pessoa física', 'Meu perfil', '/api/profile'],
-  // Nenhuma das duas serve o admin da plataforma (terceira área).
-  both: ['/api/admin', 'Admin financeiro'],
-};
+// ETAPA 5 · marcadores. A lista (BUNDLE_MARKERS, packages/areas/src/markers.js) é uma só e também
+// alimenta a suíte de isolamento (apps/api/test/isolation). Escritos literalmente, nunca palavras soltas:
+// "CPF" pode aparecer no CNPJ (o colaborador entra com CPF, Q1) e "temcnpj" pode aparecer no CPF (está no host dele).
 
 describe('marcadores: o bundle de cada área não leva texto nem chamada da outra', () => {
   for (const area of ['cpf', 'cnpj']) {

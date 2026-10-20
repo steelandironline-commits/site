@@ -28,3 +28,4 @@ export {
   isPageOf,
   areasOfPage,
 } from './manifest.js';
+export { BUNDLE_MARKERS, markersFor } from './markers.js';

@@ -10,7 +10,8 @@
     "./manifest": "./src/manifest.js",
     "./brand/platform": "./src/brand/platform.js",
     "./brand/cnpj": "./src/brand/cnpj.js",
-    "./brand/cpf": "./src/brand/cpf.js"
+    "./brand/cpf": "./src/brand/cpf.js",
+    "./markers": "./src/markers.js"
   },
   "scripts": {
     "test": "vitest run"
