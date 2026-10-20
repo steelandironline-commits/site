@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { forbidden } from '@autopix/core';
+import { notFoundApi } from '../middleware/errors.js';
 import { requireAuth } from '../middleware/session.js';
 import { parse } from '../middleware/validate.js';
 
@@ -47,9 +48,19 @@ export function payRoutes({ transactions, protectedPayments, commissions, trips,
   return r;
 }
 
-/** Restricted financial back office (User.isPlatformAdmin). Read-only + audited annotations. */
-export function adminRoutes({ admin, disputes, commissions }) {
+/**
+ * Restricted financial back office (User.isPlatformAdmin). Read-only + audited annotations.
+ *
+ * Area mode (ARQUITETURA 6.5): the mount already exists only on the admin host, or on the CNPJ host
+ * when there is no ADMIN_HOST. Here, anything that is not an ADMIN session of a platform admin gets
+ * the same 404 as an unknown route (the area is the one stored on the session, never the host),
+ * before the authentication answers 401/403. Legacy mode keeps 401 and 403.
+ */
+export function adminRoutes({ admin, disputes, commissions, config }) {
   const r = Router();
+  if (config?.areas?.enabled) {
+    r.use((req, res, next) => (req.session?.area === 'ADMIN' && req.user?.isPlatformAdmin ? next() : notFoundApi(req, res, next)));
+  }
   r.use(requireAuth);
   r.use((req, res, next) => (req.user?.isPlatformAdmin ? next() : next(forbidden('Acesso restrito à administração da plataforma.'))));
   const status = (req) => (typeof req.query.status === 'string' && /^[A-Z_]{2,40}$/.test(req.query.status) ? req.query.status : undefined);
