@@ -138,11 +138,11 @@ Não usar um build único com várias entradas: os chunks dividiriam o mesmo `/a
 - (b) nenhum módulo de `dist-cpf/modules.json` é de classe CNPJ ou ADMIN, e vice-versa;
 - (c) uma busca de texto em `dist-<área>/**/*.{js,css,html,json,webmanifest,txt,xml}` não acha os marcadores da outra área.
 
+Os marcadores são escolhidos a dedo, nunca palavras soltas. Proibidos no CPF: `Tem CNPJ`, `CNPJ` (maiúsculas), `Licitações`, `Colaborador`, `/app/licitacoes`, `/api/team`, `/api/company`, `/api/pay`, `/checkout`. Proibidos no CNPJ: `Tem CPF`, `pessoa física`, `Meu perfil`, `/api/profile`. Proibidos nos dois: `/api/admin`, `Admin financeiro`. `CPF` não pode ser proibido no CNPJ, porque o colaborador entra com CPF (Q1). `temcnpj` não pode ser proibido no CPF, porque está no próprio host.
+
 A ETAPA 5 acrescentou a prova pelo lado de dentro, derivada do manifesto: cada `/api/...` que o bundle chama é uma montagem que o host da área tem; cada link de página que o bundle escreve é uma página da área; nenhuma montagem nem página exclusiva da outra área aparece. O plugin `areaBoundary` também recusa, em qualquer área, o código do build legado (`App.jsx`, `main.jsx`, `legacyNav.js`, `legacy/`).
 
 **Textos por build (ETAPA 5).** As telas que as duas áreas dividem (Login, ativação, Social, Atividade, confirmação, Configurações, perfil operacional, plano, AppLayout, Home do CNPJ) não têm texto, link nem chamada de uma área só: recebem por props a cópia (`areas/cnpj/copy.js`, `areas/cpf/copy.js`) e as peças da área (cartão de equipe, chave de repasse, fonte do perfil operacional). O build legado usa `src/legacy/copy.js`, que reproduz os textos de sempre, e invólucros em `src/legacy/` que escolhem pelo tipo da conta. O cadastro tem um motor comum (`pages/onboarding/OnboardingFlow.jsx`) e um fluxo por área (`areas/<área>/Onboarding.jsx`); o cadastro de antes, com a escolha entre empresa e pessoa, ficou intacto em `src/legacy/`.
-
-Os marcadores são escolhidos a dedo, nunca palavras soltas. Proibidos no CPF: `Tem CNPJ`, `CNPJ` (maiúsculas), `Licitações`, `Colaborador`, `/app/licitacoes`, `/api/team`, `/api/company`, `/api/pay`, `/checkout`. Proibidos no CNPJ: `Tem CPF`, `pessoa física`, `Meu perfil`, `/api/profile`. Proibidos nos dois: `/api/admin`, `Admin financeiro`. `CPF` não pode ser proibido no CNPJ, porque o colaborador entra com CPF (Q1). `temcnpj` não pode ser proibido no CPF, porque está no próprio host.
 
 ## 6. Sessão, tokens e guarda de área
 
