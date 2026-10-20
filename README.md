@@ -68,6 +68,7 @@ commercial approach to a realtime dashboard.
 
 - **`packages/shared`** — isomorphic constants, formatters and Zod schemas (used by web *and* api).
 - **`packages/core`** — server domain: config, Prisma client, security, services, payment providers, engine.
+- **`packages/ui`** — shared front-end template (`@autopix/ui`): generic components, logo, auth shell, API client, session, hooks, PWA helpers and the base CSS tokens. No area-specific text, routes or endpoints.
 - **`apps/api`** — HTTP layer only (routes, middleware, SSE hub). Never runs search workflows in a request.
 - **`apps/worker`** — scheduler + job consumer. Can be scaled horizontally (jobs are claimed with `SKIP LOCKED`).
 - **`apps/web`** — React 19 + Vite + Framer Motion + Lucide; CSS Modules over a token system; Three.js/R3F only for the radar.
@@ -533,12 +534,13 @@ database the DB suites are skipped with a warning.
 │   ├── worker/                  # background worker entrypoint
 │   └── web/                     # React + Vite SPA
 │       └── src/
-│           ├── components/      # brand, ui, cards, activity, radar (Three.js)
+│           ├── components/      # cards, activity, radar (Three.js)
 │           ├── pages/           # landing, onboarding, checkout, auth, app/*
-│           ├── lib/             # api client, session, hooks, SSE stream, toasts
-│           └── styles/          # design tokens + global CSS
+│           └── lib/             # toasts, actions client, time formatters, demo feed
 ├── packages/
 │   ├── shared/                  # constants, formatters, Zod schemas
+│   ├── ui/                      # @autopix/ui: shared template (components, brand, auth shell,
+│   │                            # api client, session, hooks, PWA, design tokens + global CSS)
 │   └── core/                    # config, db, security, services, payments, engine,
 │                                # actions (ActionEngine), events (EventEngine),
 │                                # whatsapp, notifications, domains (freight, workforce)

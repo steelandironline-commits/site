@@ -2,7 +2,7 @@
 
 Plano: `docs/PLANO_DIVISAO.md` · Inventário: `docs/divisao/INVENTARIO.md`
 
-Atualizado: 2026-10-19
+Atualizado: 2026-10-20
 
 ## Etapas
 
@@ -10,7 +10,7 @@ Atualizado: 2026-10-19
 |---|---|---|---|
 | 0 · Inventário | Opus (`arquiteto`) | **Concluída. Aguardando aprovação** | `docs/divisao/INVENTARIO.md`, subagentes em `.claude/agents/` |
 | 1 · Arquitetura | Opus (`arquiteto`) | **Concluída** | `docs/divisao/ARQUITETURA.md` (366 linhas, contrato das etapas 2 a 8) |
-| 2 · Base compartilhada sem mudar comportamento | Sonnet (`implementador`) | Não iniciada | — |
+| 2 · Base compartilhada sem mudar comportamento | Sonnet (`implementador`) | **Concluída. Aguardando aprovação** | Pacote `packages/ui` (`@autopix/ui`). Testes, build e lint verdes |
 | 3 · Roteamento por host e temas | Sonnet (`implementador`) | Não iniciada | — |
 | 4 · Autenticação e API isoladas | Opus desenha, Sonnet implementa | Não iniciada | Revisão de segurança do `arquiteto` antes de seguir |
 | 5 · Separação das telas e funções | Sonnet (`implementador`) | Não iniciada | Depende das respostas do inventário |
@@ -35,6 +35,25 @@ Atualizado: 2026-10-19
 4. **Unicidade global.** `User.loginId` e `Company.cnpj` são únicos no sistema inteiro (Q2).
 5. **Cookie** já é host-only, o que ajuda. Trocar o nome para `__Host-` derruba todas as sessões (Q12).
 6. **Stack real.** Não há `areas/`, `packages/ui`, `packages/auth` nem `packages/areas`. Serão criados. Ajustes de nome estão na seção "Adaptação à stack real" do inventário.
+
+## ETAPA 2 · O que foi feito
+
+Só o `packages/ui`, como decidido na seção 11 (item 1) da arquitetura. As regras comuns seguem em `packages/shared`. Nada muda para o usuário.
+
+- [x] Pacote `@autopix/ui` criado, em `workspaces` e como dependência do `apps/web`. As dependências de interface (react, react-router-dom, framer-motion, lucide-react) têm as mesmas versões do `apps/web`.
+- [x] Movidos com `git mv`: `components/ui` (`ui.jsx`, `ui.module.css`), `BRLIcon.jsx` e `brl-symbol.svg` (o `ui.jsx` depende deles), `Logo.jsx` e seu CSS, `PageLoader.jsx`, `AuthShell.jsx`, `PasswordInput.jsx`, `lib/api.js`, `hooks.js`, `session.jsx`, `pwa.js`, `activityStream.js`, `styles/tokens.css` e `styles/global.css`.
+- [x] `auth.module.css` foi dividido: o shell e o campo de senha ficam no pacote; `row`, `notice`, `identity` e `subtitle`, usadas só pelas telas de login, ficam em `pages/auth/authPage.module.css`.
+- [x] Os imports do `apps/web` usam `@autopix/ui`. O CSS global entra por `@autopix/ui/styles/global.css`.
+- [x] Ficaram no `apps/web`: `toast.jsx`, `time.js`, `actions.js`, `WhatsAppIcon.jsx` e `NotFound.jsx` (genéricos, mas fora da lista desta etapa); `eventKind.js` e `demoFeed.js` (vocabulário de negócio e vitrine da landing); `cards`, `activity`, `radar`, `pages/*` e `App.jsx`.
+- [x] Testes: 228 antes e 228 depois (shared 32, core 78, api 99, web 19). Build e lint verdes. Nenhum arquivo de `apps/api`, `packages/core`, `packages/shared` nem `apps/worker` mudou.
+- [x] Bundle conferido contra o build anterior: mesmos chunks (mais o CSS de `authPage`), mesmos textos, mesmo CSS do bundle de entrada.
+
+**Para as ETAPAS 3, 5 e 6** (texto de marca ou de módulo dentro do pacote, sem mudar nada agora):
+
+- `Logo.jsx` fixa "TemPix". `AuthShell.jsx` fixa a frase "Tem emprego, tem rota, tem serviço. TemPix.", o rodapé "Clientes, cargas, profissionais e Pix numa tela só." (cita Cargas, que no CPF não existe pela Q3) e o `aria-label` "TemPix — início". Precisam vir do tema da área.
+- `MiniRadar` e `ScoreRing` têm rótulo padrão com vocabulário de oportunidade ("Radar procurando oportunidades", "Opportunity Score").
+- `global.css` usa o gradiente `#tempix-gold`, definido no `index.html` do `apps/web`. Cada `index.html` de área precisa trazê-lo.
+- Não há rota nem endpoint novo nesta etapa, então não há entrada nova no manifesto (ele nasce na ETAPA 3).
 
 ## Pendências abertas (fora do plano, já conhecidas)
 
