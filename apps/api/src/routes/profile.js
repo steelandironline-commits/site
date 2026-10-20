@@ -1,7 +1,18 @@
 import { Router } from 'express';
-import { profileUpdateSchema } from '@autopix/shared';
+import { z } from 'zod';
+import { companyProfileSchema } from '@autopix/shared';
 import { requireAuth, requireRole } from '../middleware/session.js';
 import { parse } from '../middleware/validate.js';
+
+/**
+ * Corpo do PUT: o subconjunto do perfil de empresa que uma pessoa preenche. Cada campo vem da mesma
+ * definição de companyProfileSchema, então a regra de validação é uma só. Não tem CNPJ, produtos,
+ * cliente ideal, ticket, setores nem palavras-chave: o que vier a mais é descartado.
+ */
+export const profileUpdateSchema = companyProfileSchema
+  .pick({ phone: true, postalCode: true, city: true, state: true, serviceRadiusKm: true, description: true, services: true, operationalProfile: true })
+  .extend({ name: z.string().trim().max(120).min(2, 'Informe seu nome') })
+  .partial();
 
 /**
  * Perfil da pessoa física (ETAPA 5), só na área CPF: lê e grava o perfil da conta PERSON com a
