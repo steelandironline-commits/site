@@ -17,7 +17,7 @@ import {
 import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
-import { Button, ErrorState, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Button, ErrorState, SkeletonCard } from '@autopix/ui';
 import { OperationFields } from '../onboarding/operations/OperationFields.jsx';
 import { CapabilityList, CompletenessMeter } from '../onboarding/operations/ProfileOverview.jsx';
 import s from './app.module.css';

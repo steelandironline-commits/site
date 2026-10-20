@@ -7,8 +7,7 @@ import { useSession } from '../../lib/session.jsx';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDate } from '../../lib/time.js';
 import { PaymentCard } from '../../components/cards/Cards.jsx';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { Badge, Button, Dialog, EmptyState, ErrorState, SkeletonCard } from '../../components/ui/ui.jsx';
+import { BRLText, Badge, Button, Dialog, EmptyState, ErrorState, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 const TONE = { ACTIVE: 'primary', PENDING: 'amber', PAST_DUE: 'amber', CANCELED: 'danger', EXPIRED: 'neutral' };

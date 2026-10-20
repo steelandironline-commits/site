@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MapPin } from 'lucide-react';
-import { Field, Input } from '../../components/ui/ui.jsx';
+import { Field, Input } from '@autopix/ui';
 import { travelEstimate } from '@autopix/shared';
 import { api } from '../../lib/api.js';
 import s from './onboarding.module.css';

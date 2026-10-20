@@ -5,8 +5,7 @@ import { BR_STATES, TENDER_STATUS_FILTERS, formatCents } from '@autopix/shared';
 import { api } from '../../lib/api.js';
 import { useDebounced, useVisibleInterval } from '../../lib/hooks.js';
 import { relative } from '../../lib/time.js';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { Badge, Button, EmptyState, ErrorState, Field, Input, Select, SkeletonCard } from '../../components/ui/ui.jsx';
+import { BRLText, Badge, Button, EmptyState, ErrorState, Field, Input, Select, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 import t from './tenders.module.css';
 

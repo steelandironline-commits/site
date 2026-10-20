@@ -6,9 +6,8 @@ import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
+import { BRLText, Button, DemoBadge, ErrorState, Field, ScoreRing, Select, SkeletonCard, Textarea } from '@autopix/ui';
 import { PriorityBadge, SignalCard, StatusBadge } from '../../components/cards/Cards.jsx';
-import { Button, DemoBadge, ErrorState, Field, ScoreRing, Select, SkeletonCard, Textarea } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
 
 const BREAKDOWN = [

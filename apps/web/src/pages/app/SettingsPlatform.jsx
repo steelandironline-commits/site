@@ -7,7 +7,7 @@ import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { disablePush, enablePush, getPushState, useInstallPrompt } from '../../lib/pwa.js';
 import { fmtDateTime } from '../../lib/time.js';
-import { Badge, Button, Field, Input, Select, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Badge, Button, Field, Input, Select, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 export function WhatsAppCard() {

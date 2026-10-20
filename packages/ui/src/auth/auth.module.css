@@ -107,22 +107,6 @@
   color: var(--primary);
 }
 
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-13);
-}
-
-.row a {
-  color: var(--text-2);
-}
-
-.row a:hover {
-  color: var(--primary);
-}
-
 .formError {
   padding: 10px 12px;
   border-radius: var(--r-sm);
@@ -130,47 +114,6 @@
   border: 1px solid rgba(229, 87, 79, 0.35);
   color: #f2a29d;
   font-size: var(--fs-13);
-}
-
-.notice {
-  display: flex;
-  gap: 12px;
-  padding: 14px;
-  border-radius: var(--r-md);
-  background: var(--surface);
-  border: 1px solid var(--line-2);
-  font-size: var(--fs-14);
-  color: var(--text-2);
-}
-
-.notice svg {
-  flex: none;
-  color: var(--primary);
-  margin-top: 2px;
-}
-
-.identity {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 14px;
-  border-radius: var(--r-md);
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-}
-
-.identity span {
-  font-size: var(--fs-11);
-  font-family: var(--font-mono);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--dim);
-}
-
-.identity strong {
-  font-weight: 500;
-  font-size: var(--fs-14);
-  overflow-wrap: anywhere;
 }
 
 .pwWrap {

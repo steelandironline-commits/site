@@ -4,8 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, BadgeCheck, BatteryFull, CheckCheck, Gauge, MessageCircle, Mic, Radar, Reply, ShieldCheck, Signal, Video, Phone, Wifi } from 'lucide-react';
-import { LogoMark } from '../../components/brand/Logo.jsx';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
+import { BRLText, LogoMark } from '@autopix/ui';
 import s from './phone.module.css';
 
 const SCENES = [

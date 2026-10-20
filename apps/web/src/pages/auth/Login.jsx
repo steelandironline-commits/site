@@ -4,10 +4,8 @@ import { ArrowRight } from 'lucide-react';
 import { formatDocument } from '@autopix/shared';
 import { post } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
-import { Button, Field, Input } from '../../components/ui/ui.jsx';
-import { AuthShell, FormError } from './AuthShell.jsx';
-import { PasswordInput } from './PasswordInput.jsx';
-import s from './auth.module.css';
+import { AuthShell, Button, Field, FormError, Input, PasswordInput } from '@autopix/ui';
+import s from './authPage.module.css';
 
 export default function Login() {
   const [params] = useSearchParams();

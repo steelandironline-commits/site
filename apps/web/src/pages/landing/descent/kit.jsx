@@ -3,7 +3,7 @@
 import { createContext, forwardRef, useContext, useImperativeHandle, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { drawBRLCanvasText } from '../../../components/brand/BRLIcon.jsx';
+import { drawBRLCanvasText } from '@autopix/ui';
 
 /* ------------------------------------------------------------------ math */
 export const clamp01 = (v) => Math.min(Math.max(v, 0), 1);

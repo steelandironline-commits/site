@@ -27,11 +27,9 @@ import {
 import { SUBSCRIPTION_STATUS_LABELS } from '@autopix/shared';
 import { useSession } from '../../lib/session.jsx';
 import { useActivityStream } from '../../lib/activityStream.js';
-import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
-import { Button, DemoBadge, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Button, DemoBadge, Logo, LogoMark, PageLoader, SkeletonCard } from '@autopix/ui';
 import { useInstallPrompt, useServiceWorkerUpdate } from '../../lib/pwa.js';
 import { safeStorage, useIsMobile } from '../../lib/hooks.js';
-import { PageLoader } from '../PageLoader.jsx';
 import s from './app.module.css';
 
 /** The TemPix symbol, used as the icon of the Pagamentos shortcut. */

@@ -6,7 +6,7 @@ import { get } from '../../lib/api.js';
 import { useDebounced } from '../../lib/hooks.js';
 import { fmtDay } from '../../lib/time.js';
 import { ActivityCard } from '../../components/cards/Cards.jsx';
-import { Badge, Button, EmptyState, ErrorState, Input, MiniRadar, Skeleton } from '../../components/ui/ui.jsx';
+import { Badge, Button, EmptyState, ErrorState, Input, MiniRadar, Skeleton } from '@autopix/ui';
 import s from './app.module.css';
 
 const FILTERS = [

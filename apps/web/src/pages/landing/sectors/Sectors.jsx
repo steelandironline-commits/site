@@ -22,8 +22,7 @@ import {
   Truck,
   Wrench,
 } from 'lucide-react';
-import { LogoMark } from '../../../components/brand/Logo.jsx';
-import { Button, Dialog } from '../../../components/ui/ui.jsx';
+import { Button, Dialog, LogoMark } from '@autopix/ui';
 import { useInView, useIsMobile, usePrefersReducedMotion } from '../../../lib/hooks.js';
 import { CONSTRUCTION, ECOSYSTEM, MARITIME, SHARED } from './copy.js';
 import PortArt from './PortArt.jsx';

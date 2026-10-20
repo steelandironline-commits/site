@@ -24,9 +24,7 @@ import {
 import { post, put } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { safeStorage } from '../../lib/hooks.js';
-import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { Button, Field, Input, Select, TagInput, Textarea } from '../../components/ui/ui.jsx';
+import { BRLText, Button, Field, Input, Logo, LogoMark, Select, TagInput, Textarea } from '@autopix/ui';
 import { AccountStartFields } from './AccountStartFields.jsx';
 import { PersonWhereFields } from './PersonWhereFields.jsx';
 import { OperationFields } from './operations/OperationFields.jsx';

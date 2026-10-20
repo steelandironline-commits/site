@@ -7,9 +7,7 @@ import { api, post } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
 import { useVisibleInterval } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
-import { Logo, LogoMark } from '../../components/brand/Logo.jsx';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { Button, DemoBadge, ErrorState, Skeleton } from '../../components/ui/ui.jsx';
+import { BRLText, Button, DemoBadge, ErrorState, Logo, LogoMark, Skeleton } from '@autopix/ui';
 import s from './checkout.module.css';
 
 const ease = [0.22, 1, 0.36, 1];

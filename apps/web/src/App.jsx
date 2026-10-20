@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Landing from './pages/landing/Landing.jsx';
-import { PageLoader } from './pages/PageLoader.jsx';
+import { PageLoader } from '@autopix/ui';
 
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding.jsx'));
 const Checkout = lazy(() => import('./pages/checkout/Checkout.jsx'));

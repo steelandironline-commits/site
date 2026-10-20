@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { Input } from '../../components/ui/ui.jsx';
+import { Input } from '../components/ui.jsx';
 import s from './auth.module.css';
 
 export function PasswordInput(props) {

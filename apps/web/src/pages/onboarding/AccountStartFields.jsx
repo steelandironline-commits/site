@@ -1,7 +1,6 @@
 import { Building2, UserRound } from 'lucide-react';
 import { formatCnpj, formatCpf } from '@autopix/shared';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { Field, Input } from '../../components/ui/ui.jsx';
+import { BRLText, Field, Input } from '@autopix/ui';
 import s from './onboarding.module.css';
 
 /** Shared first step: both account types require an e-mail; company name is separate. */

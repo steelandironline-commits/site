@@ -4,7 +4,7 @@ import { formatCpf } from '@autopix/shared';
 import { del, post } from '../../lib/api.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
-import { Badge, Button, ErrorState, Field, Input, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Badge, Button, ErrorState, Field, Input, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 const STATUS = {

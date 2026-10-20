@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MailCheck } from 'lucide-react';
 import { post } from '../../lib/api.js';
-import { Button, Field, Input } from '../../components/ui/ui.jsx';
-import { AuthShell, FormError } from './AuthShell.jsx';
-import s from './auth.module.css';
+import { AuthShell, Button, Field, FormError, Input } from '@autopix/ui';
+import s from './authPage.module.css';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');

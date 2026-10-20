@@ -29,8 +29,7 @@ import {
   PRIORITY_LABELS,
   SIGNAL_TYPE_LABELS,
 } from '@autopix/shared';
-import { Badge, Button, DemoBadge, ScoreRing, Skeleton, cx } from '../ui/ui.jsx';
-import { BRLText, BRLSymbol } from '../brand/BRLIcon.jsx';
+import { BRLSymbol, BRLText, Badge, Button, DemoBadge, ScoreRing, Skeleton, cx } from '@autopix/ui';
 import { fmtDate, fmtDateTime, fmtTime, formatDuration, relative } from '../../lib/time.js';
 import s from './cards.module.css';
 

@@ -5,7 +5,7 @@ import { executeAction } from '../../lib/actions.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { CompanyCard } from '../../components/cards/Cards.jsx';
-import { Button, ErrorState, Field, Input, Select, SkeletonCard, TagInput, Textarea } from '../../components/ui/ui.jsx';
+import { Button, ErrorState, Field, Input, Select, SkeletonCard, TagInput, Textarea } from '@autopix/ui';
 import s from './app.module.css';
 
 const TEXT = ['name', 'cnpj', 'website', 'instagram', 'phone', 'city', 'state', 'description', 'idealCustomer'];

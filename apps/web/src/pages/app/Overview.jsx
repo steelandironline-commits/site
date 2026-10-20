@@ -9,7 +9,7 @@ import { greeting, relative } from '../../lib/time.js';
 import { MetricCard, OpportunityCard } from '../../components/cards/Cards.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import { BusinessFlow } from '../../components/activity/Flow.jsx';
-import { Button, EmptyState, ErrorState, MiniRadar, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Button, EmptyState, ErrorState, MiniRadar, SkeletonCard } from '@autopix/ui';
 import { useOpportunityActions } from './useOpportunityActions.js';
 import s from './app.module.css';
 

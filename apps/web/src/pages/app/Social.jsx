@@ -7,8 +7,7 @@ import { get } from '../../lib/api.js';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { Badge, Button, DemoBadge, ErrorState, Field, Select, SkeletonCard, Textarea } from '../../components/ui/ui.jsx';
+import { BRLText, Badge, Button, DemoBadge, ErrorState, Field, Select, SkeletonCard, Textarea } from '@autopix/ui';
 import s from './Social.module.css';
 import app from './app.module.css';
 

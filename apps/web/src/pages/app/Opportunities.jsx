@@ -5,7 +5,7 @@ import { LayoutGrid, List, Search } from 'lucide-react';
 import { get } from '../../lib/api.js';
 import { useDebounced } from '../../lib/hooks.js';
 import { OpportunityCard } from '../../components/cards/Cards.jsx';
-import { Button, EmptyState, ErrorState, Input, MiniRadar, Select, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Button, EmptyState, ErrorState, Input, MiniRadar, Select, SkeletonCard } from '@autopix/ui';
 import { useOpportunityActions } from './useOpportunityActions.js';
 import s from './app.module.css';
 

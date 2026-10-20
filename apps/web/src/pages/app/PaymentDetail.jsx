@@ -2,11 +2,10 @@ import { useEffect } from 'react';
 import { Navigate, useOutletContext, useParams } from 'react-router-dom';
 import { Copy } from 'lucide-react';
 import { PAYMENT_STATUS_LABELS, formatCents } from '@autopix/shared';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
+import { BRLText, Badge, Button, DemoBadge, ErrorState, SkeletonCard } from '@autopix/ui';
 import { useApi, useVisibleInterval } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
-import { Badge, Button, DemoBadge, ErrorState, SkeletonCard } from '../../components/ui/ui.jsx';
 import { PartnerNote } from './Pay.jsx';
 import s from './app.module.css';
 

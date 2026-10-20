@@ -3,10 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { get, post } from '../../lib/api.js';
 import { useSession } from '../../lib/session.jsx';
-import { Button, Field, Skeleton } from '../../components/ui/ui.jsx';
-import { AuthShell, FormError, PasswordStrength } from './AuthShell.jsx';
-import { PasswordInput } from './PasswordInput.jsx';
-import s from './auth.module.css';
+import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton } from '@autopix/ui';
+import s from './authPage.module.css';
 
 export default function Activate() {
   const { token } = useParams();

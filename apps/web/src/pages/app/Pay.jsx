@@ -6,10 +6,8 @@ import { useApi } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { api } from '../../lib/api.js';
 import { fmtDateTime } from '../../lib/time.js';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { LogoMark } from '../../components/brand/Logo.jsx';
+import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, LogoMark, Select, SkeletonCard } from '@autopix/ui';
 import { MetricCard } from '../../components/cards/Cards.jsx';
-import { Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, Select, SkeletonCard } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
 
 const TABS = [

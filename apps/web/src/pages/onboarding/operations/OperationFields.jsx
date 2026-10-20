@@ -44,7 +44,7 @@ import {
   optionsFor,
   setPath,
 } from '@autopix/shared';
-import { Field, Input, TagInput } from '../../../components/ui/ui.jsx';
+import { Field, Input, TagInput } from '@autopix/ui';
 import { OPS_COPY as T } from './copy.js';
 import o from './operations.module.css';
 

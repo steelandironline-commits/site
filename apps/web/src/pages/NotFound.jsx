@@ -1,5 +1,4 @@
-import { Logo } from '../components/brand/Logo.jsx';
-import { Button } from '../components/ui/ui.jsx';
+import { Button, Logo } from '@autopix/ui';
 
 export default function NotFound() {
   return (

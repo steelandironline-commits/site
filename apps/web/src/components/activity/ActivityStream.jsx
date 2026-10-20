@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ActivityCard } from '../cards/Cards.jsx';
 import { KIND_STYLE, eventKind } from '../../lib/eventKind.js';
-import { Badge, DemoBadge, Skeleton } from '../ui/ui.jsx';
+import { Badge, DemoBadge, Skeleton } from '@autopix/ui';
 import s from './activity.module.css';
 
 const MODE_LABEL = { live: 'Ao vivo', polling: 'Atualizando', connecting: 'Conectando', demo: 'Simulação' };

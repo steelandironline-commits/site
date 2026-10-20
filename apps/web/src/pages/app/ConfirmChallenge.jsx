@@ -5,8 +5,7 @@ import { post } from '../../lib/api.js';
 import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
-import { Badge, Button, ErrorState, Field, Input, SkeletonCard } from '../../components/ui/ui.jsx';
-import { PasswordInput } from '../auth/PasswordInput.jsx';
+import { Badge, Button, ErrorState, Field, Input, PasswordInput, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 const VIA = { WEB: 'App', API: 'Aplicativo', WHATSAPP: 'WhatsApp', SYSTEM: 'Sistema' };

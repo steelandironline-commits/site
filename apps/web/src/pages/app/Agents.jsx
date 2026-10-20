@@ -6,7 +6,7 @@ import { useApi } from '../../lib/hooks.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, formatDuration, relative } from '../../lib/time.js';
 import { AgentCard } from '../../components/cards/Cards.jsx';
-import { Badge, Button, EmptyState, ErrorState, SkeletonCard } from '../../components/ui/ui.jsx';
+import { Badge, Button, EmptyState, ErrorState, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 const RUN_TONE = { RUNNING: 'revenue', SUCCEEDED: 'primary', FAILED: 'danger' };

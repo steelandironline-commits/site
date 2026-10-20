@@ -14,10 +14,8 @@ import {
   X,
 } from 'lucide-react';
 import { PRICING, formatCents } from '@autopix/shared';
-import { Logo } from '../../components/brand/Logo.jsx';
-import { BRLText, BRLSymbol } from '../../components/brand/BRLIcon.jsx';
+import { BRLSymbol, BRLText, Button, Dialog, Logo, ScoreRing } from '@autopix/ui';
 import { WhatsAppIcon } from '../../components/brand/WhatsAppIcon.jsx';
-import { Button, Dialog, ScoreRing } from '../../components/ui/ui.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import ProductStage from './ProductStage.jsx';
 import { useDemoFeed } from '../../lib/demoFeed.js';

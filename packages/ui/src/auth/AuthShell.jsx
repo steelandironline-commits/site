@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Logo } from '../../components/brand/Logo.jsx';
+import { Logo } from '../brand/Logo.jsx';
 import s from './auth.module.css';
 
 /** › › › rows with a light running through them (no radar). */

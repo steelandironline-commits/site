@@ -4,8 +4,7 @@ import { ArrowLeft, CalendarClock, Check, Send, Star, UserPlus, Users, X } from 
 import { useApi } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { fmtDate } from '../../lib/time.js';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard } from '../../components/ui/ui.jsx';
+import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 const STATUS = { SUGGESTED: ['primary', 'Sugerido'], INVITED: ['amber', 'Convidado'], ACCEPTED: ['revenue', 'Aceitou'], DECLINED: ['neutral', 'Recusado'], COMPLETED: ['revenue', 'Concluído'] };

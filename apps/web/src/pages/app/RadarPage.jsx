@@ -3,9 +3,8 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { formatRange } from '@autopix/shared';
 import { useApi, useIsMobile } from '../../lib/hooks.js';
 import { compactBRL } from '../../lib/time.js';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
+import { BRLText, DemoBadge, EmptyState, ErrorState, MiniRadar, Skeleton } from '@autopix/ui';
 import LazyRadar from '../../components/radar/LazyRadar.jsx';
-import { DemoBadge, EmptyState, ErrorState, MiniRadar, Skeleton } from '../../components/ui/ui.jsx';
 import s from './app.module.css';
 
 export default function RadarPage() {

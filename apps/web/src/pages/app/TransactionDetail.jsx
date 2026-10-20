@@ -6,8 +6,7 @@ import { useApi, useVisibleInterval } from '../../lib/hooks.js';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
-import { BRLText } from '../../components/brand/BRLIcon.jsx';
-import { Badge, Button, DemoBadge, Dialog, ErrorState, Field, Input, SkeletonCard, Textarea } from '../../components/ui/ui.jsx';
+import { BRLText, Badge, Button, DemoBadge, Dialog, ErrorState, Field, Input, SkeletonCard, Textarea } from '@autopix/ui';
 import { PartnerNote } from './Pay.jsx';
 import s from './app.module.css';
 

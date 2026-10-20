@@ -1,4 +1,4 @@
-import { LogoMark } from '../components/brand/Logo.jsx';
+import { LogoMark } from '../brand/Logo.jsx';
 
 export function PageLoader() {
   return (
