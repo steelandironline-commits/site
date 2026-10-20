@@ -15,7 +15,8 @@ const Activate = lazy(() => import('../../pages/auth/Activate.jsx'));
 const ForgotPassword = lazy(() => import('../../pages/auth/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('../../pages/auth/ResetPassword.jsx'));
 const AppLayout = lazy(() => import('../../pages/app/AppLayout.jsx'));
-const Overview = lazy(() => import('../../pages/app/Overview.jsx'));
+const Overview = lazy(() => import('./Overview.jsx'));
+const Profile = lazy(() => import('./Profile.jsx'));
 const Social = lazy(() => import('../../pages/app/Social.jsx'));
 const Operations = lazy(() => import('./OperationsPage.jsx'));
 const Activity = lazy(() => import('../../pages/app/Activity.jsx'));
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/app" element={<AppLayout nav={NAV} back={BACK} onboardingTo={onboardingPath} copy={COPY.layout} />}>
             <Route index element={<Overview />} />
+            <Route path="perfil" element={<Profile />} />
             <Route path="social" element={<Social copy={COPY.social} />} />
             <Route path="operacao" element={<Operations />} />
             <Route path="activity" element={<Activity copy={COPY.activity} />} />

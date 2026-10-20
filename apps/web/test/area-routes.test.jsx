@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToPipeableStream } from 'react-dom/server';
 import { MemoryRouter, Navigate, Routes, createRoutesFromChildren } from 'react-router-dom';
 import { BrandProvider, SessionProvider } from '@autopix/ui';
-import { ALL_PAGES, PAGES, isPageOf } from '@autopix/areas';
+import { ALL_PAGES, EXCLUSIVE_PAGES, PAGES, isPageOf } from '@autopix/areas';
 import { AREA_BRAND as CNPJ_BRAND } from '@autopix/areas/brand/cnpj';
 import { AREA_BRAND as CPF_BRAND } from '@autopix/areas/brand/cpf';
 import LegacyApp from '../src/App.jsx';
@@ -55,8 +55,12 @@ describe('deriva de rotas: o roteador de cada build bate com o manifesto', () =>
     expect(patternsOf(CpfApp)).toEqual([...PAGES.CPF].sort());
   });
 
-  it('o build legado declara a união das áreas (toda página, inclusive o admin)', () => {
-    expect(patternsOf(LegacyApp)).toEqual([...ALL_PAGES].sort());
+  it('o build legado declara a união das áreas (toda página, inclusive o admin), menos as páginas que só existem nas áreas', () => {
+    // "Meu perfil" (/app/perfil) é do CPF: no legado a pessoa vê o perfil em /app/company, a tela da empresa.
+    const areaOnly = EXCLUSIVE_PAGES.CPF;
+    expect(areaOnly).toEqual(['/app/perfil']);
+    expect(patternsOf(LegacyApp)).toEqual(ALL_PAGES.filter((p) => !areaOnly.includes(p)).sort());
+    for (const page of areaOnly) expect(patternsOf(LegacyApp)).not.toContain(page);
   });
 
   it('o CPF não declara nenhuma rota do CNPJ nem do admin, e vice-versa', () => {
@@ -116,6 +120,20 @@ describe('o menu de cada área só aponta para páginas da própria área', () =
     expect(cnpjNav.BACK.map((r) => [r[0].source, r[1], r[2]])).toEqual(legacyNav.BACK.map((r) => [r[0].source, r[1], r[2]]));
   });
 
+  it('cada menu é só da própria área: "Meu perfil" só no CPF, e nenhum item de empresa nele', () => {
+    expect(cpfNav.NAV.map((i) => i.to)).toContain('/app/perfil');
+    expect(cnpjNav.NAV.map((i) => i.to)).not.toContain('/app/perfil');
+    const cpfLabels = cpfNav.NAV.map((i) => i.label).join('|');
+    expect(cpfLabels).not.toMatch(/Licita|Pagamentos|Cargas|Equipes|Agentes|Empresa|Plano|Oportunidades|Radar|Intermedia/);
+    expect(cnpjNav.NAV.map((i) => i.label).join('|')).not.toContain('Meu perfil');
+    for (const nav of [cnpjNav, cpfNav]) {
+      for (const item of nav.NAV) {
+        expect(item.companyOnly, item.to).toBeUndefined();
+        expect(item.personLabel, item.to).toBeUndefined();
+      }
+    }
+  });
+
   it('o cadastro em andamento vai para o checkout só no CNPJ; o CPF não tem checkout', () => {
     expect(cnpjNav.onboardingPath({ user: { status: 'PENDING_PAYMENT' } })).toBe('/checkout');
     expect(cnpjNav.onboardingPath({ user: { status: 'PENDING_ACTIVATION' } })).toBe('/onboarding');
@@ -154,8 +172,20 @@ describe('caminho fora da lista da área mostra a NotFound neutra, sem redirecio
     });
   }
 
-  const outsideCpf = ['/checkout', '/app/licitacoes', '/app/pay', '/app/pay/transactions/1', '/app/freight', '/app/company', '/app/admin', '/app/nao-existe', '/qualquer/coisa'];
-  const outsideCnpj = ['/app/admin', '/app/nao-existe', '/qualquer/coisa'];
+  // Toda página que o manifesto marca como só do CNPJ (com um id no lugar dos parâmetros) cai na NotFound do CPF.
+  const concrete = (page) => page.replace(/:\w+/g, '1');
+  const outsideCpf = [
+    ...PAGES.CNPJ.filter((p) => !PAGES.CPF.includes(p)).map(concrete),
+    '/app/admin',
+    '/app/nao-existe',
+    '/qualquer/coisa',
+  ];
+  const outsideCnpj = [...PAGES.CPF.filter((p) => !PAGES.CNPJ.includes(p)).map(concrete), '/app/admin', '/app/nao-existe', '/qualquer/coisa'];
+
+  it('a lista de caminhos de fora inclui as telas de empresa e de pessoa que o inventário separa', () => {
+    expect(outsideCpf).toEqual(expect.arrayContaining(['/checkout', '/app/licitacoes', '/app/company', '/app/subscription', '/app/pay/transactions/1', '/app/payments/1', '/app/freight/matches/1', '/app/workforce/matches/1', '/app/intermediacao', '/app/opportunities/1', '/app/radar', '/app/agents']));
+    expect(outsideCnpj).toContain('/app/perfil');
+  });
 
   it('CPF', async () => {
     for (const url of outsideCpf) {

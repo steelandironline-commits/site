@@ -1,0 +1,34 @@
+.shortcuts {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+}
+
+.shortcut {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.shortcut svg {
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.shortcut span {
+  color: var(--muted);
+  font-size: var(--fs-13);
+}
+
+.shortcut:hover {
+  border-color: var(--primary-line);
+  background: var(--elevated);
+}

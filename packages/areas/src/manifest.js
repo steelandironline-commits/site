@@ -48,8 +48,9 @@ export const EXCLUSIVE_PAGES = Object.freeze({
     '/app/workforce',
     '/app/workforce/matches/:id',
   ]),
-  // Sem tela exclusiva hoje. O CPF ganha a tela de perfil na ETAPA 5.
-  CPF: Object.freeze([]),
+  // "Meu perfil": o perfil da pessoa física, que lê e grava GET/PUT /api/profile. Não existe no build legado,
+  // onde a pessoa vê o perfil em /app/company (tela da empresa, com a rota de empresa).
+  CPF: Object.freeze(['/app/perfil']),
   // Admin da plataforma (Q6). Sem ADMIN_HOST, quem serve é o host CNPJ; a regra de
   // quem serve o quê entra na ETAPA 4.
   ADMIN: Object.freeze(['/app/admin']),
@@ -64,7 +65,7 @@ export const EXCLUSIVE_PAGES = Object.freeze({
  * O arquivo é do tipo "só uma área usa hoje": entrou aqui porque só as páginas daquela área
  * (e o que elas puxam sozinhas) o alcançam. Um teste (apps/web/test/bundle-isolation) compara a
  * lista com os módulos reais de cada build, e acusa arquivo exclusivo que ficou de fora.
- * Na ETAPA 5, quando a tela comum for dividida, o arquivo muda de lugar e sai daqui.
+ * A ETAPA 5 dividiu as telas que as duas áreas dividiam: o que sobrou comum recebe a cópia da área por props.
  */
 export const EXCLUSIVE_FILES = Object.freeze({
   CNPJ: Object.freeze([
@@ -89,6 +90,13 @@ export const EXCLUSIVE_FILES = Object.freeze({
     'pages/app/Intermediation.jsx',
     'pages/app/Freight.jsx',
     'pages/app/Workforce.jsx',
+    // O painel da empresa (a pessoa tem o seu, em src/areas/cpf/Overview.jsx) e o que só ele e as telas
+    // de empresa usam: cartões de oportunidade, agente e empresa, fluxo comercial e link de oportunidade.
+    'pages/app/Overview.jsx',
+    'pages/app/useOpportunityActions.js',
+    'components/cards/Cards.jsx',
+    'components/activity/Flow.jsx',
+    'lib/opportunityLink.js',
     // Equipe (colaboradores com login por CPF) e chave Pix de repasse da empresa (Q1, Q4).
     'pages/app/TeamCard.jsx',
     'pages/app/PayoutCard.jsx',

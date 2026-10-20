@@ -129,14 +129,28 @@ describe('manifesto de páginas', () => {
     expect(admin).toEqual(['/api/actions', '/api/admin', '/api/auth', '/api/challenges', '/api/me', '/api/session']);
   });
 
-  it('toda rota do App.jsx legado está declarada em alguma área, e só elas', () => {
+  it('toda rota do App.jsx legado está declarada em alguma área, e só elas (menos as páginas que só existem nas áreas)', () => {
     const routes = legacyRoutes();
     // Garante que o leitor de rotas enxerga o App.jsx inteiro.
     expect(routes).toContain('/app');
     expect(routes).toContain('/app/pay/transactions/:id');
     expect(routes).toContain('/activate/:token');
     expect(new Set(routes).size).toBeGreaterThanOrEqual(30);
-    expect([...ALL_PAGES].sort()).toEqual([...new Set(routes)].sort());
+    // "Meu perfil" é uma página nova do CPF (ETAPA 5): o legado, que é o site de hoje, não a tem.
+    const areaOnly = ['/app/perfil'];
+    for (const page of areaOnly) {
+      expect(EXCLUSIVE_PAGES.CPF).toContain(page);
+      expect(routes).not.toContain(page);
+    }
+    expect(ALL_PAGES.filter((p) => !areaOnly.includes(p)).sort()).toEqual([...new Set(routes)].sort());
+  });
+
+  it('"Meu perfil" e /api/profile são só do CPF', () => {
+    expect(isPageOf('CPF', '/app/perfil')).toBe(true);
+    expect(isPageOf('CNPJ', '/app/perfil')).toBe(false);
+    expect(areasOfPage('/app/perfil')).toEqual(['CPF']);
+    expect(API_MOUNTS.find((m) => m.path === '/api/profile')?.areas).toEqual(['CPF']);
+    expect(API_MOUNTS.filter((m) => m.areas.includes('CNPJ')).map((m) => m.path)).not.toContain('/api/profile');
   });
 });
 
@@ -182,9 +196,13 @@ describe('arquivos exclusivos de cada área (fronteira do build)', () => {
     for (const file of ['pages/app/Pay.jsx', 'pages/app/Tenders.jsx', 'pages/app/Freight.jsx', 'pages/app/Workforce.jsx', 'pages/checkout/']) {
       expect(EXCLUSIVE_FILES.CNPJ, file).toContain(file);
     }
+    // O painel da empresa, a equipe e a chave de repasse (ETAPA 5): o CPF tem o painel dele, sem os dois cartões.
+    for (const file of ['pages/app/Overview.jsx', 'pages/app/TeamCard.jsx', 'pages/app/PayoutCard.jsx', 'components/cards/Cards.jsx']) {
+      expect(EXCLUSIVE_FILES.CNPJ, file).toContain(file);
+    }
     expect(EXCLUSIVE_FILES.ADMIN).toContain('pages/app/Admin.jsx');
-    // As páginas comuns nunca são exclusivas.
-    for (const file of ['pages/app/Overview.jsx', 'pages/app/Social.jsx', 'pages/app/Settings.jsx', 'pages/auth/', 'pages/onboarding/', 'pages/NotFound.jsx']) {
+    // As páginas que as duas áreas dividem (com a cópia da área por props) nunca são exclusivas.
+    for (const file of ['pages/app/Social.jsx', 'pages/app/Settings.jsx', 'pages/app/Operations.jsx', 'pages/app/Activity.jsx', 'pages/app/AppLayout.jsx', 'pages/auth/', 'pages/onboarding/OnboardingFlow.jsx', 'pages/NotFound.jsx']) {
       for (const area of AREAS) expect(EXCLUSIVE_FILES[area].some((e) => file.startsWith(e)), `${area} ${file}`).toBe(false);
     }
   });
