@@ -357,6 +357,7 @@ Todos os domínios entram como domínios personalizados do **mesmo** serviço `a
 | Apex sem ALIAS no DNS atual | Apex não aponta para o Railway | Provedor de DNS com flattening (seção 9) |
 | Limite de domínios no plano do Railway | Faltar domínio para o 301 | Conferir antes. Alternativa: 301 no provedor de DNS |
 | `/api/config` e textos de erro com termos de empresa | Texto do CNPJ aparece no CPF | Resposta e mensagens por área (`text(area)`) |
+| App nativo, no modo de áreas | Sem `Origin`, `POST /api/onboarding/*` e `POST /api/auth/forgot-password` respondem 403 "Origem não permitida" (só `native/login` e `native/verify-whatsapp` são isentos) | Limitação conhecida, a regra de CSRF não muda: com cookie, um `Origin` ausente não prova nada, e os dois hosts são *same-site*. Quando o app nativo precisar de cadastro e recuperação de senha, tratar à parte (endpoints `native/*` sem cookie, como o login) |
 
 ## 13. Em aberto para você
 
