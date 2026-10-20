@@ -54,12 +54,19 @@ export function cepRoutes({ limiters, cep = new CepService() }) {
   return r;
 }
 
-/** GET /api/config: public, non-secret runtime flags for the web app. */
+/**
+ * GET /api/config: public, non-secret runtime flags for the web app.
+ *
+ * Area mode answers by the host's area (ARQUITETURA 6.5, INVENTARIO 2): the signup fee, the plan and
+ * the company commission belong to the company side, so only the CNPJ host receives them. Any other
+ * area gets the minimum (fail closed). Legacy mode answers exactly as before.
+ */
 export function configRoutes({ config }) {
   const r = Router();
 
   r.get('/', (req, res) => {
-    res.json({
+    if (config.areas.enabled && req.area !== 'CNPJ') return res.json({ demoMode: config.demoMode });
+    return res.json({
       demoMode: config.demoMode,
       paymentProvider: config.payment.provider,
       simulationAvailable: !config.isProduction && config.payment.provider === 'mock',
