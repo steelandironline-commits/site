@@ -8,7 +8,7 @@ import '@fontsource/ibm-plex-sans/600.css';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '@fontsource/ibm-plex-mono/600.css';
-import './styles/global.css';
+import '@autopix/ui/styles/global.css';
 import App from './App.jsx';
 import { SessionProvider, registerServiceWorker } from '@autopix/ui';
 import { ToastProvider } from './lib/toast.jsx';
