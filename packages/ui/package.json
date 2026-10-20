@@ -1,0 +1,21 @@
+{
+  "name": "@autopix/ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./styles/*": "./src/styles/*"
+  },
+  "sideEffects": [
+    "**/*.css",
+    "./src/lib/pwa.js"
+  ],
+  "dependencies": {
+    "framer-motion": "12.43.0",
+    "lucide-react": "0.548.0",
+    "react": "19.2.0",
+    "react-router-dom": "7.18.4"
+  }
+}

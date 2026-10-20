@@ -11,6 +11,7 @@
   "workspaces": [
     "packages/shared",
     "packages/core",
+    "packages/ui",
     "apps/api",
     "apps/worker",
     "apps/web"
