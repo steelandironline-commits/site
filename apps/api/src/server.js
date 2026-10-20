@@ -20,6 +20,7 @@ async function main() {
       demoMode: config.demoMode,
       paymentProvider: config.payment.provider,
       realtime: hub.mode,
+      areas: config.areas.enabled ? 'on' : 'off',
     });
   });
   server.keepAliveTimeout = 65_000;

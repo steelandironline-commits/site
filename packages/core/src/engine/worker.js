@@ -132,7 +132,8 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, reconcileMs = 
   (async () => {
     await ensureAgents(prisma);
     await platform.commissions.ensureDefaults();
-    logger.info('worker started', { demoMode: config.demoMode, intervalMinutes: config.search.intervalMinutes });
+    // The worker builds links for e-mail and WhatsApp: it needs the same PUBLIC_HOST_* variables as the web service.
+    logger.info('worker started', { demoMode: config.demoMode, intervalMinutes: config.search.intervalMinutes, areas: config.areas.enabled ? 'on' : 'off' });
     scheduleLoop();
     pollLoop();
     eventLoop();
