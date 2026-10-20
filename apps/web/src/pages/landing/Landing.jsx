@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { PRICING, formatCents } from '@autopix/shared';
+import { COMPANY_PRICING_FEATURES, PERSON_PRICING_FEATURES, PRICING, formatCents } from '@autopix/shared';
 import { BRLSymbol, BRLText, Button, Dialog, Logo, ScoreRing, isIos, useInstallPrompt, useSession } from '@autopix/ui';
 import { WhatsAppIcon } from '../../components/brand/WhatsAppIcon.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
@@ -354,7 +354,7 @@ function Pricing() {
               <p className={s.priceNote}>Para trabalhadores e autônomos se identificarem e receberem vagas, serviços e fretes.</p>
             </div>
             <ul className={s.priceList}>
-              {PRICING.person.map((f) => (
+              {PERSON_PRICING_FEATURES.map((f) => (
                 <li key={f}>
                   <Check size={15} aria-hidden="true" /> <BRLText>{f}</BRLText>
                 </li>
@@ -375,7 +375,7 @@ function Pricing() {
               </p>
             </div>
             <ul className={`${s.priceList} gold-icons`}>
-              {PRICING.company.map((f) => (
+              {COMPANY_PRICING_FEATURES.map((f) => (
                 <li key={f}>
                   <Check size={15} aria-hidden="true" /> <BRLText>{f}</BRLText>
                 </li>

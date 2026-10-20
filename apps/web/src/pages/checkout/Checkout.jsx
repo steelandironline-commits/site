@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, ArrowLeft, Building2, Check, Clock, Copy, FlaskConical, Lock, QrCode, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react';
-import { PLAN, PRICING, formatCents, formatCnpj } from '@autopix/shared';
+import { COMPANY_PRICING_FEATURES, PLAN, PRICING, formatCents, formatCnpj } from '@autopix/shared';
 import { BRLText, Button, DemoBadge, ErrorState, Logo, LogoMark, Skeleton, api, post, useSession, useVisibleInterval } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import s from './checkout.module.css';
@@ -210,7 +210,7 @@ export default function Checkout() {
             <span>{oneTime ? ' uma vez só' : '/mês'}</span>
           </p>
           <ul className={s.features}>
-            {(oneTime ? PRICING.company : PLAN.features.slice(0, 6)).map((f) => (
+            {(oneTime ? COMPANY_PRICING_FEATURES : PLAN.features.slice(0, 6)).map((f) => (
               <li key={f}>
                 <Check size={14} aria-hidden="true" /> <BRLText>{f}</BRLText>
               </li>

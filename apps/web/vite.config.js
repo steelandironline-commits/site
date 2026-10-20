@@ -12,6 +12,7 @@ import { areaHtml } from './vite-plugins/areaHtml.js';
 import { moduleList } from './vite-plugins/moduleList.js';
 
 const webRoot = path.dirname(fileURLToPath(import.meta.url));
+const SHARED_SRC = /[\\/]packages[\\/]shared[\\/]src[\\/]/;
 const repoRoot = path.resolve(webRoot, '../..');
 
 /**
@@ -103,6 +104,11 @@ function areaConfig(area) {
       rollupOptions: {
         input: path.join(webRoot, 'areas', own, 'index.html'),
         output: { manualChunks },
+        // @autopix/shared é dado e funções puras (esquemas zod, catálogos, constantes). Nas áreas, um
+        // módulo dele que nenhum código da área usa sai do bundle, em vez de ficar pelas chamadas do
+        // topo do arquivo (os esquemas do servidor, com mensagens de empresa e de pessoa, entrariam
+        // nas duas áreas). O build legado não muda: ele mantém tudo, como sempre.
+        treeshake: { moduleSideEffects: (id) => !SHARED_SRC.test(id) },
       },
     },
   };

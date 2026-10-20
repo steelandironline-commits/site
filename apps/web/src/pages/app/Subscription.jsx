@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Check, QrCode, ShieldCheck } from 'lucide-react';
-import { COMMISSION_PLAN_CODE, PLAN, PRICING, SUBSCRIPTION_STATUS_LABELS, formatCents } from '@autopix/shared';
+import { COMMISSION_PLAN_CODE, COMPANY_PRICING_FEATURES, PERSON_PRICING_FEATURES, PLAN, PRICING, SUBSCRIPTION_STATUS_LABELS, formatCents } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
 import { BRLText, Badge, Button, Dialog, EmptyState, ErrorState, SkeletonCard, useApi, useSession } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
@@ -204,7 +204,7 @@ function CommissionPlan() {
             têm mensalidade.
           </p>
           <ul className={s.reasons} style={{ marginTop: 18 }}>
-            {(company ? PRICING.company : PRICING.person).map((f) => (
+            {(company ? COMPANY_PRICING_FEATURES : PERSON_PRICING_FEATURES).map((f) => (
               <li key={f}>
                 <Check size={14} aria-hidden="true" /> {f}
               </li>

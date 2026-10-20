@@ -28,23 +28,27 @@ export const PRICING = Object.freeze({
   commissionLabel: '5% a 2%, conforme o valor do contrato',
   /** One-time signup fee for companies (CNPJ). Professionals sign up free. */
   companySignupFeeCents: 20000,
-  person: [
-    'Cadastro grátis; para ir à entrevista, só R$ 1,00',
-    'Receba vagas, serviços e fretes da sua região',
-    'Pagamento assegurado até a conclusão',
-    'Receba por Pix direto na sua conta',
-    'Avisos no WhatsApp e no celular',
-  ],
-  company: [
-    'Taxa única de cadastro: paga uma vez, sem mensalidade',
-    'Login pelo CNPJ (MEI também) e acesso para colaboradores',
-    'Clientes, cargas e profissionais para a sua empresa',
-    'Pagamento assegurado até a conclusão',
-    'Cobrança e recebimento por Pix',
-    'Rotas, entregas e contratações no painel',
-    'Alertas no WhatsApp e painel no celular',
-  ],
 });
+
+// What each side gets, one list per side. They are separate exports (not fields of PRICING) so that
+// the build of an area only carries its own list: a bundle that imports one never holds the other.
+export const PERSON_PRICING_FEATURES = Object.freeze([
+  'Cadastro grátis; para ir à entrevista, só R$ 1,00',
+  'Receba vagas, serviços e fretes da sua região',
+  'Pagamento assegurado até a conclusão',
+  'Receba por Pix direto na sua conta',
+  'Avisos no WhatsApp e no celular',
+]);
+
+export const COMPANY_PRICING_FEATURES = Object.freeze([
+  'Taxa única de cadastro: paga uma vez, sem mensalidade',
+  'Login pelo CNPJ (MEI também) e acesso para colaboradores',
+  'Clientes, cargas e profissionais para a sua empresa',
+  'Pagamento assegurado até a conclusão',
+  'Cobrança e recebimento por Pix',
+  'Rotas, entregas e contratações no painel',
+  'Alertas no WhatsApp e painel no celular',
+]);
 
 /** Plan code stored on the account-access record in the commission model. */
 export const COMMISSION_PLAN_CODE = 'COMMISSION';
