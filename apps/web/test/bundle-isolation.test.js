@@ -6,14 +6,15 @@ import { createRequire } from 'node:module';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AREAS, EXCLUSIVE_FILES, isPageOf } from '@autopix/areas';
+import { API_MOUNTS, AREAS, EXCLUSIVE_FILES, PAGES, isAnyArea, isPageOf } from '@autopix/areas';
 import { AREA_BRAND as CNPJ_BRAND } from '@autopix/areas/brand/cnpj';
 import { AREA_BRAND as CPF_BRAND } from '@autopix/areas/brand/cpf';
 
 // Isolamento do bundle: builda de verdade cada área (vite build --mode <área>, num diretório
 // temporário) e confere o que entrou no grafo. A lista de módulos de cada área não pode ter
 // módulo da outra, e todo arquivo que só uma área alcança precisa estar classificado no manifesto.
-// (O "marcador de texto" no dist é da ETAPA 5: ainda há textos cruzados nas telas comuns.)
+// A ETAPA 5 acrescenta a prova pelo texto: nenhum arquivo de saída de uma área (js, css, html, json,
+// webmanifest, txt, xml) contém os marcadores da outra (ARQUITETURA 5, "Teste que prova").
 
 const run = promisify(execFile);
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,6 +25,26 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tempix-bundles-'));
 const dist = (area) => path.join(tmp, `dist-${area}`);
 const read = (area, file) => fs.readFileSync(path.join(dist(area), file), 'utf8');
 const modulesOf = (area) => JSON.parse(read(area, 'modules.json')).modules;
+
+/** Todos os arquivos de texto da saída de uma área, com o caminho relativo ao dist dela. */
+function outputFiles(area) {
+  const out = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(file);
+      else if (/\.(js|css|html|json|webmanifest|txt|xml|svg)$/.test(entry.name)) out.push(path.relative(dist(area), file));
+    }
+  };
+  walk(dist(area));
+  return out.sort();
+}
+
+/** Arquivos da saída de uma área que contêm o texto (ou casam a expressão). */
+function filesWith(area, needle) {
+  const hit = needle instanceof RegExp ? (text) => needle.test(text) : (text) => text.includes(needle);
+  return outputFiles(area).filter((file) => hit(read(area, file)));
+}
 
 /** Módulos de apps/web/src que não são da pasta da própria área. */
 const sharedSrc = (modules, area) => modules.filter((m) => m.startsWith('apps/web/src/') && !m.startsWith(`apps/web/src/areas/${area}/`));
@@ -147,5 +168,106 @@ describe('modules.json: nenhum módulo da outra área', () => {
 
   it('as áreas declaradas são as do manifesto', () => {
     expect(AREAS).toEqual(['CNPJ', 'CPF', 'ADMIN']);
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
+// ETAPA 5 · marcadores. Escritos literalmente, nunca palavras soltas: "CPF" pode aparecer no CNPJ
+// (o colaborador entra com CPF, Q1) e "temcnpj" pode aparecer no CPF (está no host dele).
+
+const MARKERS = {
+  // O CPF não pode ter nada de empresa, de licitação, de equipe, de pagamento nem de cobrança.
+  cpf: ['Tem CNPJ', 'CNPJ', 'Licitações', 'Colaborador', '/app/licitacoes', '/api/team', '/api/company', '/api/pay', '/checkout'],
+  // O CNPJ não pode ter nada da área de pessoas.
+  cnpj: ['Tem CPF', 'pessoa física', 'Meu perfil', '/api/profile'],
+  // Nenhuma das duas serve o admin da plataforma (terceira área).
+  both: ['/api/admin', 'Admin financeiro'],
+};
+
+describe('marcadores: o bundle de cada área não leva texto nem chamada da outra', () => {
+  for (const area of ['cpf', 'cnpj']) {
+    for (const marker of [...MARKERS[area], ...MARKERS.both]) {
+      it(`${area}: nenhum arquivo contém ${JSON.stringify(marker)}`, () => {
+        expect(filesWith(area, marker)).toEqual([]);
+      });
+    }
+  }
+
+  it('a busca enxerga o dist inteiro (sem isso, o teste passaria à toa)', () => {
+    for (const area of ['cpf', 'cnpj']) {
+      const files = outputFiles(area);
+      expect(files.filter((f) => f.endsWith('.js')).length, area).toBeGreaterThan(15);
+      expect(files).toEqual(expect.arrayContaining(['index.html', 'manifest.webmanifest', 'modules.json', 'robots.txt', 'sw.js']));
+    }
+    // Cada lado de fato tem o que é dele: os marcadores da outra área existem nas fontes do CNPJ e do CPF.
+    expect(filesWith('cnpj', 'CNPJ').length).toBeGreaterThan(3);
+    expect(filesWith('cpf', 'Tem CPF').length + filesWith('cpf', 'CPF').length).toBeGreaterThan(3);
+    expect(filesWith('cnpj', '/api/company').length).toBeGreaterThan(0);
+    expect(filesWith('cpf', '/api/profile').length).toBeGreaterThan(0);
+  });
+
+  it('o marcador "CPF" é permitido no CNPJ (colaborador) e "temcnpj" no CPF', () => {
+    expect(filesWith('cnpj', 'CPF').length).toBeGreaterThan(0);
+    expect(MARKERS.cnpj.some((m) => m === 'CPF')).toBe(false);
+    expect(MARKERS.cpf.some((m) => /temcnpj/i.test(m))).toBe(false);
+  });
+
+  // Tudo o que o manifesto marca como só da outra área: a rota de API e o caminho da página.
+  for (const [area, other] of [['cpf', 'CNPJ'], ['cnpj', 'CPF']]) {
+    const ownMounts = API_MOUNTS.filter((m) => !isAnyArea(m.areas) && m.areas.includes(area.toUpperCase()));
+    const foreignMounts = API_MOUNTS.filter((m) => !isAnyArea(m.areas) && !m.areas.includes(area.toUpperCase()));
+    // O que a outra área tem de exclusivo: nenhuma montagem própria é prefixo de uma estranha, e vice-versa.
+    it(`${area}: nenhuma montagem de API exclusiva da área ${other} aparece no bundle`, () => {
+      expect(foreignMounts.map((m) => m.path)).toContain(other === 'CNPJ' ? '/api/company' : '/api/profile');
+      for (const mount of foreignMounts) {
+        const clash = ownMounts.find((m) => mount.path.startsWith(m.path) || m.path.startsWith(mount.path));
+        expect(clash, `${mount.path} x ${clash?.path}`).toBeUndefined();
+        expect(filesWith(area, mount.path), mount.path).toEqual([]);
+      }
+    });
+
+    it(`${area}: nenhum caminho de página exclusivo da área ${other} aparece no bundle`, () => {
+      const ownPages = PAGES[area.toUpperCase()];
+      const foreignPages = [...new Set(AREAS.filter((a) => a !== area.toUpperCase()).flatMap((a) => PAGES[a]))].filter((p) => !ownPages.includes(p));
+      expect(foreignPages.length).toBeGreaterThan(0);
+      for (const page of foreignPages) {
+        const prefix = page.split('/:')[0];
+        // /app/pay/transactions/:id e /app/payments/:id começam por /app/pay, que também é página só do CNPJ.
+        expect(filesWith(area, prefix), prefix).toEqual([]);
+      }
+    });
+  }
+
+  it('o CPF não manda a pessoa a um checkout, a licitações nem a pagamentos, e o CNPJ não a "Meu perfil"', () => {
+    expect(filesWith('cpf', /checkout/i)).toEqual([]);
+    expect(filesWith('cpf', /\blicita[cç][oõ]es\b/i)).toEqual([]);
+    expect(filesWith('cpf', /colaborador/i)).toEqual([]);
+    expect(filesWith('cnpj', /pessoa f[ií]sica/i)).toEqual([]);
+    expect(filesWith('cnpj', /cadastro pessoa/i)).toEqual([]);
+    expect(filesWith('cnpj', /tipo=profissional/)).toEqual([]);
+    expect(filesWith('cnpj', 'Profissional entra')).toEqual([]);
+    expect(filesWith('cnpj', /\/app\/perfil/)).toEqual([]);
+  });
+
+  it('o CNPJ não leva a cópia, o legado nem a Home do CPF; o CPF não leva a landing nem o legado', () => {
+    const cnpj = modulesOf('cnpj');
+    const cpf = modulesOf('cpf');
+    expect(cnpj.filter((m) => m.startsWith('apps/web/src/areas/cpf/') || m.startsWith('apps/web/src/legacy/'))).toEqual([]);
+    expect(cpf.filter((m) => m.startsWith('apps/web/src/areas/cnpj/') || m.startsWith('apps/web/src/legacy/'))).toEqual([]);
+    for (const legacy of ['apps/web/src/App.jsx', 'apps/web/src/main.jsx', 'apps/web/src/legacyNav.js']) {
+      expect(cnpj, legacy).not.toContain(legacy);
+      expect(cpf, legacy).not.toContain(legacy);
+    }
+    expect(cpf).toContain('apps/web/src/areas/cpf/Profile.jsx');
+    expect(cpf).toContain('apps/web/src/areas/cpf/copy.js');
+    expect(cnpj).toContain('apps/web/src/areas/cnpj/copy.js');
+    expect(cnpj).not.toContain('apps/web/src/areas/cpf/copy.js');
+  });
+
+  it('o CPF não importa nenhum módulo de empresa: cartões, equipe, chave de repasse, checkout, landing', () => {
+    const cpf = modulesOf('cpf').join('\n');
+    for (const file of ['components/cards/Cards.jsx', 'pages/app/TeamCard.jsx', 'pages/app/PayoutCard.jsx', 'pages/checkout/', 'pages/landing/', 'pages/app/Overview.jsx', 'pages/app/Company.jsx', 'lib/opportunityLink.js']) {
+      expect(cpf, file).not.toContain(`apps/web/src/${file}`);
+    }
   });
 });
