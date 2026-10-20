@@ -64,10 +64,15 @@ describe('entradas estáticas das áreas', () => {
   it('robots.txt: o CPF não cita o caminho do checkout, que é só do CNPJ', () => {
     expect(read('areas/cnpj/public/robots.txt')).toContain('Disallow: /checkout');
     expect(read('areas/cpf/public/robots.txt')).not.toContain('/checkout');
+    // Cada robots.txt aponta o sitemap para o próprio host e não cita o outro.
+    const own = { cnpj: 'https://temcnpj.com.br/sitemap.xml', cpf: 'https://cpf.temcnpj.com.br/sitemap.xml' };
+    const other = { cnpj: 'cpf.temcnpj.com.br', cpf: 'https://temcnpj.com.br/' };
     for (const area of ['cnpj', 'cpf']) {
       const text = read('areas', area, 'public/robots.txt');
       expect(text).toContain('Disallow: /app');
-      expect(text).not.toMatch(/Sitemap|temcnpj|temcpf/i);
+      expect(text).toContain(`Sitemap: ${own[area]}`);
+      expect(text).not.toContain(other[area]);
+      expect(text).not.toMatch(/temcpf/i);
     }
   });
 });
