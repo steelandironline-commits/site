@@ -3,24 +3,34 @@ import { getPrisma } from '../db.js';
 import { describeResult } from '../actions/definitions.js';
 import { commandPayload } from './WhatsAppProvider.js';
 import { logger } from '../logger.js';
+import { notFound } from '../errors.js';
 
 const PENDING_TTL_MS = 10 * 60 * 1000;
 const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit' }) : null);
 
-export const HELP_TEXT = [
-  'TemPix no WhatsApp — exemplos:',
-  '• quais oportunidades apareceram hoje?',
-  '• quanto tenho em negócios abertos?',
-  '• procura carga de Santos para São Paulo amanhã',
-  '• preciso de 3 soldadores segunda',
-  '• gere um Pix de 1400',
-].join('\n');
+const HELP_HEADER = 'TemPix no WhatsApp — exemplos:';
+/** [action the line leads to, help line]. The action's `areas` decide who sees the line. */
+const HELP_LINES = [
+  ['LIST_TODAY_OPPORTUNITIES', '• quais oportunidades apareceram hoje?'],
+  ['GET_OPEN_PIPELINE_VALUE', '• quanto tenho em negócios abertos?'],
+  ['CREATE_FREIGHT_REQUEST', '• procura carga de Santos para São Paulo amanhã'],
+  ['CREATE_WORKFORCE_DEMAND', '• preciso de 3 soldadores segunda'],
+  ['CREATE_PIX', '• gere um Pix de 1400'],
+];
+export const HELP_TEXT = [HELP_HEADER, ...HELP_LINES.map(([, line]) => line)].join('\n');
+/** An area with no command available by message gets no examples (nothing of another area is named). */
+const NO_COMMANDS_TEXT = 'TemPix no WhatsApp — por aqui você recebe os avisos da sua conta. Os comandos por mensagem não estão disponíveis para ela.';
 
 /**
  * Natural-language commands. Pipeline:
  *   parse intent → validate parameters → (confirmation for state changes)
  *   → ActionEngine.execute(channel WHATSAPP) → reply.
  * The parser never touches state; only the ActionEngine does.
+ *
+ * Area mode (ARQUITETURA 6.6): the owner's area decides what exists. The help lists only the
+ * commands whose action the area may run, and a command of another area is refused with the
+ * ActionEngine's own denial BEFORE any confirmation is asked (no button, no pending command).
+ * Legacy mode: the full help and every command, as before.
  */
 export class WhatsAppCommandService {
   constructor({ prisma = getPrisma(), parser, engine, messenger }) {
@@ -32,6 +42,20 @@ export class WhatsAppCommandService {
 
   actorFor(connection) {
     return { userId: connection.userId, whatsappConnectionId: connection.id };
+  }
+
+  /** Help text for the number's owner. Legacy mode: the full text. */
+  async helpFor(connection) {
+    const area = await this.messenger.areaOf(connection);
+    if (!area) return HELP_TEXT;
+    const lines = HELP_LINES.filter(([action]) => this.engine.get(action)?.areas?.includes(area)).map(([, line]) => line);
+    return lines.length ? [HELP_HEADER, ...lines].join('\n') : NO_COMMANDS_TEXT;
+  }
+
+  /** Area mode: refuses, like the engine would, an action the owner's area may not run. */
+  async assertAvailable(connection, action) {
+    const area = await this.messenger.areaOf(connection);
+    if (area && !this.engine.get(action)?.areas?.includes(area)) throw notFound('Ação desconhecida.');
   }
 
   async run(connection, action, input) {
@@ -65,9 +89,11 @@ export class WhatsAppCommandService {
         return this.messenger.reply(connection, describeResult('GET_OPEN_PIPELINE_VALUE', result));
       }
       case 'CREATE_PIX':
+        await this.assertAvailable(connection, 'CREATE_PIX');
         if (!p.amountCents) return this.messenger.reply(connection, 'Qual o valor do Pix? Ex.: “gere um Pix de 1400”.');
         return this.askConfirmation(connection, 'CREATE_PIX', { amountCents: p.amountCents, ...(p.description ? { description: p.description } : {}) }, `Gerar uma cobrança Pix de ${formatCents(p.amountCents)}?`);
       case 'SEARCH_FREIGHT':
+        await this.assertAvailable(connection, 'CREATE_FREIGHT_REQUEST');
         if (!p.origin || !p.destination) return this.messenger.reply(connection, 'Informe a rota. Ex.: “procura carga de Santos para São Paulo amanhã”.');
         return this.askConfirmation(
           connection,
@@ -76,6 +102,7 @@ export class WhatsAppCommandService {
           `Procurar cargas ${p.origin} → ${p.destination}${p.date ? ` (${fmtDay(p.date)})` : ''}?`,
         );
       case 'CREATE_WORKFORCE_DEMAND': {
+        await this.assertAvailable(connection, 'CREATE_WORKFORCE_DEMAND');
         const startDate = p.startDate || p.date;
         if (!p.role || !p.quantity) return this.messenger.reply(connection, 'Diga a quantidade e a função. Ex.: “preciso de 3 soldadores segunda”.');
         return this.askConfirmation(
@@ -86,9 +113,9 @@ export class WhatsAppCommandService {
         );
       }
       case 'HELP':
-        return this.messenger.reply(connection, HELP_TEXT);
+        return this.messenger.reply(connection, await this.helpFor(connection));
       default:
-        return this.messenger.reply(connection, `Não entendi. ${HELP_TEXT}`);
+        return this.messenger.reply(connection, `Não entendi. ${await this.helpFor(connection)}`);
     }
   }
 
