@@ -8,7 +8,8 @@ export const CHAPTERS = [
     id: 'cidade',
     rail: 'Início',
     kicker: 'Transporte · Pessoas · Serviços · Pix',
-    title: 'Tem emprego, tem rota, tem serviço. TemPix.',
+    // Título e textos com a marca são funções (nome e frase de abertura da marca da entrada): Descent.jsx as chama.
+    title: (name, slogan) => slogan,
     body: 'Clientes, cargas, vagas e serviços chegam no seu WhatsApp, com pagamento assegurado até a conclusão. Sem mensalidade, com taxas pequenas e transparentes.',
     palette: { top: '#1150d8', bottom: '#00237a', sky: '#d6e4ff', ground: '#0b2a6b', accent: '#ffdf00' },
   },
@@ -17,7 +18,7 @@ export const CHAPTERS = [
     rail: 'Cliente',
     kicker: 'Tem cliente · demanda e procura',
     title: 'Quem precisa encontra quem oferece.',
-    body: 'O TemPix lê sinais públicos, como expansões, obras e novas unidades, e mostra quem precisa do que a sua empresa faz. Cada oportunidade chega com nota de 0 a 100.',
+    body: (name) => `O ${name} lê sinais públicos, como expansões, obras e novas unidades, e mostra quem precisa do que a sua empresa faz. Cada oportunidade chega com nota de 0 a 100.`,
     palette: { top: '#1d8a8a', bottom: '#062a2e', sky: '#b4fff1', ground: '#0d3236', accent: '#2ad1b8' },
   },
   {
@@ -33,7 +34,7 @@ export const CHAPTERS = [
     rail: 'Carga',
     kicker: 'Tem carga · terminais e transportadoras',
     title: 'A carga encontra o caminhão.',
-    body: 'Terminais e indústrias publicam cargas. O TemPix entrega cada uma à transportadora certa, pela rota, capacidade e janela de coleta.',
+    body: (name) => `Terminais e indústrias publicam cargas. O ${name} entrega cada uma à transportadora certa, pela rota, capacidade e janela de coleta.`,
     palette: { top: '#d0814a', bottom: '#3a1912', sky: '#ffd9b0', ground: '#3d1f17', accent: '#ffb35c' },
   },
   {
@@ -41,7 +42,7 @@ export const CHAPTERS = [
     rail: 'Porto',
     kicker: 'Tem navio · operações marítimas e portuárias',
     title: 'Navios também precisam de quem resolva.',
-    body: 'O navio atraca com uma necessidade: peça, reparo, suprimento ou transporte. O TemPix leva a demanda a fornecedores capazes, e o comprador compara as cotações.',
+    body: (name) => `O navio atraca com uma necessidade: peça, reparo, suprimento ou transporte. O ${name} leva a demanda a fornecedores capazes, e o comprador compara as cotações.`,
     palette: { top: '#1d6fb8', bottom: '#03182f', sky: '#cfe6ff', ground: '#062038', accent: '#4f9dff' },
   },
   {
@@ -65,7 +66,7 @@ export const CHAPTERS = [
     rail: 'Garantia',
     kicker: 'Tem garantia · pagamento assegurado',
     title: 'Pagamento assegurado até a conclusão.',
-    body: 'Em obras, serviços, rotas e transportes, o valor fica protegido na instituição de pagamento parceira e só é liberado, por Pix, quando a conclusão é confirmada. O TemPix fica com uma taxa por valor do contrato, de 5% a 2%.',
+    body: (name) => `Em obras, serviços, rotas e transportes, o valor fica protegido na instituição de pagamento parceira e só é liberado, por Pix, quando a conclusão é confirmada. O ${name} fica com uma taxa por valor do contrato, de 5% a 2%.`,
     palette: { top: '#23b3a6', bottom: '#04282b', sky: '#c4fff6', ground: '#0a2f30', accent: '#4fe0c9' },
   },
   {

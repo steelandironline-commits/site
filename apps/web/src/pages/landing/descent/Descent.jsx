@@ -3,7 +3,7 @@ import { Component, Fragment, Suspense, lazy, useCallback, useEffect, useLayoutE
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
 import { ArrowRight, Building2, Construction, Container, Landmark, LayoutDashboard, Radar, Route, Ship, UserCheck } from 'lucide-react';
 import { WhatsAppIcon } from '../../../components/brand/WhatsAppIcon.jsx';
-import { Button, loadBRLIconImage, useInView, useIsMobile, usePrefersReducedMotion, useSession } from '@autopix/ui';
+import { Button, loadBRLIconImage, useBrand, useInView, useIsMobile, usePrefersReducedMotion, useSession } from '@autopix/ui';
 import { CHAPTERS, N, levelFromProgress, progressForChapter } from './chapters.js';
 import s from './descent.module.css';
 
@@ -94,7 +94,10 @@ function BrazilSky() {
 function Copy({ index, reduced }) {
   const c = CHAPTERS[index];
   const { isAuthenticated } = useSession();
-  const words = c.title.split(' ');
+  const { name, slogan } = useBrand();
+  const title = typeof c.title === 'function' ? c.title(name, slogan) : c.title;
+  const body = typeof c.body === 'function' ? c.body(name, slogan) : c.body;
+  const words = title.split(' ');
   const Heading = index === 0 ? motion.h1 : motion.h2;
   const word = {
     hidden: reduced ? { opacity: 0 } : { y: '110%', rotate: 3 },
@@ -122,7 +125,7 @@ function Copy({ index, reduced }) {
         {words.map((w, i) => (
           <Fragment key={`${w}${i}`}>
             <span className={s.mask}>
-              <motion.span className={w.startsWith('TemPix') ? `${s.word} ${s.brand}` : s.word} variants={word}>
+              <motion.span className={w.startsWith(name.replace(/\s+/g, '')) ? `${s.word} ${s.brand}` : s.word} variants={word}>
                 {w}
               </motion.span>
             </span>
@@ -131,7 +134,7 @@ function Copy({ index, reduced }) {
         ))}
       </Heading>
       <motion.p className={s.body} variants={fade}>
-        {c.body}
+        {body}
       </motion.p>
       {(index === 0 || index === N - 1) && (
         <motion.div className={s.ctas} variants={fade}>

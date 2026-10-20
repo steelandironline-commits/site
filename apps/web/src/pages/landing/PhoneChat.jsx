@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, BadgeCheck, BatteryFull, CheckCheck, Gauge, MessageCircle, Mic, Radar, Reply, ShieldCheck, Signal, Video, Phone, Wifi } from 'lucide-react';
-import { BRLText, LogoMark } from '@autopix/ui';
+import { BRLText, LogoMark, useBrand } from '@autopix/ui';
 import s from './phone.module.css';
 
 const SCENES = [
@@ -72,8 +72,9 @@ const bubble = {
 };
 
 function Typing() {
+  const { name } = useBrand();
   return (
-    <motion.div className={`${s.msg} ${s.in} ${s.typing}`} {...bubble} aria-label="TemPix está digitando">
+    <motion.div className={`${s.msg} ${s.in} ${s.typing}`} {...bubble} aria-label={`${name} está digitando`}>
       <i />
       <i />
       <i />
@@ -91,6 +92,7 @@ function Time({ clock, read }) {
 }
 
 export default function PhoneChat({ running = true, reduced = false }) {
+  const { name } = useBrand();
   const [scene, setScene] = useState(0);
   const [p, setP] = useState(reduced ? AT.done : -1);
   const clock = useMemo(() => new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date()), []);
@@ -161,7 +163,7 @@ export default function PhoneChat({ running = true, reduced = false }) {
                 </span>
                 <span className={s.bannerText}>
                   <span className={s.bannerTop}>
-                    <strong>TemPix</strong> <em>WhatsApp · agora</em>
+                    <strong>{name}</strong> <em>WhatsApp · agora</em>
                   </span>
                   <span>{sc.title}</span>
                 </span>
@@ -176,7 +178,7 @@ export default function PhoneChat({ running = true, reduced = false }) {
             </span>
             <span className={s.who}>
               <strong>
-                TemPix <BadgeCheck size={14} className={s.verified} />
+                {name} <BadgeCheck size={14} className={s.verified} />
               </strong>
               <small>{typing ? 'digitando…' : 'conta comercial'}</small>
             </span>

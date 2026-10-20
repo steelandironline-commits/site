@@ -2,12 +2,15 @@
 // marketing page and is never persisted or mixed with account data.
 import { useEffect, useRef, useState } from 'react';
 
+/** Marca de "fonte = módulo de pagamentos". O nome vem da cópia da área (quem chama passa `paySource`). */
+const PAY_SOURCE = 'payment-module';
+
 const SCRIPT = [
   { type: 'SEARCH', title: 'Analisando 24 empresas', source: 'Agente Radar' },
   { type: 'RESEARCH', title: 'Site encontrado', description: 'Indústria Porto Atlântico', source: 'Agente de Pesquisa' },
   { type: 'RESEARCH', title: 'Perfil comercial identificado', description: 'Metalurgia · Joinville/SC', source: 'Agente de Pesquisa' },
   { type: 'SEARCH', title: 'Nova fonte analisada', description: 'Diário regional de negócios', source: 'Agente Radar' },
-  { type: 'PAYMENT', kind: 'contract', title: 'Contrato fechado', description: 'Construções · R$ 9.800,00', source: 'TemPix Pay', severity: 'SUCCESS' },
+  { type: 'PAYMENT', kind: 'contract', title: 'Contrato fechado', description: 'Construções · R$ 9.800,00', source: PAY_SOURCE, severity: 'SUCCESS' },
   { type: 'SIGNAL', title: 'Possível demanda detectada', description: 'Cotação aberta para manutenção industrial', source: 'Agente de Sinais', severity: 'SUCCESS' },
   { type: 'SYSTEM', kind: 'route', title: 'Rota concluída', description: 'Santos → Campinas · 212 km', source: 'Cargas', severity: 'SUCCESS' },
   { type: 'SIGNAL', title: 'Expansão operacional identificada', description: 'Nova unidade fabril anunciada', source: 'Agente de Sinais', severity: 'SUCCESS' },
@@ -19,31 +22,32 @@ const SCRIPT = [
   { type: 'OPPORTUNITY', title: 'Abordagem comercial sugerida', source: 'Inteligência Comercial' },
   { type: 'SYSTEM', kind: 'works', title: 'Obra entregue', description: 'Reforma de galpão · etapa final confirmada', source: 'Obras', severity: 'SUCCESS' },
   { type: 'SEARCH', title: 'Analisando 17 empresas', source: 'Agente Radar' },
-  { type: 'PAYMENT', kind: 'contract', title: 'Contrato assinado', description: 'Frete recorrente · R$ 4.800,00', source: 'TemPix Pay', severity: 'SUCCESS' },
+  { type: 'PAYMENT', kind: 'contract', title: 'Contrato assinado', description: 'Frete recorrente · R$ 4.800,00', source: PAY_SOURCE, severity: 'SUCCESS' },
   { type: 'SIGNAL', title: 'Obra de ampliação detectada', description: 'Licença de instalação publicada', source: 'Agente de Sinais', severity: 'SUCCESS' },
   { type: 'AGENT', title: 'Compatibilidade calculada: 86%', source: 'Agente de Pontuação' },
   { type: 'OPPORTUNITY', title: 'Oportunidade criada', description: 'Negócio estimado: R$ 32.000', source: 'Inteligência Comercial', severity: 'SUCCESS' },
 ];
 
 let n = 0;
-function makeEvent(i) {
+function makeEvent(i, paySource) {
   n += 1;
   const item = SCRIPT[i % SCRIPT.length];
-  return { id: `demo-${n}`, severity: 'INFO', isDemo: true, createdAt: new Date().toISOString(), ...item };
+  const source = item.source === PAY_SOURCE ? paySource : item.source;
+  return { id: `demo-${n}`, severity: 'INFO', isDemo: true, createdAt: new Date().toISOString(), ...item, source };
 }
 
 const FEED_INTERVAL = [5200, 8000];
 
 /** Calm pace: one new event every ~5–8 s, so each one can be read. */
-export function useDemoFeed({ enabled = true, interval = FEED_INTERVAL, initial = 5 } = {}) {
+export function useDemoFeed({ enabled = true, interval = FEED_INTERVAL, initial = 5, paySource } = {}) {
   const [minMs, maxMs] = interval;
-  const [events, setEvents] = useState(() => Array.from({ length: initial }, (_, i) => makeEvent(initial - 1 - i)));
+  const [events, setEvents] = useState(() => Array.from({ length: initial }, (_, i) => makeEvent(initial - 1 - i, paySource)));
   const idx = useRef(initial);
   useEffect(() => {
     if (!enabled) return undefined;
     let t;
     const tick = () => {
-      const e = makeEvent(idx.current);
+      const e = makeEvent(idx.current, paySource);
       idx.current += 1;
       setEvents((prev) => [e, ...prev].slice(0, 14));
       t = setTimeout(tick, minMs + Math.random() * (maxMs - minMs));
@@ -51,7 +55,7 @@ export function useDemoFeed({ enabled = true, interval = FEED_INTERVAL, initial 
     t = setTimeout(tick, 2500);
     return () => clearTimeout(t);
     // Depend on the numbers, not the array: a new array each render restarted the timer.
-  }, [enabled, minMs, maxMs]);
+  }, [enabled, minMs, maxMs, paySource]);
   return { events };
 }
 

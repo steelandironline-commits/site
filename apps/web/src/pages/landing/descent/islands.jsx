@@ -3,7 +3,7 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { drawBRLCanvasText } from '@autopix/ui';
+import { drawBRLCanvasText, useBrand } from '@autopix/ui';
 import {
   B,
   Ball,
@@ -1141,6 +1141,7 @@ function shieldGeometry() {
 
 /** Contract paid by Pix → held by the partner institution → works concluded → released to the account (minus the commission). */
 export function PixIsland() {
+  const { name } = useBrand();
   const ch = useChapter();
   const PHONE = [-3.8, 0, 3.4];
   const VAULT = [0.2, 0, -0.4];
@@ -1305,7 +1306,7 @@ export function PixIsland() {
         </Rise>
         <Pulse color="#23b3a6" radius={2.6} period={P_PERIOD} delay={8.6} y={0.32} />
       </group>
-      <Label text="Liberado na conta" sub="R$ 9.500,00 · taxa TemPix 5%" accent="#4fe0c9" check position={[4.0, 3.5, -3.6]} vis={() => bump(tt(), 8.7, 9.1, 11.0, 11.4)} />
+      <Label text="Liberado na conta" sub={`R$ 9.500,00 · taxa ${name} 5%`} accent="#4fe0c9" check position={[4.0, 3.5, -3.6]} vis={() => bump(tt(), 8.7, 9.1, 11.0, 11.4)} />
       {/* money in flight */}
       <group ref={token} userData={{ rigid: true }} visible={false}>
         <B s={[0.62, 0.62, 0.14]} r={[0, 0, Math.PI / 4]} c="#32bcad" e="#32bcad" ei={0.9} center />
@@ -1338,7 +1339,7 @@ export function PixIsland() {
 }
 
 /* =================================================================== 6 · painel */
-function dashboardTexture() {
+function dashboardTexture(name) {
   return screenTexture(1024, 620, (g, w, h) => {
     g.fillStyle = '#0d0f12';
     g.fillRect(0, 0, w, h);
@@ -1356,7 +1357,7 @@ function dashboardTexture() {
     g.stroke();
     g.fillStyle = '#ecebe6';
     g.font = '600 26px "IBM Plex Sans", system-ui, sans-serif';
-    g.fillText('TemPix', 64, 54);
+    g.fillText(name, 64, 54);
     const nav = ['Painel', 'Oportunidades', 'Cargas', 'Equipes', 'Pix'];
     nav.forEach((n, i) => {
       if (i === 0) {
@@ -1424,9 +1425,10 @@ const NOTES = [
   { text: 'Contratação registrada', sub: 'operador logístico', accent: '#5fe39a', x: 2.4 },
 ];
 export function PanelIsland() {
+  const { name } = useBrand();
   const ch = useChapter();
   const ring = useMemo(() => circleCurve(5.3), []);
-  const dashMat = useMemo(() => new THREE.MeshBasicMaterial({ map: dashboardTexture(), toneMapped: false }), []);
+  const dashMat = useMemo(() => new THREE.MeshBasicMaterial({ map: dashboardTexture(name), toneMapped: false }), [name]);
   const movers = useRef([]);
   const notes = useRef([]);
   useFrame((state) => {

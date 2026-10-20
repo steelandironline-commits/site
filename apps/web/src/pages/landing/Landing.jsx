@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { COMPANY_PRICING_FEATURES, PRICING, formatCents } from '@autopix/shared';
-import { BRLSymbol, BRLText, Button, Dialog, Logo, ScoreRing, cx, isIos, useInstallPrompt, useSession } from '@autopix/ui';
+import { BRLSymbol, BRLText, Button, Dialog, Logo, ScoreRing, cx, isIos, useBrand, useInstallPrompt, useSession } from '@autopix/ui';
 import { WhatsAppIcon } from '../../components/brand/WhatsAppIcon.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import ProductStage from './ProductStage.jsx';
@@ -29,6 +29,7 @@ import s from './landing.module.css';
 /* ------------------------------------------------------------ download */
 /** "Instalar App": installs the TemPix app (PWA). iPhone gets the two-tap instructions. */
 function DownloadButton({ block = false }) {
+  const { name } = useBrand();
   const { installed, canPrompt, prompt } = useInstallPrompt();
   const navigate = useNavigate();
   const [help, setHelp] = useState(null);
@@ -48,7 +49,7 @@ function DownloadButton({ block = false }) {
       </Button>
       <Dialog
         open={Boolean(help)}
-        title="Instale o app TemPix"
+        title={`Instale o app ${name}`}
         onClose={() => setHelp(null)}
         actions={
           <Button size="sm" onClick={() => setHelp(null)}>
@@ -64,7 +65,7 @@ function DownloadButton({ block = false }) {
             <li>
               Escolha <strong>Adicionar à Tela de Início</strong>.
             </li>
-            <li>Abra o TemPix pelo ícone, como qualquer app.</li>
+            <li>Abra o {name} pelo ícone, como qualquer app.</li>
           </ol>
         ) : (
           <ol className={s.installSteps}>
@@ -74,7 +75,7 @@ function DownloadButton({ block = false }) {
             <li>
               No computador, use o ícone de instalar na barra de endereço do <strong>Chrome</strong> ou do <strong>Edge</strong>.
             </li>
-            <li>O TemPix abre como app, com avisos de clientes, cargas e Pix.</li>
+            <li>O {name} abre como app, com avisos de clientes, cargas e Pix.</li>
           </ol>
         )}
       </Dialog>
@@ -84,6 +85,7 @@ function DownloadButton({ block = false }) {
 
 /* ------------------------------------------------------------------ nav */
 function Nav() {
+  const { name } = useBrand();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [immersive, setImmersive] = useState(true);
@@ -114,7 +116,7 @@ function Nav() {
   return (
     <header className={`${s.nav} ${scrolled ? (immersive ? s.navGlass : s.navScrolled) : ''}`}>
       <div className={`container ${s.navInner}`}>
-        <Link to="/" aria-label="TemPix — início">
+        <Link to="/" aria-label={`${name} — início`}>
           <Logo />
         </Link>
         <nav className={s.navLinks} aria-label="Principal">
@@ -181,8 +183,9 @@ function Nav() {
 }
 
 /* -------------------------------------------------------------- product */
-function Product() {
-  const { events } = useDemoFeed();
+function Product({ paySource }) {
+  const { name } = useBrand();
+  const { events } = useDemoFeed({ paySource });
   const values = [
     { icon: Radar, title: 'Monitoramento contínuo', text: 'Agentes procuram empresas e sinais no mercado 24 horas por dia.' },
     { icon: Gauge, title: 'Nota de oportunidade', text: 'Cada oportunidade recebe uma nota de 0 a 100, com o motivo explicado.' },
@@ -193,14 +196,14 @@ function Product() {
       <div className="container">
         <motion.header className={s.sectionHead} {...reveal}>
           <p className="eyebrow">Produto</p>
-          <h2 id="produto-title">O TemPix está trabalhando para sua empresa.</h2>
+          <h2 id="produto-title">O {name} está trabalhando para sua empresa.</h2>
           <p>Cada busca, cada site analisado e cada sinal aparece no seu painel no momento em que acontece.</p>
         </motion.header>
 
         <div className={s.productGrid}>
           <motion.div className={s.flowCard} {...reveal}>
             <header className={s.flowHead}>
-              <span className="eyebrow">Como o TemPix encontra oportunidades</span>
+              <span className="eyebrow">Como o {name} encontra oportunidades</span>
             </header>
             <ProductStage />
             <ul className={s.values}>
@@ -226,6 +229,7 @@ function Product() {
 
 /* -------------------------------------------------------------- live demo */
 function LiveDemo() {
+  const { name } = useBrand();
   const [open, setOpen] = useState(false);
   return (
     <section id="oportunidades" className={s.section} aria-labelledby="demo-title">
@@ -240,7 +244,7 @@ function LiveDemo() {
             <span />
             <span />
             <span />
-            <p className="mono">tempix / app / oportunidades</p>
+            <p className="mono">{name.toLowerCase()} / app / oportunidades</p>
           </div>
           <div className={s.previewBody}>
             <div className={s.previewMain}>
@@ -295,7 +299,7 @@ function LiveDemo() {
                 >
                   <div className={s.previewDetailInner}>
                     <div>
-                      <p className="eyebrow">Por que o TemPix selecionou</p>
+                      <p className="eyebrow">Por que o {name} selecionou</p>
                       <ul>
                         <li>Setor preferencial: Indústria</li>
                         <li>Demanda compatível com usinagem e caldeiraria</li>
@@ -325,6 +329,7 @@ function LiveDemo() {
 const perDay = (cents) => (cents / 100 / 365).toFixed(2).replace('.', ',');
 
 function Pricing({ copy, personCard }) {
+  const { name } = useBrand();
   const fee = PRICING.commissionLabel;
   const { config } = useSession();
   const signup = config?.billing?.companySignupFeeCents ?? PRICING.companySignupFeeCents;
@@ -363,7 +368,7 @@ function Pricing({ copy, personCard }) {
         <motion.div className={s.priceFoot} {...reveal}>
           <p>
             <strong><BRLText>Em todo valor intermediado com sucesso: {fee}.</BRLText></strong>{' '}
-            <BRLText>Exemplo: contrato de R$ 10.000,00 → R$ 500,00 para o TemPix e R$ 9.500,00 para quem executou.</BRLText>
+            <BRLText>{`Exemplo: contrato de R$ 10.000,00 → R$ 500,00 para o ${name} e R$ 9.500,00 para quem executou.`}</BRLText>
           </p>
           <p className={s.priceSafe}>
             <ShieldCheck size={14} aria-hidden="true" /> Pagamento assegurado até a conclusão: em obras, serviços, rotas e transportes, o valor fica
@@ -389,7 +394,7 @@ function FinalCta({ copy }) {
       <div className="container">
         <motion.div className={s.finalInner} {...reveal}>
           <h2>
-            Tem emprego, tem rota, tem serviço. <span>TemPix.</span>
+            {copy.finalSlogan.lead}<span>{copy.finalSlogan.accent}</span>
           </h2>
           <p className={s.finalSub}>{copy.finalSub}</p>
           <div className={s.priceCtas}>
@@ -406,12 +411,13 @@ function FinalCta({ copy }) {
   );
 }
 
-function Footer() {
+function Footer({ copy }) {
+  const { name } = useBrand();
   return (
     <footer className={s.footer}>
       <div className={`container ${s.footerInner}`}>
         <Logo />
-        <p>© {new Date().getFullYear()} TemPix. Tem emprego, tem rota, tem serviço.</p>
+        <p>© {new Date().getFullYear()} {copy.footerLine}</p>
         <nav aria-label="Rodapé">
           <Link to="/login">Entrar</Link>
           <a href="#preco">Preço</a>
@@ -419,8 +425,9 @@ function Footer() {
         </nav>
       </div>
       <p className={`container ${s.footerNote}`}>
-        O TemPix utiliza apenas informações públicas de empresas. Nunca consultamos bases vazadas nem coletamos dados pessoais privados.
+        O {name} utiliza apenas informações públicas de empresas. Nunca consultamos bases vazadas nem coletamos dados pessoais privados.
       </p>
+      {copy.disclaimer && <p className={`container ${s.footerNote}`}>{copy.disclaimer}</p>}
     </footer>
   );
 }
@@ -432,8 +439,8 @@ function Footer() {
  */
 export default function Landing({ copy, personCard = null }) {
   useEffect(() => {
-    document.title = 'TemPix — Tem emprego, tem rota, tem serviço';
-  }, []);
+    document.title = copy.title;
+  }, [copy.title]);
   return (
     <>
       <a href="#main" className="skip-link">
@@ -443,14 +450,14 @@ export default function Landing({ copy, personCard = null }) {
       <main id="main" style={{ overflowX: 'clip' }}>
         <Descent />
         <Ecosystem />
-        <Maritime />
+        <Maritime maritime={copy.products.maritime} />
         <ConstructionSection />
-        <Product />
+        <Product paySource={copy.products.payment} />
         <LiveDemo />
         <Pricing copy={copy} personCard={personCard} />
         <FinalCta copy={copy} />
       </main>
-      <Footer />
+      <Footer copy={copy} />
     </>
   );
 }

@@ -1,6 +1,6 @@
 /* Home sector sections: ecosystem, TemPix Marítimo and obras / máquinas.
    Visual first: flows, an opportunity card and a 2.5D site; text kept short. */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -22,14 +22,20 @@ import {
   Truck,
   Wrench,
 } from 'lucide-react';
-import { Button, Dialog, LogoMark, useInView, useIsMobile, usePrefersReducedMotion } from '@autopix/ui';
-import { CONSTRUCTION, ECOSYSTEM, MARITIME, SHARED } from './copy.js';
+import { Button, Dialog, LogoMark, useBrand, useInView, useIsMobile, usePrefersReducedMotion } from '@autopix/ui';
+import { sectorsCopy } from './copy.js';
 import PortArt from './PortArt.jsx';
 import SiteArt from './SiteArt.jsx';
 import s from './sectors.module.css';
 
+/** Textos das seções com o nome da marca desta entrada e o rótulo marítimo que a cópia da área manda. */
+function useSectors(maritime) {
+  const { name } = useBrand();
+  return useMemo(() => sectorsCopy(name, maritime), [name, maritime]);
+}
+
 const ease = [0.22, 1, 0.36, 1];
-const reveal = { initial: { opacity: 0, y: 16 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-80px' }, transition: { duration: 0.6, ease } };
+const reveal ={ initial: { opacity: 0, y: 16 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-80px' }, transition: { duration: 0.6, ease } };
 
 const ICONS = { factory: Factory, truck: Truck, route: Route, container: Container, ship: Ship, store: Store, cart: ShoppingCart, wrench: Wrench, hardhat: HardHat, crane: Construction, clipboard: ClipboardList, scale: Scale, handshake: Handshake, building: Building2 };
 const Icon = ({ name, size = 18 }) => {
@@ -72,6 +78,7 @@ const FACTS = { Local: MapPin, Prazo: Clock };
 
 /** Premium (gold) card: the need as a headline, place and deadline up front, details below. */
 function OpportunityCard({ data, cta }) {
+  const { SHARED } = useSectors();
   const [open, setOpen] = useState(false);
   const facts = data.rows.filter(([k]) => FACTS[k]);
   const rows = data.rows.filter(([k]) => !FACTS[k]);
@@ -163,6 +170,7 @@ function ChipCloud({ items, size = 8, running, label }) {
 
 /* ------------------------------------------------------- ecosystem */
 export function Ecosystem() {
+  const { ECOSYSTEM } = useSectors();
   const ref = useRef(null);
   const inView = useInView(ref, { rootMargin: '0px' });
   const reduced = usePrefersReducedMotion();
@@ -206,7 +214,8 @@ export function Ecosystem() {
 }
 
 /* --------------------------------------------------------- maritime */
-export function Maritime() {
+export function Maritime({ maritime }) {
+  const { MARITIME } = useSectors(maritime);
   const ref = useRef(null);
   const inView = useInView(ref, { rootMargin: '0px' });
   const reduced = usePrefersReducedMotion();
@@ -273,6 +282,7 @@ export function Maritime() {
 
 /* ---------------------------------------------- construction 2.5D */
 function SiteStage() {
+  const { CONSTRUCTION } = useSectors();
   const ref = useRef(null);
   const inView = useInView(ref, { rootMargin: '0px' });
   const mobile = useIsMobile();
@@ -293,6 +303,7 @@ function SiteStage() {
 }
 
 export function ConstructionSection() {
+  const { CONSTRUCTION } = useSectors();
   const ref = useRef(null);
   const inView = useInView(ref, { rootMargin: '0px' });
   const reduced = usePrefersReducedMotion();
