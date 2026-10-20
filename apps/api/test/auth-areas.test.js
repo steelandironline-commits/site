@@ -630,11 +630,13 @@ describe.skipIf(!hasDb)('área da sessão · modo de áreas com ADMIN_HOST', () 
     expect(crossed.body).toEqual(baseline.body);
   });
 
-  it('o host de admin não tem cadastro: o onboarding responde 400 genérico', async () => {
+  it('o host de admin não tem cadastro: a rota nem existe nele (404, 4b) e o serviço também recusaria (400 genérico)', async () => {
     const res = await call(ctx.app, ADMIN_HOST, 'post', '/api/onboarding/start', {
       body: { name: 'Zé', email: `ze-${Date.now()}@area.example`, document: testCpf() },
     });
-    expect(res.status).toBe(400);
-    expect(res.body.error.message).toBe(GENERIC_SIGNUP);
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } });
+    // Defesa em profundidade: se a rota fosse montada, o serviço ainda recusaria o host de admin.
+    expect(() => ctx.services.onboarding.applyHostAccountType({}, 'ADMIN')).toThrow(GENERIC_SIGNUP);
   });
 });

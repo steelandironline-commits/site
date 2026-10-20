@@ -9,6 +9,7 @@ import {
   EXCLUSIVE_FILES,
   PAGES,
   API_MOUNTS,
+  isAnyArea,
   ALL_PAGES,
   exclusiveFilesOf,
   pagesOf,
@@ -96,8 +97,36 @@ describe('manifesto de páginas', () => {
     expect(areasOfPage('/nao/existe')).toEqual([]);
   });
 
-  it('as montagens de API ficam vazias até a ETAPA 4', () => {
-    expect(API_MOUNTS).toEqual([]);
+  it('cada montagem de API declara áreas válidas, sem repetição e sem caminho fora de /api', () => {
+    expect(API_MOUNTS.length).toBeGreaterThan(20);
+    const paths = API_MOUNTS.map((m) => m.path);
+    expect(new Set(paths).size).toBe(paths.length);
+    for (const mount of API_MOUNTS) {
+      expect(mount.path, mount.path).toMatch(/^\/api\/[a-z-]+$/);
+      expect(mount.areas.length, mount.path).toBeGreaterThan(0);
+      expect(new Set(mount.areas).size, mount.path).toBe(mount.areas.length);
+      // ANY_AREA vale sozinho; senão só áreas conhecidas.
+      if (isAnyArea(mount.areas)) continue;
+      for (const area of mount.areas) expect(AREAS, `${mount.path} ${area}`).toContain(area);
+    }
+    expect(Object.isFrozen(API_MOUNTS)).toBe(true);
+  });
+
+  it('só infraestrutura responde em qualquer host', () => {
+    expect(API_MOUNTS.filter((m) => isAnyArea(m.areas)).map((m) => m.path).sort()).toEqual(['/api/health', '/api/webhooks']);
+  });
+
+  it('o CPF não recebe as montagens de empresa, de pagamento, de carga, de equipe nem de intermediação', () => {
+    const cpf = API_MOUNTS.filter((m) => m.areas.includes('CPF')).map((m) => m.path);
+    for (const p of ['/api/company', '/api/opportunities', '/api/agents', '/api/payments', '/api/subscription', '/api/team', '/api/freight', '/api/tenders', '/api/workforce', '/api/pay', '/api/intermediation', '/api/admin']) {
+      expect(cpf, p).not.toContain(p);
+    }
+    for (const p of ['/api/social', '/api/dashboard', '/api/activity', '/api/events', '/api/onboarding']) expect(cpf, p).toContain(p);
+  });
+
+  it('o admin da plataforma só entra nas montagens de conta e de administração', () => {
+    const admin = API_MOUNTS.filter((m) => m.areas.includes('ADMIN')).map((m) => m.path).sort();
+    expect(admin).toEqual(['/api/actions', '/api/admin', '/api/auth', '/api/challenges', '/api/me', '/api/session']);
   });
 
   it('toda rota do App.jsx legado está declarada em alguma área, e só elas', () => {

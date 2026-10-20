@@ -6,7 +6,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { ROOT_DIR, buildPlatform } from '@autopix/core';
 import { buildLimiters, csrfGuard } from './middleware/security.js';
-import { areaOrigins, hostArea } from './middleware/area.js';
+import { ANY_AREA, areaOrigins, hostArea, initAreaMounts, mountArea } from './middleware/area.js';
 import { areaSpa } from './middleware/spa.js';
 import { loadSession } from './middleware/session.js';
 import { errorHandler, notFoundApi } from './middleware/errors.js';
@@ -22,8 +22,8 @@ import { paymentRoutes } from './routes/payments.js';
 import { webhookRoutes } from './routes/webhooks.js';
 import { subscriptionRoutes } from './routes/subscription.js';
 import { teamRoutes } from './routes/team.js';
-import { systemRoutes } from './routes/system.js';
-import { actionRoutes } from './routes/actions.js';
+import { cepRoutes, configRoutes, healthRoutes, sessionRoutes } from './routes/system.js';
+import { actionRoutes, challengeRoutes } from './routes/actions.js';
 import { whatsappRoutes, whatsappWebhookRoutes } from './routes/whatsapp.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { freightRoutes, workforceRoutes, eventRoutes } from './routes/domains.js';
@@ -69,6 +69,8 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
 
   // Right after helmet (ARQUITETURA 6.4): picks the area by host, or 301/404. Legacy mode: no-op.
   app.use(hostArea(config));
+  // Every API mount below goes through mountArea, which declares its areas (404 before auth).
+  initAreaMounts(app, config);
 
   // CORS: only the origin of the request's own area (area mode) or APP_URL (legacy). No wildcard.
   const corsBase = {
@@ -90,8 +92,8 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   );
 
   // Webhooks need the raw body → mounted before the JSON parser.
-  app.use('/api/webhooks', whatsappWebhookRoutes(ctx));
-  app.use('/api/webhooks', webhookRoutes(ctx));
+  mountArea(app, '/api/webhooks', ANY_AREA, whatsappWebhookRoutes(ctx));
+  mountArea(app, '/api/webhooks', ANY_AREA, webhookRoutes(ctx));
 
   app.use('/api/actions/PUBLISH_SOCIAL_POST', express.json({ limit: '750kb' }));
   app.use(express.json({ limit: '100kb' }));
@@ -104,29 +106,42 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
     next();
   });
 
-  app.use('/api', systemRoutes(ctx));
-  app.use('/api/auth', authRoutes(ctx));
-  app.use('/api/me', meRoutes(ctx));
-  app.use('/api/onboarding', onboardingRoutes(ctx));
-  app.use('/api/company', companyRoutes(ctx));
-  app.use('/api/opportunities', opportunityRoutes(ctx));
-  app.use('/api/activity', activityRoutes(ctx));
-  app.use('/api/agents', agentRoutes(ctx));
-  app.use('/api/dashboard', dashboardRoutes(ctx));
-  app.use('/api/payments', paymentRoutes(ctx));
-  app.use('/api/subscription', subscriptionRoutes(ctx));
-  app.use('/api/team', teamRoutes(ctx));
-  app.use('/api', actionRoutes(ctx));
-  app.use('/api/whatsapp', whatsappRoutes(ctx));
-  app.use('/api/notifications', notificationRoutes(ctx));
-  app.use('/api/freight', freightRoutes(ctx));
-  app.use('/api/tenders', tenderRoutes(ctx));
-  app.use('/api/workforce', workforceRoutes(ctx));
-  app.use('/api/events', eventRoutes(ctx));
-  app.use('/api/pay', payRoutes(ctx));
-  app.use('/api/social', socialRoutes(ctx));
-  app.use('/api/intermediation', intermediationRoutes(ctx));
-  app.use('/api/admin', adminRoutes(ctx));
+  // Hosts in which each mount exists (ARQUITETURA 6.5). Anywhere else: 404, before authentication.
+  // Keep packages/areas/src/manifest.js (API_MOUNTS) in step: a drift test compares both.
+  const CNPJ_ONLY = ['CNPJ'];
+  const BOTH = ['CNPJ', 'CPF'];
+  const ALL = ['CNPJ', 'CPF', 'ADMIN'];
+  // Q6: admin lives on ADMIN_HOST; without it, on the CNPJ host (platform-admin sessions only).
+  const ADMIN_MOUNT = config.areas.hosts.ADMIN ? ['ADMIN'] : ['CNPJ', 'ADMIN'];
+
+  mountArea(app, '/api/health', ANY_AREA, healthRoutes(ctx));
+  mountArea(app, '/api/session', ALL, sessionRoutes(ctx));
+  mountArea(app, '/api/cep', BOTH, cepRoutes(ctx));
+  mountArea(app, '/api/config', BOTH, configRoutes(ctx));
+  mountArea(app, '/api/auth', ALL, authRoutes(ctx));
+  mountArea(app, '/api/me', ALL, meRoutes(ctx));
+  mountArea(app, '/api/onboarding', BOTH, onboardingRoutes(ctx));
+  mountArea(app, '/api/company', CNPJ_ONLY, companyRoutes(ctx));
+  mountArea(app, '/api/opportunities', CNPJ_ONLY, opportunityRoutes(ctx));
+  mountArea(app, '/api/activity', BOTH, activityRoutes(ctx));
+  mountArea(app, '/api/agents', CNPJ_ONLY, agentRoutes(ctx));
+  mountArea(app, '/api/dashboard', BOTH, dashboardRoutes(ctx));
+  mountArea(app, '/api/payments', CNPJ_ONLY, paymentRoutes(ctx));
+  mountArea(app, '/api/subscription', CNPJ_ONLY, subscriptionRoutes(ctx));
+  mountArea(app, '/api/team', CNPJ_ONLY, teamRoutes(ctx));
+  // Actions of another area answer 404 "Ação desconhecida" (ActionEngine, by the user's area).
+  mountArea(app, '/api/actions', ALL, actionRoutes(ctx));
+  mountArea(app, '/api/challenges', ALL, challengeRoutes(ctx));
+  mountArea(app, '/api/whatsapp', BOTH, whatsappRoutes(ctx));
+  mountArea(app, '/api/notifications', BOTH, notificationRoutes(ctx));
+  mountArea(app, '/api/freight', CNPJ_ONLY, freightRoutes(ctx));
+  mountArea(app, '/api/tenders', CNPJ_ONLY, tenderRoutes(ctx));
+  mountArea(app, '/api/workforce', CNPJ_ONLY, workforceRoutes(ctx));
+  mountArea(app, '/api/events', BOTH, eventRoutes(ctx));
+  mountArea(app, '/api/pay', CNPJ_ONLY, payRoutes(ctx));
+  mountArea(app, '/api/social', BOTH, socialRoutes(ctx));
+  mountArea(app, '/api/intermediation', CNPJ_ONLY, intermediationRoutes(ctx));
+  mountArea(app, '/api/admin', ADMIN_MOUNT, adminRoutes(ctx));
   app.use('/api', notFoundApi);
 
   // Area mode: each host gets only its own build, apps/web/dist-<area> (next to `webDist`).

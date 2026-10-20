@@ -5,7 +5,7 @@
 // e a tabela de rotas do docs/divisao/INVENTARIO.md, seção 1. As linhas que o
 // inventário deixou como DÚVIDA seguem as premissas do docs/divisao/ARQUITETURA.md
 // (seção 1 e tabela 6.5). Rota nova no front precisa entrar aqui (há teste de deriva).
-import { AREAS } from './areas.js';
+import { ANY_AREA, AREAS } from './areas.js';
 
 /**
  * Páginas servidas nas duas áreas públicas. Cada área tem o seu próprio conteúdo
@@ -102,10 +102,55 @@ export const PAGES = Object.freeze({
 });
 
 /**
- * Montagens de API de cada área: { path, areas } por `mountArea`.
- * preenchida na ETAPA 4
+ * Montagens de API: { path, areas }, uma por `mountArea` de apps/api/src/app.js (ARQUITETURA 6.5).
+ * `areas` lista os hosts em que a montagem existe; em qualquer outro a resposta é 404, antes da
+ * autenticação. `ANY_AREA` é só para infraestrutura sem sessão.
+ *
+ * Rota nova na API entra aqui E no app.js: o teste de deriva (apps/api/test/api-mounts.test.js)
+ * falha se as duas listas divergirem, e o de isolamento percorre esta lista.
+ *
+ * /api/admin: o host de admin sempre; o host CNPJ só quando ADMIN_HOST não está definido (Q6).
+ * Com ADMIN_HOST definido, o app monta apenas ['ADMIN'].
  */
-export const API_MOUNTS = Object.freeze([]);
+export const API_MOUNTS = Object.freeze(
+  [
+    // Infraestrutura (qualquer host).
+    { path: '/api/webhooks', areas: ANY_AREA },
+    { path: '/api/health', areas: ANY_AREA },
+    // Sistema.
+    { path: '/api/session', areas: ['CNPJ', 'CPF', 'ADMIN'] },
+    { path: '/api/cep', areas: ['CNPJ', 'CPF'] },
+    { path: '/api/config', areas: ['CNPJ', 'CPF'] },
+    // Conta e acesso.
+    { path: '/api/auth', areas: ['CNPJ', 'CPF', 'ADMIN'] },
+    { path: '/api/me', areas: ['CNPJ', 'CPF', 'ADMIN'] },
+    { path: '/api/onboarding', areas: ['CNPJ', 'CPF'] },
+    // Recursos do painel.
+    { path: '/api/company', areas: ['CNPJ'] },
+    { path: '/api/opportunities', areas: ['CNPJ'] },
+    { path: '/api/activity', areas: ['CNPJ', 'CPF'] },
+    { path: '/api/agents', areas: ['CNPJ'] },
+    { path: '/api/dashboard', areas: ['CNPJ', 'CPF'] },
+    { path: '/api/payments', areas: ['CNPJ'] },
+    { path: '/api/subscription', areas: ['CNPJ'] },
+    { path: '/api/team', areas: ['CNPJ'] },
+    // Ações e desafios: a ação de outra área responde 404 "Ação desconhecida" (ActionEngine).
+    // ADMIN entra porque as ações de administração só existem para essa área.
+    { path: '/api/actions', areas: ['CNPJ', 'CPF', 'ADMIN'] },
+    { path: '/api/challenges', areas: ['CNPJ', 'CPF', 'ADMIN'] },
+    { path: '/api/whatsapp', areas: ['CNPJ', 'CPF'] },
+    { path: '/api/notifications', areas: ['CNPJ', 'CPF'] },
+    // Q3, Q4 e Q13: Cargas, Licitações, Equipes, Pagamentos e Intermediação ficam só no CNPJ.
+    { path: '/api/freight', areas: ['CNPJ'] },
+    { path: '/api/tenders', areas: ['CNPJ'] },
+    { path: '/api/workforce', areas: ['CNPJ'] },
+    { path: '/api/events', areas: ['CNPJ', 'CPF'] },
+    { path: '/api/pay', areas: ['CNPJ'] },
+    { path: '/api/social', areas: ['CNPJ', 'CPF'] },
+    { path: '/api/intermediation', areas: ['CNPJ'] },
+    { path: '/api/admin', areas: ['CNPJ', 'ADMIN'] },
+  ].map((mount) => Object.freeze({ path: mount.path, areas: Object.freeze([...mount.areas]) })),
+);
 
 /** Todas as páginas declaradas, sem repetição. */
 export const ALL_PAGES = Object.freeze([...new Set(AREAS.flatMap((area) => PAGES[area]))]);

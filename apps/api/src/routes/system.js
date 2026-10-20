@@ -3,10 +3,14 @@ import { PLAN, PRICING } from '@autopix/shared';
 import { CepService } from '@autopix/core';
 import { describeSession } from './me.js';
 
-export function systemRoutes({ config, prisma, hub, limiters, cep = new CepService() }) {
+// Cada rota do sistema é uma montagem própria em app.js, porque cada uma tem as suas áreas
+// (ARQUITETURA 6.5): /health em qualquer host; /session, /cep e /config nos hosts de área.
+
+/** GET /api/health: healthcheck da infraestrutura, em qualquer host. */
+export function healthRoutes({ prisma, hub }) {
   const r = Router();
 
-  r.get('/health', async (req, res) => {
+  r.get('/', async (req, res) => {
     let db = 'ok';
     try {
       await prisma.$queryRaw`SELECT 1`;
@@ -16,13 +20,25 @@ export function systemRoutes({ config, prisma, hub, limiters, cep = new CepServi
     res.status(db === 'ok' ? 200 : 503).json({ status: db === 'ok' ? 'ok' : 'degraded', db, realtime: hub?.mode ?? 'off' });
   });
 
-  /** SPA bootstrap: always 200, `session` is null when anonymous. */
-  r.get('/session', async (req, res) => {
+  return r;
+}
+
+/** GET /api/session: SPA bootstrap. Always 200, `session` is null when anonymous. */
+export function sessionRoutes({ config, prisma }) {
+  const r = Router();
+
+  r.get('/', async (req, res) => {
     res.json({ session: req.session ? await describeSession({ prisma, config }, req) : null });
   });
 
-  /** CEP → cidade/UF (signup "Onde você mora?"). Public, rate limited, nothing stored. */
-  r.get('/cep/:cep', limiters?.onboardingCheck ?? ((req, res, next) => next()), async (req, res) => {
+  return r;
+}
+
+/** GET /api/cep/:cep: CEP → cidade/UF (signup "Onde você mora?"). Public, rate limited, nothing stored. */
+export function cepRoutes({ limiters, cep = new CepService() }) {
+  const r = Router();
+
+  r.get('/:cep', limiters?.onboardingCheck ?? ((req, res, next) => next()), async (req, res) => {
     const digits = String(req.params.cep || '').replace(/\D/g, '');
     if (!/^\d{8}$/.test(digits)) return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Informe o CEP com 8 números.' } });
     try {
@@ -35,8 +51,14 @@ export function systemRoutes({ config, prisma, hub, limiters, cep = new CepServi
     }
   });
 
-  /** Public, non-secret runtime flags for the web app. */
-  r.get('/config', (req, res) => {
+  return r;
+}
+
+/** GET /api/config: public, non-secret runtime flags for the web app. */
+export function configRoutes({ config }) {
+  const r = Router();
+
+  r.get('/', (req, res) => {
     res.json({
       demoMode: config.demoMode,
       paymentProvider: config.payment.provider,
