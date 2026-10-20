@@ -1,4 +1,5 @@
 import { formatCents } from '@autopix/shared';
+import { areaOf } from '@autopix/areas/areas';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
@@ -50,10 +51,20 @@ const LIST_SELECT = {
   payment: { select: { id: true, status: true, provider: true, expiresAt: true } },
 };
 
+const BUYER_SIDE = { buyerCompanyId: null, buyerUserId: null, buyerName: null, buyerEmail: null };
+const SELLER_SIDE = { sellerCompanyId: null, sellerUserId: null };
+
 /**
  * MarketplaceTransactionService — TemPix Pay's provider-independent core.
  * Amounts are always computed server-side (reference price or the seller's
  * agreed deal value), never taken from a client at payment time.
+ *
+ * Area mode (ARQUITETURA 6.3, last row): the counterpart of another area never shows up. A buyer
+ * whose account belongs to another area is treated exactly like an e-mail with no account ("outside
+ * the platform": no company, no name from the registry, no protected flow), so the answer does not
+ * tell whether the account exists. Reads (get/list) strip the counterpart's identity when the two
+ * companies are of different areas, and events are never published to the other area's company.
+ * Legacy mode (config.areas.enabled false) does none of this.
  */
 export class MarketplaceTransactionService {
   constructor({ prisma = getPrisma(), config = getConfig(), events, commissions, audit, payments, providerFactory = getPaymentProvider } = {}) {
@@ -82,6 +93,29 @@ export class MarketplaceTransactionService {
     return null;
   }
 
+  areasOn() {
+    return Boolean(this.config?.areas?.enabled);
+  }
+
+  /** Area (CNPJ/CPF) of each company id, from its account type. Only used in area mode. */
+  async areasOfCompanies(ids, db = this.prisma) {
+    const unique = [...new Set(ids.filter(Boolean))];
+    const rows = unique.length ? await db.company.findMany({ where: { id: { in: unique } }, select: { id: true, accountType: true } }) : [];
+    return new Map(rows.map((c) => [c.id, areaOf(c.accountType)]));
+  }
+
+  /**
+   * Area mode: do the seller and the buyer of this transaction belong to different areas? False in
+   * legacy mode and when there is no buyer on the platform. An unknown company counts as another
+   * area (fail closed).
+   */
+  async crossArea(t, db = this.prisma) {
+    if (!this.areasOn() || !t.buyerCompanyId) return false;
+    const areas = await this.areasOfCompanies([t.sellerCompanyId, t.buyerCompanyId], db);
+    const seller = areas.get(t.sellerCompanyId);
+    return !seller || seller !== areas.get(t.buyerCompanyId);
+  }
+
   async load(id, companyId, { tx = this.prisma } = {}) {
     const t = await tx.marketplaceTransaction.findUnique({ where: { id }, include: { payment: true } });
     if (!t || !this.roleOf(t, companyId)) throw notFound('Transação não encontrada.');
@@ -100,7 +134,7 @@ export class MarketplaceTransactionService {
       { ...event, companyId: t.sellerCompanyId, aggregateType: 'transaction', aggregateId: t.id, isDemo: t.isDemo, payload: { ...(event.payload || {}), audience: 'SELLER' }, activity: sellerActivity ?? event.activity },
       tx,
     );
-    if (t.buyerCompanyId) {
+    if (t.buyerCompanyId && !(await this.crossArea(t, tx))) {
       await this.events.publish(
         { ...event, companyId: t.buyerCompanyId, userId: null, aggregateType: 'transaction', aggregateId: t.id, isDemo: t.isDemo, payload: { ...(event.payload || {}), audience: 'BUYER' }, activity: buyerActivity ?? event.activity },
         tx,
@@ -139,9 +173,11 @@ export class MarketplaceTransactionService {
     const txType = type || resolved.type;
     let buyerUser = null;
     if (buyerEmail) {
-      buyerUser = await this.prisma.user.findUnique({ where: { email: buyerEmail.toLowerCase() } });
+      buyerUser = await this.prisma.user.findUnique({ where: { email: buyerEmail.toLowerCase() }, include: { company: { select: { accountType: true } } } });
       if (buyerUser?.companyId === company.id) throw badRequest('O comprador não pode ser a sua própria empresa.');
       if (buyerUser && buyerUser.status !== 'ACTIVE') buyerUser = null;
+      // Area mode: an account of another area is "outside the platform", same as no account at all.
+      if (buyerUser && this.areasOn() && areaOf(buyerUser.company?.accountType) !== areaOf(company.accountType)) buyerUser = null;
     }
     const quote = await this.commissions.quote({ transactionType: txType, companyId: company.id, grossCents: resolved.grossCents });
     const caps = this.capabilities();
@@ -352,10 +388,19 @@ export class MarketplaceTransactionService {
     });
     const role = t ? this.roleOf(t, companyId) : null;
     if (!t || (!role && !isPlatformAdmin)) throw notFound('Transação não encontrada.');
+    // Area mode: the viewer never sees the identity of a counterpart from another area. The row is
+    // redacted before anything else reads it, so the names, the allowed actions and the DTO agree.
+    if (role && (await this.crossArea(t))) {
+      const other = role === 'SELLER' ? t.buyerUserId : t.sellerUserId;
+      const mask = (id) => (id && id === other ? null : id);
+      Object.assign(t, role === 'SELLER' ? BUYER_SIDE : SELLER_SIDE);
+      t.timeline = t.timeline.map((e) => ({ ...e, actorUserId: mask(e.actorUserId) }));
+      t.disputes = t.disputes.map((d) => ({ ...d, openedByUserId: mask(d.openedByUserId), resolvedByUserId: mask(d.resolvedByUserId) }));
+    }
     const caps = this.capabilities();
     const openDispute = t.disputes.some((d) => !['RESOLVED_BUYER', 'RESOLVED_SELLER', 'CANCELLED'].includes(d.status));
     const [seller, buyer, refunds] = await Promise.all([
-      this.prisma.company.findUnique({ where: { id: t.sellerCompanyId }, select: { name: true } }),
+      t.sellerCompanyId ? this.prisma.company.findUnique({ where: { id: t.sellerCompanyId }, select: { name: true } }) : null,
       t.buyerCompanyId ? this.prisma.company.findUnique({ where: { id: t.buyerCompanyId }, select: { name: true } }) : null,
       t.payment ? this.prisma.refund.findMany({ where: { paymentId: t.payment.id }, orderBy: { createdAt: 'desc' } }) : [],
     ]);
@@ -382,7 +427,7 @@ export class MarketplaceTransactionService {
       transaction: {
         ...t,
         payment,
-        sellerName: seller?.name,
+        sellerName: seller?.name ?? null,
         buyerCompanyName: buyer?.name ?? null,
         refunds,
         trip,
@@ -413,7 +458,16 @@ export class MarketplaceTransactionService {
       take: limit,
       select: LIST_SELECT,
     });
-    return items.map((t) => ({ ...t, role: this.roleOf(t, companyId) }));
+    if (!this.areasOn()) return items.map((t) => ({ ...t, role: this.roleOf(t, companyId) }));
+    // Area mode: a counterpart of another area is dropped from the row, as in get().
+    const areas = await this.areasOfCompanies([companyId, ...items.flatMap((t) => [t.sellerCompanyId, t.buyerCompanyId])]);
+    const own = areas.get(companyId);
+    return items.map((t) => {
+      const role = this.roleOf(t, companyId);
+      const otherId = role === 'SELLER' ? t.buyerCompanyId : t.sellerCompanyId;
+      const hide = otherId && areas.get(otherId) !== own;
+      return { ...t, ...(hide ? (role === 'SELLER' ? BUYER_SIDE : SELLER_SIDE) : {}), role };
+    });
   }
 
   /** TemPix Pay header metrics — all from the database. */
