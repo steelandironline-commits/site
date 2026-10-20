@@ -6,9 +6,11 @@ import {
   AREAS,
   COMMON_PAGES,
   EXCLUSIVE_PAGES,
+  EXCLUSIVE_FILES,
   PAGES,
   API_MOUNTS,
   ALL_PAGES,
+  exclusiveFilesOf,
   pagesOf,
   isPageOf,
   areasOfPage,
@@ -106,6 +108,56 @@ describe('manifesto de páginas', () => {
     expect(routes).toContain('/activate/:token');
     expect(new Set(routes).size).toBeGreaterThanOrEqual(30);
     expect([...ALL_PAGES].sort()).toEqual([...new Set(routes)].sort());
+  });
+});
+
+describe('arquivos exclusivos de cada área (fronteira do build)', () => {
+  const webSrc = path.join(root, 'apps/web/src');
+  const entries = AREAS.flatMap((area) => EXCLUSIVE_FILES[area].map((entry) => ({ area, entry })));
+
+  it('toda área tem uma lista, congelada', () => {
+    expect(Object.keys(EXCLUSIVE_FILES)).toEqual([...AREAS]);
+    for (const area of AREAS) {
+      expect(Object.isFrozen(EXCLUSIVE_FILES[area]), area).toBe(true);
+      expect(exclusiveFilesOf(area)).toBe(EXCLUSIVE_FILES[area]);
+    }
+    expect(() => exclusiveFilesOf('toString')).toThrow(TypeError);
+  });
+
+  it('cada caminho existe em apps/web/src: arquivo, ou pasta quando termina em "/"', () => {
+    expect(entries.length).toBeGreaterThan(10);
+    for (const { area, entry } of entries) {
+      expect(entry, `${area} ${entry}`).toMatch(/^[A-Za-z0-9._/-]+$/);
+      expect(entry.startsWith('/') || entry.includes('..'), entry).toBe(false);
+      const target = path.join(webSrc, entry);
+      expect(fs.existsSync(target), `${area} ${entry}`).toBe(true);
+      expect(fs.statSync(target).isDirectory(), `${area} ${entry}`).toBe(entry.endsWith('/'));
+    }
+  });
+
+  it('nenhum caminho está em duas áreas, nem dentro da pasta de outro', () => {
+    for (const a of entries) {
+      for (const b of entries) {
+        if (a === b) continue;
+        const inside = b.entry.endsWith('/') && a.entry.startsWith(b.entry);
+        expect(inside || a.entry === b.entry, `${a.area} ${a.entry} x ${b.area} ${b.entry}`).toBe(false);
+      }
+    }
+  });
+
+  it('as pastas src/areas/<área>/ são exclusivas por regra e não precisam constar da lista', () => {
+    for (const { entry } of entries) expect(entry.startsWith('areas/')).toBe(false);
+  });
+
+  it('as páginas exclusivas de cada área existem como arquivo classificado (CNPJ: telas de empresa e pagamento)', () => {
+    for (const file of ['pages/app/Pay.jsx', 'pages/app/Tenders.jsx', 'pages/app/Freight.jsx', 'pages/app/Workforce.jsx', 'pages/checkout/']) {
+      expect(EXCLUSIVE_FILES.CNPJ, file).toContain(file);
+    }
+    expect(EXCLUSIVE_FILES.ADMIN).toContain('pages/app/Admin.jsx');
+    // As páginas comuns nunca são exclusivas.
+    for (const file of ['pages/app/Overview.jsx', 'pages/app/Social.jsx', 'pages/app/Settings.jsx', 'pages/auth/', 'pages/onboarding/', 'pages/NotFound.jsx']) {
+      for (const area of AREAS) expect(EXCLUSIVE_FILES[area].some((e) => file.startsWith(e)), `${area} ${file}`).toBe(false);
+    }
   });
 });
 

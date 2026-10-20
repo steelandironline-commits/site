@@ -55,6 +55,45 @@ export const EXCLUSIVE_PAGES = Object.freeze({
   ADMIN: Object.freeze(['/app/admin']),
 });
 
+/**
+ * Arquivos de apps/web/src que só uma área pode importar. Caminhos relativos a apps/web/src;
+ * os que terminam em "/" valem para a pasta inteira. Sai daqui a fronteira do build: o plugin
+ * `areaBoundary` derruba o build de uma área que importe um arquivo da lista de outra.
+ *
+ * As pastas src/areas/<área>/ são sempre exclusivas da área e não precisam constar aqui.
+ * O arquivo é do tipo "só uma área usa hoje": entrou aqui porque só as páginas daquela área
+ * (e o que elas puxam sozinhas) o alcançam. Um teste (apps/web/test/bundle-isolation) compara a
+ * lista com os módulos reais de cada build, e acusa arquivo exclusivo que ficou de fora.
+ * Na ETAPA 5, quando a tela comum for dividida, o arquivo muda de lugar e sai daqui.
+ */
+export const EXCLUSIVE_FILES = Object.freeze({
+  CNPJ: Object.freeze([
+    // Home atual (landing) e vitrine: o CPF tem a sua em src/areas/cpf/Home.jsx.
+    'pages/landing/',
+    'lib/demoFeed.js',
+    'components/brand/WhatsAppIcon.jsx',
+    // Páginas listadas em EXCLUSIVE_PAGES.CNPJ e o que só elas usam.
+    'pages/checkout/',
+    'pages/app/RadarPage.jsx',
+    'components/radar/',
+    'pages/app/Tenders.jsx',
+    'pages/app/tenders.module.css',
+    'pages/app/Opportunities.jsx',
+    'pages/app/OpportunityDetail.jsx',
+    'pages/app/Agents.jsx',
+    'pages/app/Company.jsx',
+    'pages/app/Subscription.jsx',
+    'pages/app/Pay.jsx',
+    'pages/app/TransactionDetail.jsx',
+    'pages/app/PaymentDetail.jsx',
+    'pages/app/Intermediation.jsx',
+    'pages/app/Freight.jsx',
+    'pages/app/Workforce.jsx',
+  ]),
+  CPF: Object.freeze([]),
+  ADMIN: Object.freeze(['pages/app/Admin.jsx']),
+});
+
 /** Páginas de cada área, já com as comuns. */
 export const PAGES = Object.freeze({
   CNPJ: Object.freeze([...COMMON_PAGES, ...EXCLUSIVE_PAGES.CNPJ]),
@@ -70,6 +109,12 @@ export const API_MOUNTS = Object.freeze([]);
 
 /** Todas as páginas declaradas, sem repetição. */
 export const ALL_PAGES = Object.freeze([...new Set(AREAS.flatMap((area) => PAGES[area]))]);
+
+export function exclusiveFilesOf(area) {
+  const files = Object.hasOwn(EXCLUSIVE_FILES, area) ? EXCLUSIVE_FILES[area] : undefined;
+  if (!files) throw new TypeError(`área desconhecida: ${String(area)}`);
+  return files;
+}
 
 export function pagesOf(area) {
   const pages = PAGES[area];

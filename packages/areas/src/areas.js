@@ -20,6 +20,24 @@ export const REDIRECT_HOST_VARS = Object.freeze({
   CPF: 'PUBLIC_HOST_CPF_REDIRECT',
 });
 
+/**
+ * Pasta de saída do build de cada área, dentro de apps/web. Ficam FORA de `dist/` de propósito:
+ * se ficassem dentro dele, o modo legado (que serve `dist/`) as serviria. O build e o servidor
+ * leem esta tabela; nenhum dos dois repete os nomes.
+ */
+export const AREA_DIST_DIRS = Object.freeze({
+  CNPJ: 'dist-cnpj',
+  CPF: 'dist-cpf',
+  ADMIN: 'dist-admin',
+});
+
+/** Nome da pasta de build da área (ex.: `dist-cpf`). */
+export function distDirOf(area) {
+  const dir = Object.hasOwn(AREA_DIST_DIRS, area) ? AREA_DIST_DIRS[area] : undefined;
+  if (!dir) throw new TypeError(`área desconhecida: ${String(area)}`);
+  return dir;
+}
+
 export const isArea = (value) => AREAS.includes(value);
 
 const ACCOUNT_TYPE_AREA = Object.freeze({ COMPANY: 'CNPJ', PERSON: 'CPF' });

@@ -5,6 +5,8 @@ export {
   AREAS,
   AREA_HOST_VARS,
   REDIRECT_HOST_VARS,
+  AREA_DIST_DIRS,
+  distDirOf,
   isArea,
   areaOf,
   parseHost,
@@ -15,6 +17,8 @@ export { urlFor } from './urls.js';
 export {
   COMMON_PAGES,
   EXCLUSIVE_PAGES,
+  EXCLUSIVE_FILES,
+  exclusiveFilesOf,
   PAGES,
   API_MOUNTS,
   ALL_PAGES,

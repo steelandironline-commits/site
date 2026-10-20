@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { AREAS, AREA_HOST_VARS, REDIRECT_HOST_VARS, areaOf, isArea, parseHost, hostnameOf, hostFor } from '../src/index.js';
+import { AREAS, AREA_DIST_DIRS, AREA_HOST_VARS, REDIRECT_HOST_VARS, areaOf, distDirOf, isArea, parseHost, hostnameOf, hostFor } from '../src/index.js';
 
 describe('areas', () => {
   it('declara as três áreas e a variável de host de cada uma', () => {
@@ -10,6 +10,19 @@ describe('areas', () => {
     expect(AREAS.every(isArea)).toBe(true);
     expect(isArea('cnpj')).toBe(false);
     expect(isArea(undefined)).toBe(false);
+  });
+
+  it('cada área tem a sua pasta de build, fora de dist/', () => {
+    expect(AREA_DIST_DIRS).toEqual({ CNPJ: 'dist-cnpj', CPF: 'dist-cpf', ADMIN: 'dist-admin' });
+    expect(Object.isFrozen(AREA_DIST_DIRS)).toBe(true);
+    for (const area of AREAS) {
+      expect(distDirOf(area)).toBe(AREA_DIST_DIRS[area]);
+      // dist/ é o build legado, servido em qualquer host: a pasta de área não pode estar dentro dele.
+      expect(distDirOf(area)).not.toMatch(/^dist\//);
+      expect(distDirOf(area)).not.toBe('dist');
+    }
+    expect(new Set(AREAS.map(distDirOf)).size).toBe(AREAS.length);
+    for (const bad of ['cnpj', 'toString', '__proto__', undefined, null, 'PLATFORM']) expect(() => distDirOf(bad)).toThrow(TypeError);
   });
 
   it('areaOf: COMPANY é CNPJ e PERSON é CPF', () => {
