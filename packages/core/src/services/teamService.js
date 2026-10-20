@@ -45,14 +45,14 @@ export class TeamService {
     if (company.accountType !== 'COMPANY') throw conflict('Colaboradores são para contas de empresa.');
     if (await this.prisma.user.findUnique({ where: { email } })) throw conflict('Este e-mail já tem cadastro no TemPix.');
     if (await this.prisma.user.findUnique({ where: { loginId: cpf } })) throw conflict('Este CPF já tem cadastro no TemPix.');
-    const { member, token } = await this.prisma.$transaction(async (tx) => {
+    const { member, token, area } = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: { companyId: company.id, email, name, loginId: cpf, role: 'MEMBER', status: 'PENDING_ACTIVATION' },
         select: MEMBER_SELECT,
       });
-      return { member: created, token: await this.auth.issueActivationToken(created.id, tx) };
+      return { member: created, ...(await this.auth.issueActivation(created.id, tx)) };
     });
-    const link = `${this.config.appUrl}/activate/${token}`;
+    const link = this.auth.activationLink(token, area);
     const emailed = this.email
       ? await this.email.collaboratorInviteEmail({ to: email, name, company: company.name, link }).catch((err) => {
           logger.error('collaborator invite email failed', { err });

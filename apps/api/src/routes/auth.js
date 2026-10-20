@@ -48,7 +48,7 @@ export function authRoutes({ auth, config, limiters }) {
   });
 
   r.get('/activate/:token', limiters.sensitive, async (req, res) => {
-    const info = await auth.inspectActivationToken(req.params.token);
+    const info = await auth.inspectActivationToken(req.params.token, meta(req));
     res.json({ email: info.email, name: info.name, expiresAt: info.expiresAt });
   });
 
@@ -61,19 +61,19 @@ export function authRoutes({ auth, config, limiters }) {
 
   r.post('/forgot-password', limiters.sensitive, async (req, res) => {
     const { email } = parse(forgotPasswordSchema, req.body);
-    await auth.requestPasswordReset(email);
+    await auth.requestPasswordReset(email, meta(req));
     // Same answer whether or not the account exists.
     res.json({ ok: true, message: 'Se o e-mail estiver cadastrado, você receberá um link em instantes.' });
   });
 
   r.get('/reset-password/:token', limiters.sensitive, async (req, res) => {
-    const info = await auth.inspectResetToken(req.params.token);
+    const info = await auth.inspectResetToken(req.params.token, meta(req));
     res.json({ email: info.email, expiresAt: info.expiresAt });
   });
 
   r.post('/reset-password', limiters.sensitive, async (req, res) => {
     const { token, password } = parse(resetPasswordSchema, req.body);
-    await auth.resetPassword(token, password);
+    await auth.resetPassword(token, password, meta(req));
     if (sessionCookieName(req, config)) clearSessionCookie(res, config, req.area);
     res.json({ ok: true });
   });

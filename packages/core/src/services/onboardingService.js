@@ -245,13 +245,13 @@ export class OnboardingService {
       canceledAt: null,
       activatedAt: now,
     };
-    const token = await this.prisma.$transaction(async (tx) => {
+    const { token, area } = await this.prisma.$transaction(async (tx) => {
       await tx.subscription.upsert({ where: { companyId: company.id }, update: access, create: { companyId: company.id, ...access } });
       await tx.user.update({ where: { id: fresh.id }, data: { status: 'PENDING_ACTIVATION' } });
       await tx.activationToken.updateMany({ where: { userId: fresh.id, usedAt: null }, data: { usedAt: now } });
-      return this.auth.issueActivationToken(fresh.id, tx);
+      return this.auth.issueActivation(fresh.id, tx);
     });
-    const sent = await this.email?.activationEmail({ to: fresh.email, name: fresh.name, link: `${this.config.appUrl}/activate/${token}` });
+    const sent = await this.email?.activationEmail({ to: fresh.email, name: fresh.name, link: this.auth.activationLink(token, area) });
     if (!sent) {
       await this.prisma.activationToken.updateMany({ where: { userId: fresh.id, usedAt: null }, data: { usedAt: new Date() } });
       throw unavailable('Não foi possível enviar o link de verificação. O cadastro está gratuito, mas o e-mail de ativação precisa estar configurado para liberar o acesso.');

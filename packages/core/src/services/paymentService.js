@@ -751,8 +751,8 @@ export class PaymentService {
           const owner = payment.company.users[0];
           if (owner && (owner.status === 'PENDING_PAYMENT' || owner.status === 'PENDING_ACTIVATION')) {
             await tx.user.update({ where: { id: owner.id }, data: { status: 'PENDING_ACTIVATION' } });
-            const token = await this.auth.issueActivationToken(owner.id, tx);
-            activation = { token, user: owner };
+            const { token, area } = await this.auth.issueActivation(owner.id, tx);
+            activation = { token, area, user: owner };
           }
           await this.queue.enqueue(payment.companyId, { trigger: 'PAYMENT', isDemo: this.config.demoMode }, tx);
           await this.events.publish(
@@ -820,9 +820,10 @@ export class PaymentService {
     });
 
     if (outcome.activation && this.email) {
-      const { token, user } = outcome.activation;
-      const sent = await this.email
-        .activationEmail({ to: user.email, name: user.name, link: `${this.config.appUrl}/activate/${token}` })
+      const { token, area, user } = outcome.activation;
+      // The link is built inside the promise: a bad host configuration must not undo a confirmed payment.
+      const sent = await Promise.resolve()
+        .then(() => this.email.activationEmail({ to: user.email, name: user.name, link: this.auth.activationLink(token, area) }))
         .catch((err) => {
           logger.error('activation email failed', { err });
           return false;
@@ -857,8 +858,8 @@ export class PaymentService {
     });
     if (sentToken) return { emailVerificationRequired: true, emailSent: true };
     await this.prisma.activationToken.updateMany({ where: { userId: fresh.id, usedAt: null }, data: { usedAt: new Date() } });
-    const token = await this.auth.issueActivationToken(fresh.id);
-    const sent = await this.email?.activationEmail({ to: fresh.email, name: fresh.name, link: `${this.config.appUrl}/activate/${token}` });
+    const { token, area } = await this.auth.issueActivation(fresh.id);
+    const sent = await this.email?.activationEmail({ to: fresh.email, name: fresh.name, link: this.auth.activationLink(token, area) });
     if (!sent) {
       await this.prisma.activationToken.updateMany({ where: { userId: fresh.id, usedAt: null }, data: { usedAt: new Date() } });
       throw unavailable('Não foi possível enviar o link de verificação. Configure o e-mail de ativação para continuar.');

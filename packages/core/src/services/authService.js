@@ -1,4 +1,5 @@
 import { onlyDigits } from '@autopix/shared';
+import { urlFor } from '@autopix/areas/urls';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { generateToken, hashToken } from '../security/tokens.js';
@@ -143,7 +144,9 @@ export class AuthService {
   /**
    * Login with CNPJ (company, one login per company) or CPF (pessoa física,
    * collaborator). E-mail is still accepted for accounts created before.
-   * Every failure answers the same way, so documents can't be enumerated.
+   * Every failure answers the same way, so documents can't be enumerated. In area mode an
+   * account of another area is "unknown" here: same message, same status, and the password
+   * check is burned instead of done, so the time is the same too.
    */
   async login(identifier, password, meta = {}) {
     const raw = String(identifier || '').trim();
@@ -151,7 +154,8 @@ export class AuthService {
     let where = null;
     if (raw.includes('@')) where = { email: raw.toLowerCase() };
     else if (digits.length === 11 || digits.length === 14) where = { loginId: digits };
-    const user = where ? await this.prisma.user.findUnique({ where }) : null;
+    const found = where ? await this.prisma.user.findUnique({ where, include: { company: { select: { accountType: true } } } }) : null;
+    const user = found && hostAccepts(meta.hostArea, areaOfUser(found), this.config) ? found : null;
     if (!user || !user.passwordHash) {
       await burnPasswordCheck(password);
       throw unauthorized('CPF/CNPJ ou senha incorretos.');
@@ -182,6 +186,7 @@ export class AuthService {
       data: {
         userId: user.id,
         codeHash: 'pending',
+        area: areaOfUser(user),
         expiresAt,
         ipAddress: meta.ip ? String(meta.ip).slice(0, 64) : null,
         userAgent: meta.userAgent ? String(meta.userAgent).slice(0, 300) : null,
@@ -199,6 +204,11 @@ export class AuthService {
   async verifyLoginCode(challengeId, code, meta = {}) {
     const challenge = await this.prisma.loginChallenge.findUnique({ where: { id: challengeId }, include: { user: true } });
     if (!challenge || challenge.consumedAt) throw unauthorized('Código inválido ou expirado. Entre novamente.');
+    // Area mode: the code is only good on the host where the login began. Anywhere else (or on a
+    // challenge from before the areas) it is just an invalid code, and no attempt is spent.
+    if (this.config.areas?.enabled && (!challenge.area || !hostAccepts(meta.hostArea, challenge.area, this.config))) {
+      throw unauthorized('Código inválido ou expirado. Entre novamente.');
+    }
     if (challenge.expiresAt <= new Date()) {
       await this.prisma.loginChallenge.updateMany({ where: { id: challenge.id, consumedAt: null }, data: { consumedAt: new Date() } });
       throw gone('Este código expirou. Entre novamente para receber outro.');
@@ -225,31 +235,54 @@ export class AuthService {
 
   /** Create a one-time activation token. Returns the plaintext (never stored). */
   async issueActivationToken(userId, tx = this.prisma) {
+    return (await this.issueActivation(userId, tx)).token;
+  }
+
+  /**
+   * Same, and also says which area the link belongs to (the owner's area, stored on the token).
+   * Build the link with `activationLink(token, area)` after the transaction.
+   */
+  async issueActivation(userId, tx = this.prisma) {
+    const owner = await tx.user.findUnique({ where: { id: userId }, select: AREA_SELECT });
+    if (!owner) throw notFound('Usuário não encontrado.');
+    const area = areaOfUser(owner);
     const token = generateToken();
     await tx.activationToken.create({
       data: {
         userId,
+        area,
         tokenHash: hashToken(token, this.config.secrets.activation),
         expiresAt: new Date(Date.now() + this.config.tokens.activationTtlMs),
       },
     });
-    return token;
+    return { token, area };
   }
 
-  async #findValidToken(model, token, secret) {
+  /** Absolute activation link: on the host of the account's area (APP_URL in legacy mode). */
+  activationLink(token, area) {
+    return urlFor(area, `/activate/${token}`, this.config);
+  }
+
+  async #findValidToken(model, token, secret, hostArea = null) {
     if (!token || typeof token !== 'string' || token.length > 200) throw notFound('Link inválido.');
     const record = await this.prisma[model].findUnique({
       where: { tokenHash: hashToken(token, secret) },
-      include: { user: { select: { id: true, email: true, name: true, status: true, companyId: true } } },
+      include: { user: { select: { id: true, email: true, name: true, status: true, companyId: true, ...AREA_SELECT } } },
     });
     if (!record) throw notFound('Link inválido ou já utilizado.');
+    // Area mode: a link works only on the host of its area (a token from before the areas takes
+    // its owner's). Anywhere else it answers exactly like a token that does not exist, before the
+    // used/expired answers, so it reveals nothing.
+    if (this.config.areas?.enabled && !hostAccepts(hostArea, record.area ?? areaOfUser(record.user), this.config)) {
+      throw notFound('Link inválido ou já utilizado.');
+    }
     if (record.usedAt) throw gone('Este link já foi utilizado.');
     if (record.expiresAt.getTime() <= Date.now()) throw gone('Este link expirou.');
     return record;
   }
 
-  async inspectActivationToken(token) {
-    const record = await this.#findValidToken('activationToken', token, this.config.secrets.activation);
+  async inspectActivationToken(token, { hostArea = null } = {}) {
+    const record = await this.#findValidToken('activationToken', token, this.config.secrets.activation, hostArea);
     return { email: record.user.email, name: record.user.name, expiresAt: record.expiresAt };
   }
 
@@ -259,7 +292,7 @@ export class AuthService {
    * concurrent requests with the same token cannot both succeed.
    */
   async activate(token, password, meta = {}) {
-    const record = await this.#findValidToken('activationToken', token, this.config.secrets.activation);
+    const record = await this.#findValidToken('activationToken', token, this.config.secrets.activation, meta.hostArea);
     if (record.user.status === 'DISABLED') throw badRequest('Esta conta está desativada.');
 
     const subscription = await this.prisma.subscription.findUnique({ where: { companyId: record.user.companyId } });
@@ -291,10 +324,15 @@ export class AuthService {
 
   // ---------------------------------------------------------- password reset
 
-  /** Always resolves the same way to avoid account enumeration. */
-  async requestPasswordReset(email) {
-    const user = await this.prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
+  /**
+   * Always resolves the same way to avoid account enumeration. In area mode an account of another
+   * area is treated as unknown: nothing is stored and no e-mail goes out.
+   */
+  async requestPasswordReset(email, { hostArea = null } = {}) {
+    const user = await this.prisma.user.findUnique({ where: { email: String(email).toLowerCase() }, include: { company: { select: { accountType: true } } } });
     if (!user || user.status !== 'ACTIVE') return { sent: false };
+    const area = areaOfUser(user);
+    if (!hostAccepts(hostArea, area, this.config)) return { sent: false };
 
     // Invalidate older outstanding reset tokens.
     await this.prisma.passwordResetToken.updateMany({
@@ -305,22 +343,23 @@ export class AuthService {
     await this.prisma.passwordResetToken.create({
       data: {
         userId: user.id,
+        area,
         tokenHash: hashToken(token, this.config.secrets.passwordReset),
         expiresAt: new Date(Date.now() + this.config.tokens.passwordResetTtlMs),
       },
     });
-    const link = `${this.config.appUrl}/reset-password/${token}`;
+    const link = urlFor(area, `/reset-password/${token}`, this.config);
     if (this.email) await this.email.passwordResetEmail({ to: user.email, name: user.name, link });
     return { sent: true, token };
   }
 
-  async inspectResetToken(token) {
-    const record = await this.#findValidToken('passwordResetToken', token, this.config.secrets.passwordReset);
+  async inspectResetToken(token, { hostArea = null } = {}) {
+    const record = await this.#findValidToken('passwordResetToken', token, this.config.secrets.passwordReset, hostArea);
     return { email: record.user.email, expiresAt: record.expiresAt };
   }
 
-  async resetPassword(token, password) {
-    const record = await this.#findValidToken('passwordResetToken', token, this.config.secrets.passwordReset);
+  async resetPassword(token, password, { hostArea = null } = {}) {
+    const record = await this.#findValidToken('passwordResetToken', token, this.config.secrets.passwordReset, hostArea);
     const passwordHash = await hashPassword(password);
     await this.prisma.$transaction(async (tx) => {
       const consumed = await tx.passwordResetToken.updateMany({

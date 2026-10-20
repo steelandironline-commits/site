@@ -109,10 +109,10 @@ async function main() {
 
   if (user.status !== 'ACTIVE') {
     const auth = new AuthService({ prisma, config });
-    const token = await auth.issueActivationToken(user.id);
+    const { token, area } = await auth.issueActivation(user.id);
     console.log('\nDemo account:', DEMO_EMAIL);
     console.log('Define the password (one-time link, 48h):');
-    console.log(`  ${config.appUrl}/activate/${token}\n`);
+    console.log(`  ${auth.activationLink(token, area)}\n`);
   } else {
     console.log(`Demo account ${DEMO_EMAIL} already active. Use /forgot-password to reset it.`);
   }
