@@ -21,7 +21,8 @@ import {
   operationalProfileSchema,
   profileCompleteness,
 } from '@autopix/shared';
-import { BRLText, Button, Field, Input, Logo, LogoMark, Select, TagInput, Textarea, post, put, safeStorage, useSession } from '@autopix/ui';
+import { BRLText, Button, Field, Input, Logo, LogoMark, Select, TagInput, Textarea, post, put, safeStorage, useBrand, useSession } from '@autopix/ui';
+import { brandText } from '@autopix/shared';
 import { AccountStartFields } from './AccountStartFields.jsx';
 import { PersonWhereFields } from '../areas/cpf/PersonWhereFields.jsx';
 import { OperationFields } from '../pages/onboarding/operations/OperationFields.jsx';
@@ -338,6 +339,7 @@ function Ready({ companyName, accountType, onSave }) {
 
 /* ---------------------------------------------------------------- page */
 export default function Onboarding() {
+  const { name: brandName } = useBrand();
   const navigate = useNavigate();
   const { refresh, me, config, loading: sessionLoading } = useSession();
   const storage = useMemo(() => safeStorage(), []);
@@ -485,7 +487,7 @@ export default function Onboarding() {
               <h1 className={s.title} ref={headingRef} tabIndex={-1}>
                 {current.title}
               </h1>
-              <p className={s.subtitle}>{current.subtitle}</p>
+              <p className={s.subtitle}>{brandText(current.subtitle, brandName)}</p>
               {error && (
                 <p className={s.formError} role="alert">
                   {error}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { brandText } from '@autopix/shared';
 import {
   BUSINESS_OBJECTIVES,
   DOCUMENTS_FIELD,
@@ -226,7 +227,7 @@ export default function OnboardingFlow({ flow }) {
               <h1 className={s.title} ref={headingRef} tabIndex={-1}>
                 {current.title}
               </h1>
-              <p className={s.subtitle}>{current.subtitle}</p>
+              <p className={s.subtitle}>{brandText(current.subtitle, brandName)}</p>
               {error && (
                 <p className={s.formError} role="alert">
                   {error}

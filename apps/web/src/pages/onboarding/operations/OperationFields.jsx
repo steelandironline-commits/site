@@ -1,7 +1,7 @@
 /* Generic renderer for the operational question engine (@autopix/shared).
    A module is a list of declarative fields; this file knows how to draw each
    field type, so new categories need no new screens. */
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Anchor,
@@ -44,7 +44,8 @@ import {
   optionsFor,
   setPath,
 } from '@autopix/shared';
-import { Field, Input, TagInput } from '@autopix/ui';
+import { Field, Input, TagInput, useBrand } from '@autopix/ui';
+import { withBrand } from '@autopix/shared';
 import { OPS_COPY as T } from './copy.js';
 import o from './operations.module.css';
 
@@ -517,10 +518,13 @@ function FieldView({ f, profile, set, accountType, errors }) {
 
 /** Renders a module's fields bound to the profile. `onChange(nextProfile)`. */
 export function OperationFields({ fields, profile, onChange, accountType, errors }) {
+  const { name } = useBrand();
+  // O catálogo guarda {marca}: a troca pelo nome da marca desta entrada acontece aqui, antes de desenhar.
+  const shown = useMemo(() => withBrand(fields, name), [fields, name]);
   const set = (path, value) => onChange((p) => setPath(p, path, value));
   return (
     <div className={o.fields}>
-      {fields.map((f, i) => (
+      {shown.map((f, i) => (
         <FieldView key={(f.path || f.label) + i} f={f} profile={profile} set={set} accountType={accountType} errors={errors} />
       ))}
     </div>

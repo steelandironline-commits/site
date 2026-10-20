@@ -53,6 +53,6 @@ export const OPS_COPY = Object.freeze({
   completeness: (n) => `Perfil operacional: ${n}% completo`,
   completenessHint: 'Completar o perfil melhora a precisão das oportunidades, das cotações e da intermediação entre compradores e fornecedores.',
   reviewTitle: 'Revisão',
-  reviewSubtitle: 'Confira o que o TemPix entendeu da sua operação. Tudo pode ser editado depois pelo painel.',
+  reviewSubtitle: 'Confira o que o {marca} entendeu da sua operação. Tudo pode ser editado depois pelo painel.',
   reviewEmpty: 'Assim que você responder às etapas, suas capacidades aparecem aqui.',
 });

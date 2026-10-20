@@ -86,11 +86,11 @@ export const OPERATION_START = Object.freeze({
   id: 'operacao',
   group: 'faz',
   title: 'Qual é o seu tipo de operação?',
-  subtitle: 'Marque tudo o que faz parte do seu dia a dia. Assim o TemPix entende o que você fornece, compra e executa.',
+  subtitle: 'Marque tudo o que faz parte do seu dia a dia. Assim o {marca} entende o que você fornece, compra e executa.',
   fields: [
     { type: 'chips', path: 'types', label: 'Tipo de operação', hint: 'Marque todas que se aplicam: uma empresa pode ser fornecedora, compradora e executora ao mesmo tempo.', options: OPERATION_TYPES, required: true, byAccount: true, fold: 40, personHint: 'Marque tudo o que você faz no seu dia a dia, como autônomo. Pode marcar mais de uma opção.' },
     { type: 'text', path: 'otherType', label: 'Qual?', placeholder: 'Descreva sua operação', when: { path: 'types', includes: 'outros' } },
-    { type: 'chips', path: 'objectives', label: 'Quais são seus objetivos no TemPix?', hint: 'Marque quantos quiser: quanto mais, melhor o TemPix entende sua empresa.', options: BUSINESS_OBJECTIVES, required: true, byAccount: true, personHint: 'Marque quantos quiser: quanto mais, melhor o TemPix entende o seu trabalho.' },
+    { type: 'chips', path: 'objectives', label: 'Quais são seus objetivos no {marca}?', hint: 'Marque quantos quiser: quanto mais, melhor o {marca} entende sua empresa.', options: BUSINESS_OBJECTIVES, required: true, byAccount: true, personHint: 'Marque quantos quiser: quanto mais, melhor o {marca} entende o seu trabalho.' },
   ],
 });
 
@@ -245,7 +245,7 @@ export const OPERATION_MODULES = Object.freeze([
           { path: 'trucker.wantsTransport', label: 'Deseja receber oportunidades de transporte?' },
           { path: 'trucker.offersHeavy', label: 'Oferece transporte de equipamentos pesados?' },
           { path: 'trucker.wantsDirect', label: 'Deseja encontrar contratantes diretamente?' },
-          { path: 'trucker.acceptsIntermediation', label: 'Aceita trabalhar com intermediação do TemPix?' },
+          { path: 'trucker.acceptsIntermediation', label: 'Aceita trabalhar com intermediação do {marca}?' },
         ],
       },
     ],
@@ -287,7 +287,7 @@ export const OPERATION_MODULES = Object.freeze([
       { type: 'chips', path: 'terminal.suppliersHired', label: 'Fornecedores que normalmente contrata', options: TERMINAL_SUPPLIERS },
       { type: 'chips', path: 'terminal.cargoTypes', label: 'Tipos de carga e operação', options: CARGO_TYPES },
       { type: 'chips', path: 'terminal.equipmentHired', label: 'Equipamentos que costuma contratar', options: BUYER_NEEDS },
-      { type: 'text', path: 'terminal.servicesWanted', label: 'Quais serviços deseja contratar pelo TemPix?', placeholder: 'Ex.: manutenção de portêineres, usinagem emergencial' },
+      { type: 'text', path: 'terminal.servicesWanted', label: 'Quais serviços deseja contratar pelo {marca}?', placeholder: 'Ex.: manutenção de portêineres, usinagem emergencial' },
       {
         type: 'toggles',
         label: 'Contratação',
@@ -423,7 +423,7 @@ export const OPERATION_MODULES = Object.freeze([
     appliesTo: { types: [...BUYERS, ...CONSTRUCTION, 'terminal_portuario'], objectives: ['contratar_equipamentos', 'contratar_equipes', 'encontrar_fornecedores'] },
     when: { path: 'buyer.needs', notEmpty: true },
     title: 'Detalhes da necessidade',
-    subtitle: 'Capacidade, local e prazo: é assim que o TemPix encontra fornecedores e operadores compatíveis.',
+    subtitle: 'Capacidade, local e prazo: é assim que o {marca} encontra fornecedores e operadores compatíveis.',
     fields: [{ type: 'requests', path: 'buyer.requests', label: 'Necessidades' }],
   },
 
@@ -451,7 +451,7 @@ export const OPERATION_MODULES = Object.freeze([
           { path: 'supplier.businessBuyers', label: 'Atende compradores empresariais?' },
           { path: 'supplier.readyStock', label: 'Trabalha com pronta-entrega?' },
           { path: 'supplier.madeToOrder', label: 'Trabalha sob encomenda?' },
-          { path: 'supplier.acceptsQuotes', label: 'Aceita propostas e cotações pelo TemPix?' },
+          { path: 'supplier.acceptsQuotes', label: 'Aceita propostas e cotações pelo {marca}?' },
         ],
       },
       roles('Sua empresa é'),
