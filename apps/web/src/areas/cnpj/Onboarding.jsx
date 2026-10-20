@@ -16,7 +16,7 @@ const STEPS = [
   { key: 'sells', title: 'O que sua empresa vende?', subtitle: 'Produtos e uma breve descrição do negócio.', fields: ['products', 'description'] },
   { key: 'services', title: 'Quais serviços presta?', subtitle: 'Usamos isso para encontrar demandas compatíveis.', fields: ['services'] },
   { key: 'customer', title: 'Quem é seu cliente ideal?', subtitle: 'E quais setores você prefere atender.', fields: ['idealCustomer', 'preferredIndustries'] },
-  { key: 'rejected', title: 'Quais setores você não atende?', subtitle: 'O TemPix descarta automaticamente esses mercados.', fields: ['excludedIndustries'] },
+  { key: 'rejected', title: 'Quais setores você não atende?', subtitle: 'O Tem CNPJ descarta automaticamente esses mercados.', fields: ['excludedIndustries'] },
   { key: 'where', title: 'Onde você atende?', subtitle: 'Cidade-base, regiões e raio de atendimento.', fields: ['city', 'state', 'serviceLocations', 'serviceRadiusKm'] },
   { key: 'ticket', title: 'Qual o ticket médio?', subtitle: 'E qual o menor negócio que vale a sua atenção.', fields: ['averageTicket', 'minimumDeal'] },
   { key: 'keywords', title: 'Palavras-chave', subtitle: 'Termos que indicam demanda pelo que você faz.', fields: ['keywords'] },
@@ -274,12 +274,12 @@ export function Ready({ account, form, onSave }) {
     : `Seu cadastro está pronto. Enviaremos um link para confirmar o e-mail e criar sua senha; depois, os agentes de ${companyName || 'sua empresa'} começam a trabalhar.`;
   let foot = `Sem mensalidade · ${commission} só sobre valores intermediados com sucesso`;
   if (subscription) {
-    title = 'Seu TemPix está pronto para ser ativado.';
+    title = 'Seu Tem CNPJ está pronto para ser ativado.';
     text = `Os agentes de ${companyName || 'sua empresa'} começam a procurar oportunidades assim que o Pix for confirmado.`;
     foot = 'R$ 597,00/mês · Sem fidelidade · Cancele quando quiser';
   } else if (feeCents > 0) {
     title = 'Falta só a taxa única de cadastro.';
-    text = `${formatCents(feeCents)}, uma vez só. Sem mensalidade e sem renovação: depois disso, o TemPix só fica com ${commission}, e apenas sobre os contratos concluídos e confirmados que a ${companyName || 'sua empresa'} fechar.`;
+    text = `${formatCents(feeCents)}, uma vez só. Sem mensalidade e sem renovação: depois disso, o Tem CNPJ só fica com ${commission}, e apenas sobre os contratos concluídos e confirmados que a ${companyName || 'sua empresa'} fechar.`;
     foot = `Menos de R$ ${perDay(feeCents)} por dia no primeiro ano · nada de mensalidade depois`;
   }
 
