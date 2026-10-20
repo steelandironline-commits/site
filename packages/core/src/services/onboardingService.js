@@ -65,7 +65,6 @@ export class OnboardingService {
     // A professional's account is named after the person.
     const accountName = accountType === 'PERSON' ? name : companyName;
     const loginId = document; // CNPJ (company) or CPF (person), digits only
-    const { sessionUserId = null, ...sessionMeta } = meta;
     await this.#purgeExpiredDrafts();
     const { existing, taken } = await this.#availability({ email, accountType, loginId, hostArea: meta.hostArea, sessionUserId });
     if (taken.email) throw conflict(taken.email, { field: 'email' });
@@ -89,7 +88,7 @@ export class OnboardingService {
         });
         user = await tx.user.create({ data: { email, name, loginId, companyId: company.id, status: 'PENDING_PAYMENT', pendingExpiresAt } });
       }
-      const { token, session } = await this.auth.createSession(user.id, { scope: 'ONBOARDING', ...sessionMeta }, tx);
+      const { token, session } = await this.auth.createSession(user.id, { scope: 'ONBOARDING', ...meta }, tx);
       return { token, session, user };
     });
   }
@@ -140,13 +139,6 @@ export class OnboardingService {
         accountType === 'COMPANY'
           ? 'Este CNPJ já tem cadastro no TemPix. Entre com ele ou recupere a senha.'
           : 'Este CPF já tem cadastro no TemPix. Entre com ele ou recupere a senha.';
-    }
-    // A draft whose signup fee is in play (open Pix, or paid) is restarted only by its own session.
-    // Restarting by e-mail alone would hand the activation token to whoever knows the e-mail, while
-    // someone else pays the fee. The answer is the same message as a taken e-mail, so nothing shows
-    // that a draft exists.
-    if (existing?.status === 'PENDING_PAYMENT' && existing.id !== sessionUserId && (await this.#hasPaymentAtStake(existing.companyId))) {
-      taken.email = 'Já existe um cadastro com este e-mail. Use outro e-mail ou entre com a sua conta.';
     }
     return { existing, taken };
   }
