@@ -3,3 +3,5 @@ Allow: /
 Disallow: /app
 Disallow: /activate
 Disallow: /reset-password
+
+Sitemap: https://cpf.temcnpj.com.br/sitemap.xml

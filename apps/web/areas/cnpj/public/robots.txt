@@ -4,3 +4,5 @@ Disallow: /app
 Disallow: /activate
 Disallow: /reset-password
 Disallow: /checkout
+
+Sitemap: https://temcnpj.com.br/sitemap.xml
