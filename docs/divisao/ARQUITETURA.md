@@ -210,7 +210,7 @@ Hosts em que a montagem existe. Em qualquer outro host, responde 404.
 | 82 | `/api/actions/PUBLISH_SOCIAL_POST` | `express.json` 750kb | — | Só parser |
 | 93 | `/api/health`, `/api/session`, `/api/cep`, `/api/config` | `healthRoutes`, `sessionRoutes`, `cepRoutes`, `configRoutes` | `/health` qualquer; `/session` CNPJ, CPF, ADMIN; `/cep` CNPJ, CPF; `/config` CNPJ, CPF | Uma montagem por rota (cada uma tem as suas áreas). `/config` responde por área: o CPF recebe só `demoMode` |
 | 94 | `/api/auth` | `authRoutes` | CNPJ, CPF, ADMIN | Seção 6.2 |
-| 95 | `/api/me` | `meRoutes` | CNPJ, CPF, ADMIN | Devolve `area` |
+| 95 | `/api/me` | `meRoutes` | CNPJ, CPF, ADMIN | Devolve `area`, a da sessão (a de um admin no host CNPJ é `ADMIN`); `/api/session` devolve o mesmo campo. Modo legado: `null` |
 | 96 | `/api/onboarding` | `onboardingRoutes` | CNPJ, CPF | Tipo imposto pelo host |
 | 97 | `/api/company` | `companyRoutes` | CNPJ | O CPF ganha `/api/profile` na ETAPA 5 |
 | 98 | `/api/opportunities` | `opportunityRoutes` | CNPJ | |
