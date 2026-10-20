@@ -1,0 +1,12 @@
+/*
+ * Tema da área de pessoas: só a cor de destaque. Os demais tokens (grafite, linhas, tipografia,
+ * geometria) vêm de @autopix/ui/styles/tokens.css, que a entrada carrega antes deste arquivo.
+ * Ainda há cor de destaque fixa em alguns CSS de página; a identidade completa é da ETAPA 6.
+ */
+:root {
+  --primary: #a78bfa;
+  --primary-strong: #c2adff;
+  --primary-ink: #170a3a;
+  --primary-soft: rgba(167, 139, 250, 0.1);
+  --primary-line: rgba(167, 139, 250, 0.32);
+}

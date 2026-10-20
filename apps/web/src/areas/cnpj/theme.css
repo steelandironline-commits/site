@@ -1,0 +1,12 @@
+/*
+ * Tema da área de empresas: só a cor de destaque. Os demais tokens (grafite, linhas, tipografia,
+ * geometria) vêm de @autopix/ui/styles/tokens.css, que a entrada carrega antes deste arquivo.
+ * Ainda há cor de destaque fixa em alguns CSS de página; a identidade completa é da ETAPA 6.
+ */
+:root {
+  --primary: #5b9cff;
+  --primary-strong: #86b6ff;
+  --primary-ink: #04132e;
+  --primary-soft: rgba(91, 156, 255, 0.1);
+  --primary-line: rgba(91, 156, 255, 0.32);
+}
