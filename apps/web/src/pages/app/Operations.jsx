@@ -13,7 +13,7 @@ import {
   operationalProfileSchema,
   profileCompleteness,
 } from '@autopix/shared';
-import { Button, ErrorState, SkeletonCard, useApi } from '@autopix/ui';
+import { Button, ErrorState, SkeletonCard, useApi, useBrand } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { OperationFields } from '../onboarding/operations/OperationFields.jsx';
 import { CapabilityList, CompletenessMeter } from '../onboarding/operations/ProfileOverview.jsx';
@@ -68,6 +68,7 @@ function Section({ id, title, group, fields, profile, setProfile, accountType, o
  *   headerAction, note   elementos opcionais da área (um atalho no cabeçalho e a nota do rodapé)
  */
 export default function Operations({ source, copy, headerAction = null, note = null }) {
+  const { name } = useBrand();
   const toast = useToast();
   const { data, error, reload, setData } = useApi(source.path);
   const company = data ? source.select(data) : undefined;
@@ -76,8 +77,8 @@ export default function Operations({ source, copy, headerAction = null, note = n
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    document.title = 'Perfil operacional — TemPix';
-  }, []);
+    document.title = `Perfil operacional — ${name}`;
+  }, [name]);
   useEffect(() => {
     if (company) setProfile(normalizeOperationalProfile(company.operationalProfile));
   }, [company]);
