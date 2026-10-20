@@ -32,8 +32,9 @@ export class OnboardingService {
     // A professional's account is named after the person.
     const accountName = accountType === 'PERSON' ? name : companyName;
     const loginId = document; // CNPJ (company) or CPF (person), digits only
+    const { sessionUserId = null, ...sessionMeta } = meta;
     await this.#purgeExpiredDrafts();
-    const { existing, taken } = await this.#availability({ email, accountType, loginId });
+    const { existing, taken } = await this.#availability({ email, accountType, loginId, sessionUserId });
     if (taken.email) throw conflict(taken.email, { field: 'email' });
     if (taken.document) throw conflict(taken.document, { field: 'document' });
     const pendingExpiresAt = new Date(Date.now() + DRAFT_TTL_MS);
@@ -55,15 +56,15 @@ export class OnboardingService {
         });
         user = await tx.user.create({ data: { email, name, loginId, companyId: company.id, status: 'PENDING_PAYMENT', pendingExpiresAt } });
       }
-      const { token, session } = await this.auth.createSession(user.id, { scope: 'ONBOARDING', ...meta }, tx);
+      const { token, session } = await this.auth.createSession(user.id, { scope: 'ONBOARDING', ...sessionMeta }, tx);
       return { token, session, user };
     });
   }
 
   /** First signup step: which of the e-mail and the CNPJ/CPF already have an account (message per field). */
-  async check({ email, accountType, document }) {
+  async check({ email, accountType, document }, { sessionUserId = null } = {}) {
     await this.#purgeExpiredDrafts();
-    const { taken } = await this.#availability({ email, accountType, loginId: document });
+    const { taken } = await this.#availability({ email, accountType, loginId: document, sessionUserId });
     return { available: !taken.email && !taken.document, taken };
   }
 
@@ -71,7 +72,7 @@ export class OnboardingService {
    * One account per e-mail, per CPF and per CNPJ. An unpaid draft holds its CPF/CNPJ
    * until its hour is up; the same e-mail may restart its own draft.
    */
-  async #availability({ email, accountType, loginId }) {
+  async #availability({ email, accountType, loginId, sessionUserId = null }) {
     const taken = {};
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing && existing.status !== 'PENDING_PAYMENT') {
@@ -86,6 +87,13 @@ export class OnboardingService {
         accountType === 'COMPANY'
           ? 'Este CNPJ já tem cadastro no TemPix. Entre com ele ou recupere a senha.'
           : 'Este CPF já tem cadastro no TemPix. Entre com ele ou recupere a senha.';
+    }
+    // A draft whose signup fee is in play (open Pix, or paid) is restarted only by its own session.
+    // Restarting by e-mail alone would hand the activation token to whoever knows the e-mail, while
+    // someone else pays the fee. The answer is the same message as a taken e-mail, so nothing shows
+    // that a draft exists.
+    if (existing?.status === 'PENDING_PAYMENT' && existing.id !== sessionUserId && (await this.#hasPaymentAtStake(existing.companyId))) {
+      taken.email = 'Já existe um cadastro com este e-mail. Use outro e-mail ou entre com a sua conta.';
     }
     return { existing, taken };
   }
@@ -105,17 +113,26 @@ export class OnboardingService {
       select: { companyId: true },
     });
     for (const { companyId } of drafts) {
-      const open = await this.prisma.payment.count({
-        where: {
-          companyId,
-          OR: [
-            { status: { in: ['CONFIRMED', 'REFUNDED'] } },
-            { status: 'PENDING', OR: [{ expiresAt: null }, { expiresAt: { gt: new Date(now.getTime() - PAYMENT_GRACE_MS) } }] },
-          ],
-        },
-      });
-      if (!open) await this.prisma.company.deleteMany({ where: { id: companyId } });
+      if (!(await this.#hasPaymentAtStake(companyId, now))) await this.prisma.company.deleteMany({ where: { id: companyId } });
     }
+  }
+
+  /**
+   * Is the signup fee of this company in play? A confirmed (or refunded) payment, or a pending one
+   * whose Pix is open or expired less than PAYMENT_GRACE_MS ago. The purge and the restart use this
+   * same rule, so a draft that cannot be purged cannot be restarted by a stranger either.
+   */
+  async #hasPaymentAtStake(companyId, now = new Date()) {
+    const open = await this.prisma.payment.count({
+      where: {
+        companyId,
+        OR: [
+          { status: { in: ['CONFIRMED', 'REFUNDED'] } },
+          { status: 'PENDING', OR: [{ expiresAt: null }, { expiresAt: { gt: new Date(now.getTime() - PAYMENT_GRACE_MS) } }] },
+        ],
+      },
+    });
+    return open > 0;
   }
 
   /** Refuses to continue an unpaid signup whose hour has passed. */
