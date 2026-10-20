@@ -9,6 +9,10 @@ import { SubscriptionService } from '../services/subscriptionService.js';
  *  - recover jobs from crashed workers,
  *  - enqueue a search for every ACTIVE company whose last run is older than
  *    SEARCH_INTERVAL_MINUTES.
+ *
+ * Area mode (ARQUITETURA 6.6): the opportunity search is a CNPJ product, and a PERSON account also
+ * holds an ACTIVE subscription (free access), so only COMPANY accounts are scheduled. Legacy mode
+ * schedules every ACTIVE subscription, as before.
  */
 export class Scheduler {
   constructor({ prisma = getPrisma(), config = getConfig() } = {}) {
@@ -24,7 +28,7 @@ export class Scheduler {
     const cutoff = new Date(Date.now() - this.config.search.intervalMinutes * 60_000);
 
     const active = await this.prisma.subscription.findMany({
-      where: { status: 'ACTIVE', company: { agentsPaused: false } },
+      where: { status: 'ACTIVE', company: { agentsPaused: false, ...(this.config.areas?.enabled ? { accountType: 'COMPANY' } : {}) } },
       select: { companyId: true },
     });
     let enqueued = 0;

@@ -82,6 +82,11 @@ export class AgentOrchestrator {
     if (profile.agentsPaused) {
       return { skipped: 'agents_paused', companiesAnalyzed: 0, signalsDetected: 0, opportunitiesCreated: 0 };
     }
+    // Area mode: the search belongs to the CNPJ area. A job for a PERSON account (queued by a payment,
+    // a profile change or an old backlog) is skipped before anything is written or notified.
+    if (this.config.areas?.enabled && profile.accountType !== 'COMPANY') {
+      return { skipped: 'not_company', companiesAnalyzed: 0, signalsDetected: 0, opportunitiesCreated: 0 };
+    }
 
     // Never run the demo pipeline when DEMO_MODE is off (and vice-versa).
     const isDemo = this.config.demoMode;
