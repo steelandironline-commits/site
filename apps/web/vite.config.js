@@ -19,7 +19,7 @@ const repoRoot = path.resolve(webRoot, '../..');
  * Emits /sw.js with a build id and the list of hashed assets to precache
  * (everything except the lazily-loaded Three.js chunk and non-latin fonts).
  */
-function autopixServiceWorker() {
+function autopixServiceWorker(appName = 'TemPix') {
   return {
     name: 'autopix-sw',
     apply: 'build',
@@ -36,7 +36,7 @@ function autopixServiceWorker() {
       this.emitFile({
         type: 'asset',
         fileName: 'sw.js',
-        source: template.replace('__BUILD_ID__', buildId).replace('__PRECACHE__', JSON.stringify(precache)),
+        source: template.replace('__BUILD_ID__', buildId).replace('__PRECACHE__', JSON.stringify(precache)).replaceAll('__APP_NAME__', appName),
       });
     },
   };
@@ -85,7 +85,7 @@ function areaConfig(area) {
       react(),
       areaHtml(area, AREA_BRAND_NAMES[area]),
       areaBoundary(area, { repoRoot, webRoot, areas: AREAS, exclusiveFiles: EXCLUSIVE_FILES }),
-      autopixServiceWorker(),
+      autopixServiceWorker(AREA_BRAND_NAMES[area]),
       moduleList(area, { repoRoot }),
     ],
     // "@area" é o código da área atual: o Vite só enxerga src/areas/<área do build>.

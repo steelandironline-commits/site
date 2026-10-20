@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { OPERATION_START, modulesFor, normalizeOperationalProfile } from '@autopix/shared';
+import { BrandProvider } from '@autopix/ui';
+import { AREA_BRAND as CNPJ_BRAND } from '@autopix/areas/brand/cnpj';
+import { AREA_BRAND as CPF_BRAND } from '@autopix/areas/brand/cpf';
 import { OperationFields } from '../src/pages/onboarding/operations/OperationFields.jsx';
+
+// O catálogo recebe a marca da área da conta (ETAPA 6): cada teste roda dentro do BrandProvider dela.
+const inBrandOf = (type, node) => <BrandProvider brand={type === 'COMPANY' ? CNPJ_BRAND : CPF_BRAND}>{node}</BrandProvider>;
 
 const fieldsOf = (id, p, type = 'PERSON') => {
   const profile = normalizeOperationalProfile(p);
@@ -9,11 +15,12 @@ const fieldsOf = (id, p, type = 'PERSON') => {
 };
 const render = (id, p, type) => {
   const { profile, fields } = fieldsOf(id, p, type);
-  return renderToStaticMarkup(<OperationFields fields={fields} profile={profile} onChange={() => {}} accountType={type} errors={{}} />);
+  return renderToStaticMarkup(inBrandOf(type, <OperationFields fields={fields} profile={profile} onChange={() => {}} accountType={type} errors={{}} />));
 };
 
 describe('operation type screen by account', () => {
-  const start = (type) => renderToStaticMarkup(<OperationFields fields={OPERATION_START.fields} profile={normalizeOperationalProfile({})} onChange={() => {}} accountType={type} errors={{}} />);
+  const start = (type) =>
+    renderToStaticMarkup(inBrandOf(type, <OperationFields fields={OPERATION_START.fields} profile={normalizeOperationalProfile({})} onChange={() => {}} accountType={type} errors={{}} />));
 
   it('shows a person no company-only objective, no MEI and no company wording', () => {
     const pf = start('PERSON');

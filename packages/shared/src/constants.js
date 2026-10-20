@@ -58,7 +58,6 @@ export const ACCOUNT_TYPE_LABELS = { COMPANY: 'Empresa', PERSON: 'Profissional' 
 
 export const PLAN = Object.freeze({
   code: 'AUTOPIX',
-  name: 'TemPix',
   priceCents: 59700,
   currency: 'BRL',
   intervalDays: 30,

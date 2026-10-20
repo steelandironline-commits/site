@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { PLAN, PRICING } from '@autopix/shared';
+import { PLATFORM_NAME } from '@autopix/areas/brand/platform';
 import { CepService } from '@autopix/core';
 import { describeSession } from './me.js';
 
@@ -70,7 +71,7 @@ export function configRoutes({ config }) {
       demoMode: config.demoMode,
       paymentProvider: config.payment.provider,
       simulationAvailable: !config.isProduction && config.payment.provider === 'mock',
-      plan: { name: PLAN.name, priceCents: PLAN.priceCents, features: PLAN.features },
+      plan: { name: PLATFORM_NAME, priceCents: PLAN.priceCents, features: PLAN.features },
       billing: {
         model: config.billing.model,
         commissionTiers: PRICING.commissionTiers.map((t) => ({ label: t.label, rateBps: t.rateBps })),
