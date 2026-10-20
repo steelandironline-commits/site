@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { post } from './api.js';
+import { post } from '@autopix/ui';
 import { useToast } from './toast.jsx';
 
 /**

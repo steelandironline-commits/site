@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Check, CheckCheck, Copy, MapPin, Navigation, Package, Play, Send, ShieldCheck, Truck, Undo2, Unlock, X } from 'lucide-react';
 import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, formatCents } from '@autopix/shared';
-import { useApi, useVisibleInterval } from '../../lib/hooks.js';
+import { BRLText, Badge, Button, DemoBadge, Dialog, ErrorState, Field, Input, SkeletonCard, Textarea, useApi, useVisibleInterval } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
-import { BRLText, Badge, Button, DemoBadge, Dialog, ErrorState, Field, Input, SkeletonCard, Textarea } from '@autopix/ui';
 import { PartnerNote } from './Pay.jsx';
 import s from './app.module.css';
 

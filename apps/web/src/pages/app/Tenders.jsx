@@ -2,10 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Building, Clock, ExternalLink, Landmark, MapPin, RefreshCw } from 'lucide-react';
 import { BR_STATES, TENDER_STATUS_FILTERS, formatCents } from '@autopix/shared';
-import { api } from '../../lib/api.js';
-import { useDebounced, useVisibleInterval } from '../../lib/hooks.js';
+import {
+  BRLText,
+  Badge,
+  Button,
+  EmptyState,
+  ErrorState,
+  Field,
+  Input,
+  Select,
+  SkeletonCard,
+  api,
+  useDebounced,
+  useVisibleInterval,
+} from '@autopix/ui';
 import { relative } from '../../lib/time.js';
-import { BRLText, Badge, Button, EmptyState, ErrorState, Field, Input, Select, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 import t from './tenders.module.css';
 

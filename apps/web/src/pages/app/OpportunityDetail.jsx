@@ -3,10 +3,9 @@ import { Link, useLocation, useOutletContext, useParams } from 'react-router-dom
 import { ArrowLeft, Building2, Check, Copy, ExternalLink, Globe, Mail, MapPin, Phone, RefreshCw, ShieldCheck } from 'lucide-react';
 import { OPPORTUNITY_STATUSES, OPPORTUNITY_STATUS_LABELS, formatRange } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
-import { useApi } from '../../lib/hooks.js';
+import { BRLText, Button, DemoBadge, ErrorState, Field, ScoreRing, Select, SkeletonCard, Textarea, useApi } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
-import { BRLText, Button, DemoBadge, ErrorState, Field, ScoreRing, Select, SkeletonCard, Textarea } from '@autopix/ui';
 import { PriorityBadge, SignalCard, StatusBadge } from '../../components/cards/Cards.jsx';
 import s from './app.module.css';
 

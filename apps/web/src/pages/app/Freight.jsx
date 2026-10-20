@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, MapPin, Search, Truck, X } from 'lucide-react';
 import { formatBRL } from '@autopix/shared';
-import { useApi } from '../../lib/hooks.js';
+import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard, useApi } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { fmtDate, relative } from '../../lib/time.js';
-import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 const STATUS = { NEW: ['primary', 'Nova'], ACCEPTED: ['revenue', 'Aceita'], REJECTED: ['neutral', 'Recusada'], DRIVER_ARRIVED: ['info', 'Motorista chegou'], COMPLETED: ['revenue', 'Concluída'], EXPIRED: ['neutral', 'Expirada'] };

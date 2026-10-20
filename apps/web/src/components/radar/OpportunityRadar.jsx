@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useInView, useIsMobile, usePrefersReducedMotion } from '../../lib/hooks.js';
+import { BRLText, useInView, useIsMobile, usePrefersReducedMotion } from '@autopix/ui';
 import styles from './OpportunityRadar.module.css';
-import { BRLText } from '@autopix/ui';
 
 const RADIUS = 4.4;
 const RINGS = [1.1, 2.2, 3.3, RADIUS];

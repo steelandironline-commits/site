@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MessageCircle, Repeat2, Share2, ShieldCheck, Camera, Trash2 } from 'lucide-react';
 import { TRANSACTION_TYPE_LABELS } from '@autopix/shared';
-import { useApi } from '../../lib/hooks.js';
-import { get } from '../../lib/api.js';
+import { BRLText, Badge, Button, DemoBadge, ErrorState, Field, Select, SkeletonCard, Textarea, get, useApi } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
-import { BRLText, Badge, Button, DemoBadge, ErrorState, Field, Select, SkeletonCard, Textarea } from '@autopix/ui';
 import s from './Social.module.css';
 import app from './app.module.css';
 

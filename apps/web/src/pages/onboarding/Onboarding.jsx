@@ -21,10 +21,7 @@ import {
   operationalProfileSchema,
   profileCompleteness,
 } from '@autopix/shared';
-import { post, put } from '../../lib/api.js';
-import { useSession } from '../../lib/session.jsx';
-import { safeStorage } from '../../lib/hooks.js';
-import { BRLText, Button, Field, Input, Logo, LogoMark, Select, TagInput, Textarea } from '@autopix/ui';
+import { BRLText, Button, Field, Input, Logo, LogoMark, Select, TagInput, Textarea, post, put, safeStorage, useSession } from '@autopix/ui';
 import { AccountStartFields } from './AccountStartFields.jsx';
 import { PersonWhereFields } from './PersonWhereFields.jsx';
 import { OperationFields } from './operations/OperationFields.jsx';

@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { LogOut, Monitor } from 'lucide-react';
-import { del, put } from '../../lib/api.js';
-import { useApi } from '../../lib/hooks.js';
+import { Badge, Button, DemoBadge, ErrorState, Field, PasswordInput, PasswordStrength, SkeletonCard, del, put, useApi } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime, relative } from '../../lib/time.js';
-import { Badge, Button, DemoBadge, ErrorState, Field, PasswordInput, PasswordStrength, SkeletonCard } from '@autopix/ui';
 import { InstallCard, NotificationPrefsCard, PayoutCard, WhatsAppCard } from './SettingsPlatform.jsx';
 import { TeamCard } from './TeamCard.jsx';
 import s from './app.module.css';

@@ -2,13 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { formatCents } from '@autopix/shared';
-import { useApi } from '../../lib/hooks.js';
+import { BRLText, Badge, Button, Dialog, EmptyState, ErrorState, Field, Select, SkeletonCard, Textarea, api, useApi, useSession } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
-import { api } from '../../lib/api.js';
-import { useSession } from '../../lib/session.jsx';
 import { fmtDateTime } from '../../lib/time.js';
 import { MetricCard } from '../../components/cards/Cards.jsx';
-import { BRLText, Badge, Button, Dialog, EmptyState, ErrorState, Field, Select, SkeletonCard, Textarea } from '@autopix/ui';
 import s from './app.module.css';
 
 const money = (c) => (c == null ? '—' : <BRLText>{formatCents(c)}</BRLText>);

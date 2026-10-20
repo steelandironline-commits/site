@@ -14,13 +14,11 @@ import {
   X,
 } from 'lucide-react';
 import { PRICING, formatCents } from '@autopix/shared';
-import { BRLSymbol, BRLText, Button, Dialog, Logo, ScoreRing } from '@autopix/ui';
+import { BRLSymbol, BRLText, Button, Dialog, Logo, ScoreRing, isIos, useInstallPrompt, useSession } from '@autopix/ui';
 import { WhatsAppIcon } from '../../components/brand/WhatsAppIcon.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import ProductStage from './ProductStage.jsx';
 import { useDemoFeed } from '../../lib/demoFeed.js';
-import { useSession } from '../../lib/session.jsx';
-import { isIos, useInstallPrompt } from '../../lib/pwa.js';
 import Descent from './descent/Descent.jsx';
 import { ConstructionSection, Ecosystem, Maritime } from './sectors/Sectors.jsx';
 import s from './landing.module.css';

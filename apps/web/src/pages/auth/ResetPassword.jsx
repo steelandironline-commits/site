@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { get, post } from '../../lib/api.js';
+import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton, get, post } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
-import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton } from '@autopix/ui';
 import s from './authPage.module.css';
 
 export default function ResetPassword() {

@@ -25,11 +25,20 @@ import {
   X,
 } from 'lucide-react';
 import { SUBSCRIPTION_STATUS_LABELS } from '@autopix/shared';
-import { useSession } from '../../lib/session.jsx';
-import { useActivityStream } from '../../lib/activityStream.js';
-import { Button, DemoBadge, Logo, LogoMark, PageLoader, SkeletonCard } from '@autopix/ui';
-import { useInstallPrompt, useServiceWorkerUpdate } from '../../lib/pwa.js';
-import { safeStorage, useIsMobile } from '../../lib/hooks.js';
+import {
+  Button,
+  DemoBadge,
+  Logo,
+  LogoMark,
+  PageLoader,
+  SkeletonCard,
+  safeStorage,
+  useActivityStream,
+  useInstallPrompt,
+  useIsMobile,
+  useServiceWorkerUpdate,
+  useSession,
+} from '@autopix/ui';
 import s from './app.module.css';
 
 /** The TemPix symbol, used as the icon of the Pagamentos shortcut. */

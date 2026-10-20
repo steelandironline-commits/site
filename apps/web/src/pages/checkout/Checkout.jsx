@@ -3,11 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, ArrowLeft, Building2, Check, Clock, Copy, FlaskConical, Lock, QrCode, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react';
 import { PLAN, PRICING, formatCents, formatCnpj } from '@autopix/shared';
-import { api, post } from '../../lib/api.js';
-import { useSession } from '../../lib/session.jsx';
-import { useVisibleInterval } from '../../lib/hooks.js';
+import { BRLText, Button, DemoBadge, ErrorState, Logo, LogoMark, Skeleton, api, post, useSession, useVisibleInterval } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
-import { BRLText, Button, DemoBadge, ErrorState, Logo, LogoMark, Skeleton } from '@autopix/ui';
 import s from './checkout.module.css';
 
 const ease = [0.22, 1, 0.36, 1];

@@ -3,13 +3,12 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { Building2, CircleDollarSign, Play, Radar as RadarIcon, Target } from 'lucide-react';
 import { formatBRL } from '@autopix/shared';
 import { executeAction } from '../../lib/actions.js';
-import { useApi } from '../../lib/hooks.js';
+import { Button, EmptyState, ErrorState, MiniRadar, SkeletonCard, useApi } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { greeting, relative } from '../../lib/time.js';
 import { MetricCard, OpportunityCard } from '../../components/cards/Cards.jsx';
 import { ActivityStream } from '../../components/activity/ActivityStream.jsx';
 import { BusinessFlow } from '../../components/activity/Flow.jsx';
-import { Button, EmptyState, ErrorState, MiniRadar, SkeletonCard } from '@autopix/ui';
 import { useOpportunityActions } from './useOpportunityActions.js';
 import s from './app.module.css';
 

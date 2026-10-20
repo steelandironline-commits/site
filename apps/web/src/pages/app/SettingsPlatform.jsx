@@ -1,13 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bell, Download, ExternalLink, KeyRound, MessageCircle, Share, Smartphone, Unlink } from 'lucide-react';
 import { NOTIFICATION_CATEGORIES, NOTIFICATION_CATEGORY_LABELS, NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_LABELS } from '@autopix/shared';
-import { del, post, put } from '../../lib/api.js';
-import { useApi } from '../../lib/hooks.js';
+import {
+  Badge,
+  Button,
+  Field,
+  Input,
+  Select,
+  SkeletonCard,
+  del,
+  disablePush,
+  enablePush,
+  getPushState,
+  post,
+  put,
+  useApi,
+  useInstallPrompt,
+} from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
 import { useToast } from '../../lib/toast.jsx';
-import { disablePush, enablePush, getPushState, useInstallPrompt } from '../../lib/pwa.js';
 import { fmtDateTime } from '../../lib/time.js';
-import { Badge, Button, Field, Input, Select, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 export function WhatsAppCard() {

@@ -1,9 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { formatRange } from '@autopix/shared';
-import { useApi, useIsMobile } from '../../lib/hooks.js';
+import { BRLText, DemoBadge, EmptyState, ErrorState, MiniRadar, Skeleton, useApi, useIsMobile } from '@autopix/ui';
 import { compactBRL } from '../../lib/time.js';
-import { BRLText, DemoBadge, EmptyState, ErrorState, MiniRadar, Skeleton } from '@autopix/ui';
 import LazyRadar from '../../components/radar/LazyRadar.jsx';
 import s from './app.module.css';
 

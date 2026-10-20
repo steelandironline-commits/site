@@ -10,9 +10,8 @@ import '@fontsource/ibm-plex-mono/500.css';
 import '@fontsource/ibm-plex-mono/600.css';
 import './styles/global.css';
 import App from './App.jsx';
-import { SessionProvider } from './lib/session.jsx';
+import { SessionProvider, registerServiceWorker } from '@autopix/ui';
 import { ToastProvider } from './lib/toast.jsx';
-import { registerServiceWorker } from './lib/pwa.js';
 
 registerServiceWorker();
 

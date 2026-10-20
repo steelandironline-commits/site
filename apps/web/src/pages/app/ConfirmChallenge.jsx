@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ShieldCheck, X } from 'lucide-react';
-import { post } from '../../lib/api.js';
-import { useApi } from '../../lib/hooks.js';
+import { Badge, Button, ErrorState, Field, Input, PasswordInput, SkeletonCard, post, useApi } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { fmtDateTime } from '../../lib/time.js';
-import { Badge, Button, ErrorState, Field, Input, PasswordInput, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 const VIA = { WEB: 'App', API: 'Aplicativo', WHATSAPP: 'WhatsApp', SYSTEM: 'Sistema' };

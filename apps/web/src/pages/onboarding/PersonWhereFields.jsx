@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MapPin } from 'lucide-react';
-import { Field, Input } from '@autopix/ui';
+import { Field, Input, api } from '@autopix/ui';
 import { travelEstimate } from '@autopix/shared';
-import { api } from '../../lib/api.js';
 import s from './onboarding.module.css';
 
 /** Pessoa física: the CEP where the person lives, and how far they accept to travel for work. */

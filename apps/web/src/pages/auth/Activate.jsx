@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
-import { get, post } from '../../lib/api.js';
-import { useSession } from '../../lib/session.jsx';
-import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton } from '@autopix/ui';
+import { AuthShell, Button, Field, FormError, PasswordInput, PasswordStrength, Skeleton, get, post, useSession } from '@autopix/ui';
 import s from './authPage.module.css';
 
 export default function Activate() {

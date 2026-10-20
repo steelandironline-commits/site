@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { formatDocument } from '@autopix/shared';
-import { post } from '../../lib/api.js';
-import { useSession } from '../../lib/session.jsx';
-import { AuthShell, Button, Field, FormError, Input, PasswordInput } from '@autopix/ui';
+import { AuthShell, Button, Field, FormError, Input, PasswordInput, post, useSession } from '@autopix/ui';
 import s from './authPage.module.css';
 
 export default function Login() {

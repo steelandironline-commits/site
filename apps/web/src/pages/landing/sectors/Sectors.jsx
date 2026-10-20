@@ -22,8 +22,7 @@ import {
   Truck,
   Wrench,
 } from 'lucide-react';
-import { Button, Dialog, LogoMark } from '@autopix/ui';
-import { useInView, useIsMobile, usePrefersReducedMotion } from '../../../lib/hooks.js';
+import { Button, Dialog, LogoMark, useInView, useIsMobile, usePrefersReducedMotion } from '@autopix/ui';
 import { CONSTRUCTION, ECOSYSTEM, MARITIME, SHARED } from './copy.js';
 import PortArt from './PortArt.jsx';
 import SiteArt from './SiteArt.jsx';

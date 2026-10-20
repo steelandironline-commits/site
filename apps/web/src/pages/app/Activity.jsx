@@ -2,11 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search } from 'lucide-react';
-import { get } from '../../lib/api.js';
-import { useDebounced } from '../../lib/hooks.js';
+import { Badge, Button, EmptyState, ErrorState, Input, MiniRadar, Skeleton, get, useDebounced } from '@autopix/ui';
 import { fmtDay } from '../../lib/time.js';
 import { ActivityCard } from '../../components/cards/Cards.jsx';
-import { Badge, Button, EmptyState, ErrorState, Input, MiniRadar, Skeleton } from '@autopix/ui';
 import s from './app.module.css';
 
 const FILTERS = [

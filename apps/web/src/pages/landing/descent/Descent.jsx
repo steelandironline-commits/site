@@ -3,9 +3,7 @@ import { Component, Fragment, Suspense, lazy, useCallback, useEffect, useLayoutE
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
 import { ArrowRight, Building2, Construction, Container, Landmark, LayoutDashboard, Radar, Route, Ship, UserCheck } from 'lucide-react';
 import { WhatsAppIcon } from '../../../components/brand/WhatsAppIcon.jsx';
-import { Button, loadBRLIconImage } from '@autopix/ui';
-import { useInView, useIsMobile, usePrefersReducedMotion } from '../../../lib/hooks.js';
-import { useSession } from '../../../lib/session.jsx';
+import { Button, loadBRLIconImage, useInView, useIsMobile, usePrefersReducedMotion, useSession } from '@autopix/ui';
 import { CHAPTERS, N, levelFromProgress, progressForChapter } from './chapters.js';
 import s from './descent.module.css';
 

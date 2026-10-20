@@ -12,3 +12,12 @@ export * from './brand/Logo.jsx';
 // Layout e campos de autenticação
 export * from './auth/AuthShell.jsx';
 export * from './auth/PasswordInput.jsx';
+
+// Cliente HTTP, hooks e sessão
+export * from './lib/api.js';
+export * from './lib/hooks.js';
+export * from './lib/session.jsx';
+
+// PWA (service worker, instalação, push) e fluxo de atividade
+export * from './lib/pwa.js';
+export * from './lib/activityStream.js';

@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Clock, Hourglass, Landmark, Plus, QrCode, ShieldCheck, Wallet } from 'lucide-react';
 import { SETTLEMENT_STATUS_LABELS, TRANSACTION_TYPE_LABELS, TRANSACTION_UI_STATE, formatCents } from '@autopix/shared';
-import { useApi } from '../../lib/hooks.js';
+import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, LogoMark, Select, SkeletonCard, api, useApi } from '@autopix/ui';
 import { useAction } from '../../lib/actions.js';
-import { api } from '../../lib/api.js';
 import { fmtDateTime } from '../../lib/time.js';
-import { BRLText, Badge, Button, DemoBadge, EmptyState, ErrorState, Field, Input, LogoMark, Select, SkeletonCard } from '@autopix/ui';
 import { MetricCard } from '../../components/cards/Cards.jsx';
 import s from './app.module.css';
 

@@ -1,7 +1,7 @@
 /* Product preview: how an opportunity reaches someone, as a TemPix
    WhatsApp message on a phone. Paused while off-screen. */
 import { useRef } from 'react';
-import { useInView, usePrefersReducedMotion } from '../../lib/hooks.js';
+import { useInView, usePrefersReducedMotion } from '@autopix/ui';
 import PhoneChat from './PhoneChat.jsx';
 import s from './landing.module.css';
 

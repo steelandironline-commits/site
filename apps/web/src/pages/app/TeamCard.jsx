@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { Check, Copy, UserPlus, Users } from 'lucide-react';
 import { formatCpf } from '@autopix/shared';
-import { del, post } from '../../lib/api.js';
-import { useApi } from '../../lib/hooks.js';
+import { Badge, Button, ErrorState, Field, Input, SkeletonCard, del, post, useApi } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
-import { Badge, Button, ErrorState, Field, Input, SkeletonCard } from '@autopix/ui';
 import s from './app.module.css';
 
 const STATUS = {

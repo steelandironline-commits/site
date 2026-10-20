@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Boxes, ClipboardList, FileSignature, Handshake, Inbox, Network, PackageSearch, Send, ShieldCheck, ShoppingCart, Store } from 'lucide-react';
-import { useApi } from '../../lib/hooks.js';
-import { Badge, Button, EmptyState, ErrorState, SkeletonCard } from '@autopix/ui';
+import { Badge, Button, EmptyState, ErrorState, SkeletonCard, useApi } from '@autopix/ui';
 import { CapabilityList, CompletenessMeter } from '../onboarding/operations/ProfileOverview.jsx';
 import s from './app.module.css';
 import x from './ops.module.css';

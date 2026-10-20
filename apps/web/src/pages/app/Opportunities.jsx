@@ -2,10 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { LayoutGrid, List, Search } from 'lucide-react';
-import { get } from '../../lib/api.js';
-import { useDebounced } from '../../lib/hooks.js';
+import { Button, EmptyState, ErrorState, Input, MiniRadar, Select, SkeletonCard, get, useDebounced } from '@autopix/ui';
 import { OpportunityCard } from '../../components/cards/Cards.jsx';
-import { Button, EmptyState, ErrorState, Input, MiniRadar, Select, SkeletonCard } from '@autopix/ui';
 import { useOpportunityActions } from './useOpportunityActions.js';
 import s from './app.module.css';
 
