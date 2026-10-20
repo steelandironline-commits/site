@@ -128,15 +128,21 @@ export const onboardingStepSchema = z.object({
   complete: z.boolean().optional(),
 });
 
-/** Login with CPF or CNPJ (e-mail still accepted for older accounts). */
-export const loginSchema = z
-  .object({
-    identifier: z.string().trim().max(254).optional(),
-    email: z.string().trim().max(254).optional(),
-    password: z.string().min(1, 'Informe a senha').max(200),
-  })
-  .refine((v) => Boolean(v.identifier || v.email), { message: 'Informe CPF ou CNPJ', path: ['identifier'] })
-  .transform((v) => ({ identifier: v.identifier || v.email, password: v.password }));
+/**
+ * Login with CPF or CNPJ (e-mail still accepted for older accounts). `required` is what is said when
+ * no document is given: each area says it in its own words (loginMessages, in @autopix/core).
+ */
+export const makeLoginSchema = (required) =>
+  z
+    .object({
+      identifier: z.string().trim().max(254).optional(),
+      email: z.string().trim().max(254).optional(),
+      password: z.string().min(1, 'Informe a senha').max(200),
+    })
+    .refine((v) => Boolean(v.identifier || v.email), { message: required, path: ['identifier'] })
+    .transform((v) => ({ identifier: v.identifier || v.email, password: v.password }));
+
+export const loginSchema = makeLoginSchema('Informe CPF ou CNPJ');
 
 export const activateSchema = z.object({
   token: z.string().min(20).max(200),

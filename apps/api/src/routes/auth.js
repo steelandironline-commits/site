@@ -1,15 +1,18 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { activateSchema, forgotPasswordSchema, loginSchema, resetPasswordSchema } from '@autopix/shared';
+import { activateSchema, forgotPasswordSchema, makeLoginSchema, resetPasswordSchema } from '@autopix/shared';
+import { loginMessages } from '@autopix/core';
 import { parse } from '../middleware/validate.js';
 import { clearSessionCookie, sessionCookieName, setSessionCookie } from '../middleware/session.js';
 
 export function authRoutes({ auth, config, limiters }) {
   const r = Router();
   const meta = (req) => ({ ip: req.ip, userAgent: req.get('user-agent'), hostArea: req.area });
+  // Login body: the "no document" answer is the area's own (modo legado: the same words as always).
+  const loginBody = (req) => parse(makeLoginSchema(loginMessages(req.area, config).required), req.body);
 
   r.post('/login', limiters.login, async (req, res) => {
-    const { identifier, password } = parse(loginSchema, req.body);
+    const { identifier, password } = loginBody(req);
     const result = await auth.login(identifier, password, meta(req));
     if (result.mfaRequired) return res.json(result);
     const { token, session, user } = result;
@@ -26,7 +29,7 @@ export function authRoutes({ auth, config, limiters }) {
 
   /** Native/non-browser clients: returns a bearer token instead of a cookie. */
   r.post('/native/login', limiters.login, async (req, res) => {
-    const { identifier, password } = parse(loginSchema, req.body);
+    const { identifier, password } = loginBody(req);
     const result = await auth.login(identifier, password, meta(req));
     if (result.mfaRequired) return res.json(result);
     const { token, session, user } = result;

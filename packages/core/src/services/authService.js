@@ -6,7 +6,7 @@ import { generateToken, hashToken } from '../security/tokens.js';
 import { hashPassword, verifyPassword, burnPasswordCheck } from '../security/password.js';
 import { AppError, badRequest, conflict, gone, notFound, unauthorized, unavailable } from '../errors.js';
 import { createOtp, hashOtp, verifyOtp } from '../security/otp.js';
-import { areaOfUser, hostAccepts } from '../security/area.js';
+import { areaOfUser, hostAccepts, loginMessages } from '../security/area.js';
 
 const LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
@@ -156,12 +156,13 @@ export class AuthService {
     else if (digits.length === 11 || digits.length === 14) where = { loginId: digits };
     const found = where ? await this.prisma.user.findUnique({ where, include: { company: { select: { accountType: true } } } }) : null;
     const user = found && hostAccepts(meta.hostArea, areaOfUser(found), this.config) ? found : null;
+    const { failure } = loginMessages(meta.hostArea, this.config);
     if (!user || !user.passwordHash) {
       await burnPasswordCheck(password);
-      throw unauthorized('CPF/CNPJ ou senha incorretos.');
+      throw unauthorized(failure);
     }
     const ok = await verifyPassword(user.passwordHash, password);
-    if (!ok) throw unauthorized('CPF/CNPJ ou senha incorretos.');
+    if (!ok) throw unauthorized(failure);
     if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_INACTIVE', 'Sua conta ainda não foi ativada.');
 
     const connection = await this.prisma.whatsAppConnection.findUnique({ where: { userId: user.id } });

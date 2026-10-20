@@ -44,6 +44,21 @@ export function accountTypeForHost(hostArea) {
   return null;
 }
 
+/**
+ * O que o acesso diz a quem erra o documento ou a senha, por área (ARQUITETURA 12: mensagem de erro
+ * de uma área não cita a outra). `required` é a resposta quando falta o documento e `failure` a de
+ * documento ou senha incorretos (a mesma para conta que não existe e conta de outra área).
+ *
+ * - Modo legado: as frases de sempre, que citam CPF e CNPJ.
+ * - CPF e admin (que entra com CPF): só o CPF.
+ * - CNPJ: "documento", porque esse host aceita o CNPJ da empresa e o CPF do colaborador (Q1).
+ */
+export function loginMessages(hostArea, config) {
+  if (!config?.areas?.enabled) return { required: 'Informe CPF ou CNPJ', failure: 'CPF/CNPJ ou senha incorretos.' };
+  if (hostArea === 'CPF' || hostArea === 'ADMIN') return { required: 'Informe o CPF', failure: 'CPF ou senha incorretos.' };
+  return { required: 'Informe o documento', failure: 'Documento ou senha incorretos.' };
+}
+
 /** O host aceita sessões/tokens desta área? No modo legado, sempre. */
 export function hostAccepts(hostArea, area, config) {
   return acceptedAreas(hostArea, config).includes(area);
