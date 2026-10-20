@@ -150,6 +150,24 @@ The API refuses to boot in production with missing/short secrets, a missing paym
 
 ---
 
+## Areas: Tem CNPJ and Tem CPF (area mode)
+
+One deploy serves two isolated areas, chosen by the host the request came in on:
+
+| Variable | Example value | Meaning |
+|----------|---------------|---------|
+| `PUBLIC_HOST_CNPJ` | `temcnpj.com.br` | Host of the company area (Tem CNPJ). |
+| `PUBLIC_HOST_CPF` | `cpf.temcnpj.com.br` | Host of the person area (Tem CPF). |
+| `PUBLIC_HOST_CNPJ_REDIRECT` | `www.temcnpj.com.br` | Comma-separated hosts that answer 301 to the CNPJ host. |
+| `PUBLIC_HOST_CPF_REDIRECT` | `temcpf.com.br,www.temcpf.com.br` | Comma-separated hosts that answer 301 to the CPF host (path and query kept). |
+| `ADMIN_HOST` | (empty) | Optional own host for the platform admin. |
+
+The values above are examples, not production settings. `PUBLIC_HOST_CNPJ` and `PUBLIC_HOST_CPF` turn area mode on **together**: with only one of them set, the server refuses to start. With both empty, the server keeps the legacy behaviour and ignores the host. Set the same values on the web and the worker services.
+
+Development: `PUBLIC_HOST_CNPJ=localhost:5173` and `PUBLIC_HOST_CPF=cpf.localhost:5174`, then `npm run dev:cnpj` and `npm run dev:cpf` (the API runs with `npm run dev` or `npm start`). Production builds of both areas: `npm run build:areas`, which writes `apps/web/dist-cnpj` and `apps/web/dist-cpf`.
+
+---
+
 ## Database
 
 Prisma schema: `prisma/schema.prisma`. Models: `User`, `Session`, `Company`, `Subscription`,
@@ -181,6 +199,10 @@ npm run db:studio
 | `npm install` | Install all workspaces and generate the Prisma client. |
 | `npm run dev` | API (watch) + worker (watch) + Vite dev server. |
 | `npm run build` | Prisma generate + production build of the web app. |
+| `npm run build:areas` | Production build of the Tem CNPJ and Tem CPF areas (`apps/web/dist-cnpj`, `apps/web/dist-cpf`). |
+| `npm run dev:cnpj` | Vite dev server of the Tem CNPJ area (port 5173). |
+| `npm run dev:cpf` | Vite dev server of the Tem CPF area (port 5174). |
+| `npm run lint` | `node --check` on every `.js` file of the API, the worker and the packages. |
 | `npm run start` | Start the API (serves the built SPA). |
 | `npm run start:worker` | Start the background worker. |
 | `npm test` | Unit + integration tests (shared, core, api). |

@@ -32,7 +32,7 @@
     "db:seed": "node prisma/seed.js",
     "bb:register-webhook": "node scripts/bb-register-webhook.js",
     "db:studio": "prisma studio",
-    "lint": "node --check apps/api/src/server.js && node --check apps/worker/src/index.js"
+    "lint": "find apps/api/src apps/worker/src packages/*/src -name '*.js' -print0 | xargs -0 -n1 node --check"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",
