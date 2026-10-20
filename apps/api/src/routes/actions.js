@@ -17,15 +17,20 @@ import { actorOf, runAction } from '../actor.js';
  *
  * Two mounts in app.js (each with its own areas): /api/actions and /api/challenges.
  */
-export function actionRoutes({ actions }) {
+export function actionRoutes({ actions, limiters }) {
   const r = Router();
+
+  // INVITE_COLLABORATOR tells whether an e-mail/CPF already has an account, so it shares the
+  // onboarding/check limiter with /api/team (one counter, whichever way it is asked).
+  const probes = new Set(['INVITE_COLLABORATOR']);
+  const probeLimit = (req, res, next) => (probes.has(String(req.params.name).toUpperCase()) ? limiters.onboardingCheck(req, res, next) : next());
 
   r.get('/', requireAuth, (req, res) => {
     // Area mode lists only what the session's area may run (the engine denies the rest on every channel).
     res.json({ items: actions.catalog({ area: req.session.area }) });
   });
 
-  r.post('/:name', requireOnboardingSession, async (req, res) => {
+  r.post('/:name', requireOnboardingSession, probeLimit, async (req, res) => {
     const name = String(req.params.name).toUpperCase();
     if (!actions.get(name)) throw notFound('Ação desconhecida.');
     const input = req.body?.input ?? {};
