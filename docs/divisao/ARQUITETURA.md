@@ -219,6 +219,7 @@ Hosts em que a montagem existe. Em qualquer outro host, responde 404.
 | 96 | `/api/onboarding` | `onboardingRoutes` | CNPJ, CPF | Tipo imposto pelo host |
 | 97 | `/api/company` | `companyRoutes` | CNPJ | A pessoa física lê e grava o perfil em `/api/profile` (linha seguinte) |
 | — | `/api/profile` | `profileRoutes` | CPF | ETAPA 5. `GET`/`PUT` do perfil da conta `PERSON`, com a regra de `CompanyService` (mesmo patch e mesma detecção de mudança) e sem busca de oportunidades. Devolve só `PROFILE_FIELDS` e o CPF mascarado: nada de CNPJ, cobrança, comissão, equipe nem chave de repasse. Conta que não é `PERSON` recebe o 404 de rota inexistente, também no modo legado |
+| — | `/api/jobs` | `jobRoutes` | CPF | Vagas (`GET /` e `GET /:id`). `requireAuth` e conta `PERSON`; cada pessoa vê só as vagas da área do perfil mais as de logística (`packages/shared/src/jobs/visibility.js`). No host CNPJ, 404 antes de autenticar. Sem dado de cobrança. A página é `/app/vagas` |
 | 98 | `/api/opportunities` | `opportunityRoutes` | CNPJ | |
 | 99 | `/api/activity` | `activityRoutes` | CNPJ, CPF | Por `companyId`. O hub SSE já é por empresa |
 | 100 | `/api/agents` | `agentRoutes` | CNPJ | |
