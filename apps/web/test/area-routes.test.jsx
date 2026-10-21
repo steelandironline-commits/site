@@ -1,4 +1,5 @@
 import { Children, isValidElement } from 'react';
+import { Briefcase } from 'lucide-react';
 import { PassThrough } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import { renderToPipeableStream } from 'react-dom/server';
@@ -56,9 +57,9 @@ describe('deriva de rotas: o roteador de cada build bate com o manifesto', () =>
   });
 
   it('o build legado declara a união das áreas (toda página, inclusive o admin), menos as páginas que só existem nas áreas', () => {
-    // "Meu perfil" (/app/perfil) é do CPF: no legado a pessoa vê o perfil em /app/company, a tela da empresa.
+    // "Meu perfil" (/app/perfil) e "Vagas" (/app/vagas) são do CPF: no legado a pessoa vê o perfil em /app/company, a tela da empresa.
     const areaOnly = EXCLUSIVE_PAGES.CPF;
-    expect(areaOnly).toEqual(['/app/perfil']);
+    expect(areaOnly).toEqual(['/app/perfil', '/app/vagas']);
     expect(patternsOf(LegacyApp)).toEqual(ALL_PAGES.filter((p) => !areaOnly.includes(p)).sort());
     for (const page of areaOnly) expect(patternsOf(LegacyApp)).not.toContain(page);
   });
@@ -123,6 +124,10 @@ describe('o menu de cada área só aponta para páginas da própria área', () =
   it('cada menu é só da própria área: "Meu perfil" só no CPF, e nenhum item de empresa nele', () => {
     expect(cpfNav.NAV.map((i) => i.to)).toContain('/app/perfil');
     expect(cnpjNav.NAV.map((i) => i.to)).not.toContain('/app/perfil');
+    // "Vagas" (ícone Briefcase) também é só do CPF, na barra do celular.
+    expect(cpfNav.NAV.find((i) => i.to === '/app/vagas')).toMatchObject({ label: 'Vagas', tab: true });
+    expect(cpfNav.NAV.find((i) => i.to === '/app/vagas').icon).toBe(Briefcase);
+    expect(cnpjNav.NAV.map((i) => i.to)).not.toContain('/app/vagas');
     const cpfLabels = cpfNav.NAV.map((i) => i.label).join('|');
     expect(cpfLabels).not.toMatch(/Licita|Pagamentos|Cargas|Equipes|Agentes|Empresa|Plano|Oportunidades|Radar|Intermedia/);
     expect(cnpjNav.NAV.map((i) => i.label).join('|')).not.toContain('Meu perfil');

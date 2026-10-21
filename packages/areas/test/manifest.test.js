@@ -136,8 +136,8 @@ describe('manifesto de páginas', () => {
     expect(routes).toContain('/app/pay/transactions/:id');
     expect(routes).toContain('/activate/:token');
     expect(new Set(routes).size).toBeGreaterThanOrEqual(30);
-    // "Meu perfil" é uma página nova do CPF (ETAPA 5): o legado, que é o site de hoje, não a tem.
-    const areaOnly = ['/app/perfil'];
+    // "Meu perfil" (ETAPA 5) e "Vagas" são páginas novas do CPF: o legado, que é o site de hoje, não as tem.
+    const areaOnly = ['/app/perfil', '/app/vagas'];
     for (const page of areaOnly) {
       expect(EXCLUSIVE_PAGES.CPF).toContain(page);
       expect(routes).not.toContain(page);
@@ -151,6 +151,18 @@ describe('manifesto de páginas', () => {
     expect(areasOfPage('/app/perfil')).toEqual(['CPF']);
     expect(API_MOUNTS.find((m) => m.path === '/api/profile')?.areas).toEqual(['CPF']);
     expect(API_MOUNTS.filter((m) => m.areas.includes('CNPJ')).map((m) => m.path)).not.toContain('/api/profile');
+  });
+});
+
+describe('Vagas · página e API só do CPF', () => {
+  it('/app/vagas é página só do CPF e /api/jobs é montagem só do CPF', () => {
+    expect(isPageOf('CPF', '/app/vagas')).toBe(true);
+    expect(isPageOf('CNPJ', '/app/vagas')).toBe(false);
+    expect(isPageOf('ADMIN', '/app/vagas')).toBe(false);
+    expect(areasOfPage('/app/vagas')).toEqual(['CPF']);
+    expect(EXCLUSIVE_PAGES.CPF).toContain('/app/vagas');
+    expect(API_MOUNTS.find((m) => m.path === '/api/jobs')?.areas).toEqual(['CPF']);
+    expect(API_MOUNTS.filter((m) => m.areas.includes('CNPJ') || m.areas.includes('ADMIN')).map((m) => m.path)).not.toContain('/api/jobs');
   });
 });
 
