@@ -144,7 +144,8 @@ export class JobService {
           else throw new TypeError(`fonte desconhecida: ${adapter.name}`);
         } catch (err) {
           failure ??= { source: adapter.name, status: err instanceof JobSourceError ? err.status : 0, message: err instanceof JobSourceError ? err.message : `${adapter.name}: erro inesperado` };
-          stats.errors.push(`${failure.source} ${failure.status || 'erro'}`);
+          // Os feeds já anotam cada feed que falhou; as outras fontes anotam aqui.
+          if (!stats.errors.some((e) => e.startsWith(adapter.name))) stats.errors.push(`${failure.source} ${failure.status || 'erro'}`);
           if (!(err instanceof JobSourceError)) logger.error('jobs sync source failed', { source: adapter.name, err });
           // Em 429 o limite é da conta inteira: as outras fontes seguem, mas a rodada conta como falha.
         }

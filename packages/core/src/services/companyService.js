@@ -1,4 +1,4 @@
-import { maskCpf } from '@autopix/shared';
+import { maskCpf, readJobSearch } from '@autopix/shared';
 import { getPrisma } from '../db.js';
 import { getConfig } from '../config.js';
 import { badRequest, notFound } from '../errors.js';
@@ -53,6 +53,12 @@ const SEARCH_FIELDS = new Set([
  */
 export const PROFILE_FIELDS = Object.freeze(['name', 'phone', 'postalCode', 'city', 'state', 'serviceRadiusKm', 'description', 'services', 'operationalProfile']);
 
+/**
+ * O que a pessoa informa para receber vagas (área de atuação, cargo procurado, contato preferido). Fica no perfil
+ * operacional já existente (JSON, chave `jobSearch`), sem coluna nova: ver `readJobSearch` em packages/shared.
+ */
+export const JOB_SEARCH_FIELDS = Object.freeze(['workArea', 'jobTitle', 'contactPreference']);
+
 /** O perfil que o cliente recebe: só PROFILE_FIELDS (mais o CPF mascarado). */
 export function toProfile(company, loginId = null) {
   return {
@@ -65,6 +71,7 @@ export function toProfile(company, loginId = null) {
     description: company.description ?? null,
     services: company.services ?? [],
     operationalProfile: company.operationalProfile ?? null,
+    ...readJobSearch(company.operationalProfile),
     cpfMasked: loginId ? maskCpf(loginId) : '',
   };
 }
@@ -75,6 +82,22 @@ export function pickCompanyFields(data) {
   // The operational profile is stored whole (already validated) with its timestamp.
   if (out.operationalProfile) out.operationalProfileUpdatedAt = new Date();
   return out;
+}
+
+/**
+ * Perfil operacional a gravar. `incoming` é o perfil enviado (já validado: a chave `jobSearch` não passa por ele),
+ * `stored` o que está no banco e `jobPatch` os campos de vaga enviados. A busca de vagas guardada é sempre mantida
+ * (a tela do perfil operacional não a conhece e não a devolve) e recebe o `jobPatch`. `undefined`: nada a gravar.
+ */
+export function withJobSearch(stored, incoming, jobPatch) {
+  const storedObject = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : null;
+  if (incoming === undefined && Object.keys(jobPatch).length === 0) return undefined;
+  const next = { ...readJobSearch(storedObject), ...jobPatch };
+  const hasJobSearch = Object.values(next).some((value) => value !== null);
+  // Nada a gravar: só campos de vaga vazios sobre um perfil que nunca teve busca de vagas.
+  if (incoming === undefined && !hasJobSearch && !storedObject?.jobSearch) return undefined;
+  const { jobSearch: _old, ...rest } = incoming ?? storedObject ?? {};
+  return hasJobSearch ? { ...rest, jobSearch: next } : rest;
 }
 
 export class CompanyService {
@@ -160,6 +183,10 @@ export class CompanyService {
     if (!user?.company || user.company.accountType !== 'PERSON') throw notFound('Rota não encontrada.');
     const picked = {};
     for (const key of PROFILE_FIELDS) if (data?.[key] !== undefined) picked[key] = data[key];
+    const jobPatch = {};
+    for (const key of JOB_SEARCH_FIELDS) if (data?.[key] !== undefined) jobPatch[key] = data[key];
+    const operationalProfile = withJobSearch(user.company.operationalProfile, picked.operationalProfile, jobPatch);
+    if (operationalProfile !== undefined) picked.operationalProfile = operationalProfile;
     const { company, changed } = await this.update(user.companyId, picked, {
       userId,
       search: false,

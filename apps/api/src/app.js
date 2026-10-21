@@ -15,6 +15,7 @@ import { meRoutes } from './routes/me.js';
 import { onboardingRoutes } from './routes/onboarding.js';
 import { companyRoutes } from './routes/company.js';
 import { profileRoutes } from './routes/profile.js';
+import { jobRoutes } from './routes/jobs.js';
 import { opportunityRoutes } from './routes/opportunities.js';
 import { activityRoutes } from './routes/activity.js';
 import { agentRoutes } from './routes/agents.js';
@@ -126,6 +127,8 @@ export function createApp({ services = buildServices(), hub = null, serveWeb = t
   mountArea(app, '/api/company', CNPJ_ONLY, companyRoutes(ctx));
   // The person's profile (ETAPA 5): only the CPF host. The company route above does not exist there.
   mountArea(app, '/api/profile', CPF_ONLY, profileRoutes(ctx));
+  // Vagas (area CPF): only the CPF host; the CNPJ host answers 404 before authentication.
+  mountArea(app, '/api/jobs', CPF_ONLY, jobRoutes(ctx));
   mountArea(app, '/api/opportunities', CNPJ_ONLY, opportunityRoutes(ctx));
   mountArea(app, '/api/activity', BOTH, activityRoutes(ctx));
   mountArea(app, '/api/agents', CNPJ_ONLY, agentRoutes(ctx));

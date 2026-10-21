@@ -140,6 +140,8 @@ export const API_MOUNTS = Object.freeze(
     { path: '/api/company', areas: ['CNPJ'] },
     // O perfil da pessoa física (ETAPA 5): a tela "Meu perfil" do CPF. A rota de empresa não existe no CPF.
     { path: '/api/profile', areas: ['CPF'] },
+    // Vagas de emprego da pessoa física (Vagas): lista e detalhe, só no host CPF.
+    { path: '/api/jobs', areas: ['CPF'] },
     { path: '/api/opportunities', areas: ['CNPJ'] },
     { path: '/api/activity', areas: ['CNPJ', 'CPF'] },
     { path: '/api/agents', areas: ['CNPJ'] },
