@@ -118,7 +118,7 @@ describe.skipIf(!hasDb)('/api/profile · modo de áreas', () => {
     const res = await get(CPF_HOST, asPerson.cookie);
     expect(Object.keys(res.body)).toEqual(['profile']);
     expect(Object.keys(res.body.profile).sort()).toEqual(
-      ['cpfMasked', 'city', 'description', 'name', 'operationalProfile', 'phone', 'postalCode', 'serviceRadiusKm', 'services', 'state'].sort(),
+      ['contactPreference', 'cpfMasked', 'city', 'description', 'jobTitle', 'name', 'operationalProfile', 'phone', 'postalCode', 'serviceRadiusKm', 'services', 'state', 'workArea'].sort(),
     );
     const keys = keysDeep(res.body);
     for (const key of COMPANY_KEYS) expect(keys.has(key), key).toBe(false);

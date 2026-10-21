@@ -58,7 +58,7 @@ describe('a · API · toda montagem da outra área responde 404 neutro (sem banc
     expect(appMounts.length).toBeGreaterThan(25);
     expect(MOUNTS.length, 'o app e o manifesto declaram as mesmas montagens').toBe(manifestMounts.length);
     expect(foreignTo(MOUNTS, 'CPF').map((m) => m.path)).toEqual(expect.arrayContaining(['/api/company', '/api/pay', '/api/team', '/api/payments', '/api/intermediation', '/api/freight', '/api/workforce', '/api/tenders']));
-    expect(foreignTo(MOUNTS, 'CNPJ').map((m) => m.path)).toEqual(['/api/profile']);
+    expect(foreignTo(MOUNTS, 'CNPJ').map((m) => m.path)).toEqual(['/api/profile', '/api/jobs']);
   });
 
   for (const area of ['CPF', 'CNPJ']) {
