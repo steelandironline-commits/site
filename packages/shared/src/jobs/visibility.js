@@ -32,9 +32,16 @@ export function transversalCargo(text) {
   return CARGO_PATTERNS.find(({ pattern }) => pattern.test(folded))?.slug ?? null;
 }
 
-/** Termos de busca (sem acento) de um cargo transversal, para o filtro de banco que antecede `canSeeJob`. */
+/** Palavras que o título costuma trazer com acento; o filtro de banco precisa das duas grafias (não há `unaccent`). */
+const ACCENTED = [['logistica', 'logística']];
+
+/**
+ * Termos de busca de um cargo transversal para o filtro de banco que antecede `canSeeJob` (com e sem acento).
+ * O filtro só precisa trazer um superconjunto; `canSeeJob` decide.
+ */
 export function transversalCargoTerms(slug) {
-  return TRANSVERSAL_CARGOS.find((cargo) => cargo.slug === slug)?.terms ?? [];
+  const terms = TRANSVERSAL_CARGOS.find((cargo) => cargo.slug === slug)?.terms ?? [];
+  return [...new Set(terms.flatMap((term) => [term, ...ACCENTED.filter(([plain]) => term.includes(plain)).map(([plain, accented]) => term.replace(plain, accented))]))];
 }
 
 /**

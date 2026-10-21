@@ -53,7 +53,7 @@ const RANGE_NEXT = new RegExp(String.raw`^\s*(?:a|ate|-|–|—|e|/|ou)\s*${AMOU
 /** Palavras que indicam que o número é remuneração (sem "R$" na frente). */
 const SALARY_WORD = /(salario|remuneracao|piso|ganhos?|valor|pagamento|bolsa|fixo|diaria|vencimentos?)[^0-9]{0,30}$/;
 /** Benefícios e variáveis: um valor ao lado deles não é o salário. */
-const BENEFIT_BEFORE = /(vale|vr|va|vt|auxilio|bonus|comissao|comissoes|premio|premiacao|cesta|gratificacao|ajuda de custo|plano|desconto|multa|taxa|mensalidade)\b[^0-9]{0,25}$/;
+const BENEFIT_BEFORE = /(ganhe|lucre|vale|vr|va|vt|auxilio|bonus|comissao|comissoes|premio|premiacao|cesta|gratificacao|ajuda de custo|plano|desconto|multa|taxa|mensalidade)\b[^0-9]{0,25}$/;
 const BENEFIT_AFTER = /^\s*(?:\/\s*\w+\s*)?(?:de\s+|em\s+)?(?:vale|vr\b|va\b|vt\b|bonus|comiss|premi|auxilio|cesta|gratific|plano|desconto)/;
 
 /** "2.500 por mês", "15,50/hora": o período colado no número basta como contexto de remuneração. */
