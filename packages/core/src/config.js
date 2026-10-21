@@ -51,6 +51,45 @@ const publicHostList = z
   })
   .transform((list) => [...new Set(list.map((h) => parseHost(h)).filter(Boolean))]);
 
+const MAX_JOB_FEEDS = 20;
+
+/**
+ * JOB_FEEDS: JSON array of https URLs (or { url, name } objects) of job feeds. A malformed value is a
+ * configuration error (reported with the others), never a silently ignored feed.
+ */
+function jobFeedsFrom(raw, errors) {
+  if (!raw) return [];
+  let list;
+  try {
+    list = JSON.parse(raw);
+  } catch {
+    errors.push('JOB_FEEDS must be a JSON array of https URLs, e.g. ["https://example.com/vagas.json"]');
+    return [];
+  }
+  if (!Array.isArray(list) || list.length > MAX_JOB_FEEDS) {
+    errors.push(`JOB_FEEDS must be a JSON array with at most ${MAX_JOB_FEEDS} entries`);
+    return [];
+  }
+  const feeds = [];
+  for (const entry of list) {
+    const url = typeof entry === 'string' ? entry : entry && typeof entry === 'object' ? entry.url : undefined;
+    let parsed = null;
+    try {
+      parsed = typeof url === 'string' ? new URL(url) : null;
+    } catch {
+      parsed = null;
+    }
+    if (!parsed || parsed.protocol !== 'https:') {
+      errors.push('JOB_FEEDS entries must be https URLs');
+      continue;
+    }
+    if (!feeds.some((f) => f.url === parsed.toString())) {
+      feeds.push({ url: parsed.toString(), name: typeof entry === 'object' && typeof entry.name === 'string' ? entry.name.trim().slice(0, 60) || null : null });
+    }
+  }
+  return feeds;
+}
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: optional,
@@ -132,6 +171,15 @@ const schema = z.object({
   // Licitações from the PNCP (public, no key). On by default; the worker syncs them.
   TENDERS_SYNC_ENABLED: bool(true),
   TENDERS_SYNC_MINUTES: z.coerce.number().int().min(10).max(1440).default(30),
+  // Vagas de emprego (área CPF). Off by default: the worker only calls the sources when this is true
+  // (DEMO_MODE=true writes demo listings instead and never calls a source). Adzuna keys are free
+  // (developer.adzuna.com); JOB_FEEDS is a JSON array of https URLs of JSON or RSS job feeds.
+  JOBS_SYNC_ENABLED: bool(false),
+  JOBS_SYNC_MINUTES: z.coerce.number().int().min(10).max(1440).default(60),
+  JOBS_ADZUNA_REQUESTS_PER_RUN: z.coerce.number().int().min(1).max(25).default(6),
+  ADZUNA_APP_ID: optional,
+  ADZUNA_APP_KEY: optional,
+  JOB_FEEDS: optional,
   PUBLIC_BUSINESS_SOURCE_ENABLED: bool(false),
   EMAIL_PROVIDER: z
     .string()
@@ -310,6 +358,12 @@ export function loadConfig(env = process.env) {
     })(),
     embeddedWorker: e.EMBEDDED_WORKER,
     tenders: { syncEnabled: e.TENDERS_SYNC_ENABLED, syncMinutes: e.TENDERS_SYNC_MINUTES },
+    jobs: {
+      syncEnabled: e.JOBS_SYNC_ENABLED,
+      syncMinutes: e.JOBS_SYNC_MINUTES,
+      adzuna: { enabled: Boolean(e.ADZUNA_APP_ID && e.ADZUNA_APP_KEY), appId: e.ADZUNA_APP_ID, appKey: e.ADZUNA_APP_KEY, requestsPerRun: e.JOBS_ADZUNA_REQUESTS_PER_RUN },
+      feeds: jobFeedsFrom(e.JOB_FEEDS, errors),
+    },
     search: {
       intervalMinutes: e.SEARCH_INTERVAL_MINUTES,
       scoreThreshold: e.OPPORTUNITY_SCORE_THRESHOLD,

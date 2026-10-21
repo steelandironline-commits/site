@@ -1296,6 +1296,44 @@ model PublicTender {
   @@index([publishedAt])
 }
 
+/// Vagas de emprego públicas da área CPF (Adzuna, feeds e DEMO). Sem dono: não pertencem a uma empresa nem a uma
+/// pessoa; quem pode ver cada vaga sai da área dela (packages/shared/src/jobs/visibility.js). Apagadas após 60 dias.
+model JobListing {
+  id              String    @id @default(cuid())
+  /// ADZUNA | FEED | DEMO
+  source          String
+  externalId      String
+  title           String
+  company         String?
+  city            String?
+  state           String?
+  /// slug de packages/shared/src/jobs/areas.js
+  area            String
+  /// Em reais. Faixa ou valor único; o período diz se é por mês, hora ou dia.
+  salaryMin       Decimal?  @db.Decimal(12, 2)
+  salaryMax       Decimal?  @db.Decimal(12, 2)
+  /// MES | HORA | DIA
+  salaryPeriod    String?
+  salaryText      String?
+  description     String    @db.Text
+  contactWhatsapp String?
+  contactEmail    String?
+  sourceUrl       String
+  postedAt        DateTime
+  /// Só quando a fonte informa. Nunca é inventado.
+  expiresAt       DateTime?
+  /// BOM | VERIFIQUE | ATENCAO
+  scoreLevel      String
+  scoreValue      Int
+  scoreReasons    Json
+  fetchedAt       DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+
+  @@unique([source, externalId])
+  @@index([area])
+  @@index([postedAt])
+}
+
 /// Bookkeeping for background syncs (one row per job): lease, last run, last result.
 model SyncState {
   key           String    @id

@@ -6,6 +6,7 @@ import { Scheduler } from './scheduler.js';
 import { AgentOrchestrator } from './AgentOrchestrator.js';
 import { ensureAgents } from '../services/agentRegistry.js';
 import { buildPlatform } from '../platform.js';
+import { nextJobSyncDelayMs } from '../jobs/backoff.js';
 
 /**
  * Background worker loop. Runs in its own Railway service (apps/worker) or
@@ -129,6 +130,24 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, reconcileMs = 
     if (!stopping) timers.push(setTimeout(tenderLoop, next));
   }
 
+  // Vagas (área CPF): Adzuna e feeds com JOBS_SYNC_ENABLED, ou vagas de demonstração com DEMO_MODE. Contrato no SyncState
+  // como nas licitações; em erro (429 da fonte, rede) recua em dobro a cada falha seguida, até 6 horas.
+  let jobFailures = 0;
+  async function jobsLoop() {
+    if (stopping) return;
+    let next = config.jobs.syncMinutes * 60_000;
+    try {
+      const r = await platform.jobs.sync();
+      jobFailures = r?.error ? jobFailures + 1 : 0;
+      next = nextJobSyncDelayMs(r, { syncMinutes: config.jobs.syncMinutes, failures: Math.max(0, jobFailures - 1) });
+    } catch (err) {
+      jobFailures += 1;
+      logger.error('jobs loop failed', { code: err.code || err.name });
+      next = nextJobSyncDelayMs({ error: 'x' }, { syncMinutes: config.jobs.syncMinutes, failures: Math.max(0, jobFailures - 1) });
+    }
+    if (!stopping) timers.push(setTimeout(jobsLoop, next));
+  }
+
   (async () => {
     await ensureAgents(prisma);
     await platform.commissions.ensureDefaults();
@@ -139,6 +158,11 @@ export function startWorker({ pollMs = 3000, scheduleMs = 60_000, reconcileMs = 
     eventLoop();
     reconcileLoop();
     if (config.tenders?.syncEnabled && !config.isTest) timers.push(setTimeout(tenderLoop, 20_000));
+    if (!config.isTest) {
+      // Avisa à API quais fontes de vagas este processo tem (a API não recebe as chaves) e começa a varrer.
+      await platform.jobs.announce().catch((err) => logger.error('jobs announce failed', { code: err.code || err.name }));
+      if (platform.jobs.adapters().length > 0) timers.push(setTimeout(jobsLoop, 30_000));
+    }
   })().catch((err) => logger.error('worker boot failed', { err }));
 
   return {

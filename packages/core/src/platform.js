@@ -19,6 +19,7 @@ import { JobQueue } from './engine/jobQueue.js';
 import { FreightService } from './domains/freightService.js';
 import { WorkforceService } from './domains/workforceService.js';
 import { TenderService } from './tenders/tenderService.js';
+import { JobService } from './jobs/jobService.js';
 import { PreferenceService } from './notifications/PreferenceService.js';
 import { PushService } from './notifications/PushService.js';
 import { NotificationRouter } from './notifications/NotificationRouter.js';
@@ -70,6 +71,7 @@ export function buildPlatform({ prisma = getPrisma(), config = getConfig(), emai
     freight: new FreightService({ prisma, config, events }),
     workforce: new WorkforceService({ prisma, config, events }),
     tenders: new TenderService({ prisma }),
+    jobs: new JobService({ prisma, config }),
     preferences: new PreferenceService({ prisma }),
     push: push ?? new PushService({ prisma, config }),
   };

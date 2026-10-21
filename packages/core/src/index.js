@@ -9,6 +9,13 @@ export { EmailService } from './email/emailService.js';
 export { CepService } from './geo/cepService.js';
 export { TenderService } from './tenders/tenderService.js';
 export { PncpClient, toTender } from './tenders/pncpClient.js';
+export { JobService, JOBS_SYNC_KEY, JOB_RETENTION_DAYS } from './jobs/jobService.js';
+export { AdzunaAdapter, ADZUNA_QUERIES, toRawJob as adzunaToRawJob } from './jobs/adzunaAdapter.js';
+export { FeedAdapter, parseFeed } from './jobs/feedAdapter.js';
+export { DemoJobSource } from './jobs/demoSource.js';
+export { JobSourceError, getWithBackoff, retryWaitMs } from './jobs/http.js';
+export { nextJobSyncDelayMs } from './jobs/backoff.js';
+export { buildJobRecord } from './jobs/normalize.js';
 export { ACTIVITY_CHANNEL } from './realtime/channel.js';
 
 export { ActivityService, ACTIVITY_SELECT } from './services/activityService.js';
