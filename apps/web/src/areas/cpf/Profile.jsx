@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Save } from 'lucide-react';
-import { onlyDigits } from '@autopix/shared';
-import { Button, ErrorState, Field, Input, SkeletonCard, TagInput, Textarea, put, useApi } from '@autopix/ui';
+import { JOB_AREAS, JOB_TITLE_MAX, jobAreaName, onlyDigits } from '@autopix/shared';
+import { Button, ErrorState, Field, Input, Select, SkeletonCard, TagInput, Textarea, put, useApi } from '@autopix/ui';
 import { useToast } from '../../lib/toast.jsx';
 import { PersonWhereFields } from './PersonWhereFields.jsx';
 import s from '../../pages/app/app.module.css';
@@ -10,22 +10,26 @@ import s from '../../pages/app/app.module.css';
 // de empresa não existe neste host e esta tela não a conhece.
 
 const TEXT = ['name', 'phone', 'postalCode', 'city', 'state', 'description'];
+/** Busca de vagas: área de atuação, cargo procurado e contato preferido (guardados no perfil, ver PUT /api/profile). */
+const JOB_FIELDS = ['workArea', 'jobTitle', 'contactPreference'];
 const SUGGESTIONS = ['Eletricista', 'Pedreiro', 'Motorista', 'Pintor', 'Encanador', 'Soldador', 'Ajudante geral', 'Operador de empilhadeira'];
 
-function toForm(p) {
+export function toForm(p) {
   const f = {};
   TEXT.forEach((k) => (f[k] = p[k] ?? ''));
   f.serviceRadiusKm = p.serviceRadiusKm ?? 0;
   f.services = p.services ?? [];
+  JOB_FIELDS.forEach((k) => (f[k] = p[k] ?? ''));
   return f;
 }
 
-function toPayload(f) {
+export function toPayload(f) {
   const out = {};
   TEXT.forEach((k) => (out[k] = typeof f[k] === 'string' && f[k].trim() === '' ? null : f[k]));
   out.name = f.name;
   out.serviceRadiusKm = Number(onlyDigits(String(f.serviceRadiusKm ?? 0)) || 0);
   out.services = f.services;
+  JOB_FIELDS.forEach((k) => (out[k] = typeof f[k] === 'string' && f[k].trim() === '' ? null : f[k]));
   return out;
 }
 
@@ -117,6 +121,39 @@ export function ProfileForm({ profile, onSaved }) {
 
           <div className={s.formSection}>
             <div className={s.formSectionTitle}>
+              <h2>Vagas para você</h2>
+              <p>Escolha a área e o cargo que você procura. Você vê as vagas da sua área e as de logística, que servem para todas.</p>
+            </div>
+            <div className={s.formGrid}>
+              <Field label="Área de atuação" error={errors.workArea}>
+                {(a) => (
+                  <Select {...a} value={form.workArea} onChange={set('workArea')}>
+                    <option value="">Escolha a sua área</option>
+                    {JOB_AREAS.map((area) => (
+                      <option key={area.slug} value={area.slug}>
+                        {area.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Field label="Cargo que você procura" optional hint="Ex.: Soldador, Motorista, Auxiliar administrativo." error={errors.jobTitle}>
+                {(a) => <Input {...a} value={form.jobTitle} onChange={set('jobTitle')} maxLength={JOB_TITLE_MAX} placeholder="Ex.: Soldador" />}
+              </Field>
+              <Field label="Contato preferido nas vagas" optional hint="O botão escolhido aparece primeiro." error={errors.contactPreference}>
+                {(a) => (
+                  <Select {...a} value={form.contactPreference} onChange={set('contactPreference')}>
+                    <option value="">Sem preferência</option>
+                    <option value="WHATSAPP">WhatsApp</option>
+                    <option value="EMAIL">E-mail</option>
+                  </Select>
+                )}
+              </Field>
+            </div>
+          </div>
+
+          <div className={s.formSection}>
+            <div className={s.formSectionTitle}>
               <h2>Onde você mora</h2>
             </div>
             <div className={s.stack} style={{ gap: 16 }}>
@@ -154,6 +191,10 @@ export function ProfileForm({ profile, onSaved }) {
               <div>
                 <dt>Região</dt>
                 <dd>{place || '—'}</dd>
+              </div>
+              <div>
+                <dt>Área das vagas</dt>
+                <dd>{jobAreaName(profile.workArea) || '—'}</dd>
               </div>
               <div>
                 <dt>Distância aceita</dt>

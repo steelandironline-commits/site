@@ -9,6 +9,37 @@ export const HOME = {
   disclaimer: 'Tem CPF não tem vínculo com a Receita Federal.',
 };
 
+/** Página "Vagas". Só vocabulário de pessoa física; "contratante" é quem publicou a vaga. */
+export const VAGAS = {
+  title: 'Vagas',
+  subtitle: 'Vagas da sua área de atuação, com o contato direto, o prazo e um sinal de confiança. As vagas de logística aparecem para todas as áreas.',
+  searchLabel: 'Buscar vagas',
+  searchPlaceholder: 'Buscar por cargo, contratante ou palavra da vaga',
+  areaLabel: 'Área',
+  areaAll: 'Todas as que posso ver',
+  needsArea: {
+    title: 'Escolha a sua área de atuação',
+    message: 'Sem a área, você vê só as vagas de logística, que servem para qualquer área.',
+    link: 'Meu perfil',
+  },
+  demo: { title: 'Dados de demonstração', message: 'As vagas abaixo são fictícias e servem só para mostrar como a página funciona.' },
+  notConfigured: {
+    title: 'Fonte de vagas não configurada',
+    message: 'Ainda não há uma fonte de vagas ligada neste ambiente. Quando ela for ligada, as vagas aparecem aqui.',
+  },
+  waiting: { title: 'Buscando as primeiras vagas…', message: 'A primeira busca leva alguns minutos. Esta página atualiza sozinha.' },
+  empty: { title: 'Nenhuma vaga para você agora', message: 'Volte mais tarde ou confira a área escolhida em Meu perfil.' },
+  emptySearch: { title: 'Nenhuma vaga com essa busca', message: 'Tente outra palavra ou limpe a busca.' },
+  loadError: 'Não foi possível carregar as vagas.',
+  unknownEmployer: 'Contratante não informado',
+  unknownPlace: 'Local não informado',
+  noContact: 'Sem contato na vaga. Veja os detalhes na fonte.',
+  scoreNote: 'Indicador automático, feito só com o texto do anúncio. Não é avaliação oficial da empresa.',
+  seeFull: 'ver completo',
+  seeLess: 'ver menos',
+  seeSource: 'ver na fonte',
+};
+
 export const COPY = {
   login: {
     subtitle: 'Entre para acompanhar o seu perfil e os avisos da sua conta.',

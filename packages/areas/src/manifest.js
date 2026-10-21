@@ -50,7 +50,8 @@ export const EXCLUSIVE_PAGES = Object.freeze({
   ]),
   // "Meu perfil": o perfil da pessoa física, que lê e grava GET/PUT /api/profile. Não existe no build legado,
   // onde a pessoa vê o perfil em /app/company (tela da empresa, com a rota de empresa).
-  CPF: Object.freeze(['/app/perfil']),
+  // "Vagas" (/app/vagas): as vagas da área de atuação da pessoa, em GET /api/jobs. Também só do CPF.
+  CPF: Object.freeze(['/app/perfil', '/app/vagas']),
   // Admin da plataforma (Q6). Sem ADMIN_HOST, quem serve é o host CNPJ; a regra de
   // quem serve o quê entra na ETAPA 4.
   ADMIN: Object.freeze(['/app/admin']),
